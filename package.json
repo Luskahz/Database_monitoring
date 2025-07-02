@@ -1,0 +1,31 @@
+{
+  "name": "database_monitoring",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Luskahz/Database_monitoring.git"
+  },
+  "keywords": [
+    "monitoramento",
+    "bancoDeDados",
+    "Database",
+    "monitoring",
+    "agent_database"
+  ],
+  "author": "Lucas Alves",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Luskahz/Database_monitoring/issues"
+  },
+  "homepage": "https://github.com/Luskahz/Database_monitoring#readme",
+  "description": "",
+  "dependencies": {
+    "chokidar": "^4.0.3",
+    "mysql2": "^3.14.1"
+  }
+}
