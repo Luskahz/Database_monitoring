@@ -1,34 +1,27 @@
-import fs from "fs";
+import fs from "fs/promisses";
 import path from "path";
+import { fileHandlerController } from "../controller/fileHandlerController";
+import csvtojson from "csvtojson";
 
 function isCsvFile(filePath) {
-  return path.extname(filePath).toLowerCase() === ".csv";
+  return path.extname(filePath).toLowerCase() === ".csv" || 
+         path.extname(filePath).toLowerCase() === ".csv.inf";
 }
 
-export default function receiver(filePath, action) {
+export default async function receiver(filePath, action, next) {
   try {
     if (isCsvFile(filePath)) {
-      if (
-        !path.basename(filePath).startsWith("~$") &&
-        !filePath.endsWith(".tmp")
-      ) {
-        fs.readFile(filePath, "utf8", (err, data) => {
-          if (err) {
-            console.error(`Erro ao ler o arquivo: ${filePath}`, err);
-            return;
-          }
-          const firstLine = data.split("\n")[0];
-          if (firstLine.includes(",") || firstLine.includes(";")) {
-            // Aqui já está validado e lido, pronto para o controller global
-            console.log(`Conteúdo do arquivo: ${data}`);
-            console.log(`Arquivo recebido: ${filePath} - Ação: ${action}`);
-            // Chame aqui seu controller global, se quiser
-          } else {
-            console.log(
-              `Arquivo ignorado: ${filePath} - Não parece ser um CSV válido`
-            );
-          }
-        });
+      if (!path.basename(filePath).startsWith("~$") && !filePath.endsWith(".tmp")) {
+        const data = await fs.readFile(filePath, "utf8")
+        const firstLine = data.split(/\r?\n/)[0];
+        if (firstLine.includes(",") || firstLine.includes(";")) {
+            const dataJson =  await csvtojson().fromString(data)
+            fileHandlerController(filePath, dataJson, action) //AQUI CONTINUA O FLUXO PRO PROXIMO AGENTE
+        } else {
+          console.log(
+            `Arquivo ignorado: ${filePath} - Não parece ser um CSV válido`
+          );
+        }
       } else {
         console.log(`Arquivo ignorado: ${filePath} - Arquivo temporário`);
       }
@@ -36,7 +29,7 @@ export default function receiver(filePath, action) {
       console.log(`Arquivo ignorado: ${filePath} - Não é um arquivo CSV`);
     }
   } catch (error) {
-    console.error(`Erro ao processar o arquivo: ${filePath}`, error);
+    next(error)
   }
-  // Filtro e leitura em um só lugar
+
 }

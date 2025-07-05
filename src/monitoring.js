@@ -3,7 +3,8 @@ import chokidar from "chokidar";
 import path from "path";
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { receiver } from "./middleware/receiverMiddleware.js";
+import receiver from "./middleware/receiverMiddleware.js";
+import chokidarErrorHandler from "./middleware/errorHandler.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -19,7 +20,7 @@ export function startMonitoring() {
   watcher
     .on("add", (filePath) => {
       console.log(`Arquivo adicionado: ${filePath}`);
-      receiver(filePath, "created")//recebe o caminho do arquivo e a ação do usuario
+      receiver(filePath, "created", chokidarErrorHandler)//recebe o caminho do arquivo e a ação do usuario
     })
     .on("change", (filePath) => {
       console.log(`Arquivo modificado: ${filePath}`);
