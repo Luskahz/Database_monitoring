@@ -9,8 +9,10 @@ import chokidarErrorHandler from "./middleware/errorHandler.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 
+
 export function startMonitoring() {
   const monitorPath = path.resolve(__dirname, "../../"); // Caminho da pasta de arquivos
+  let isReady = false
 
   const watcher = chokidar.watch(monitorPath, {
     persistent: true,
@@ -24,18 +26,11 @@ export function startMonitoring() {
     })
     .on("change", (filePath) => {
       console.log(`Arquivo modificado: ${filePath}`);
+      receiver(filePath, "modified", chokidarErrorHandler)//recebe o caminho do arquivo e a ação do usuario
     })
     .on("unlink", (filePath) => {
       console.log(`Arquivo removido: ${filePath}`);
       /* arquivo removido */
-    })
-    .on("addDir", (dirPath) => {
-      console.log(`Pasta criada: ${dirPath}`);
-      /* pasta criada */
-    })
-    .on("unlinkDir", (dirPath) => {
-      console.log(`Pasta removida: ${dirPath}`);
-      /* pasta removida */
     })
     .on("error", (error) => {
       console.error(`Erro no monitoramento: ${error}`);

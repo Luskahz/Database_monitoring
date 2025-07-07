@@ -858,6 +858,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_03_11_42 (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -867,6 +868,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_03_11_40 (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -876,6 +878,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_relatorio_separacao_wms (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -885,6 +888,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_03_01_46_06 (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -894,6 +898,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_03_18_05 (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -903,6 +908,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_03_11_29 (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -912,6 +918,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_03_08_05 (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -921,6 +928,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_base_rating (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -930,6 +938,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_expurgos (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -939,6 +948,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_jornada_laboral (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -948,6 +958,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_03_01_47_01 (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -957,6 +968,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_03_02_24 (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -967,6 +979,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_03_02_37_operacao_veiculo_mapa (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -976,6 +989,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_03_02_37_tipo_movto (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -986,6 +1000,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_03_05_30_cliente (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -995,6 +1010,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_03_05_30_cod_ajudante (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -1004,6 +1020,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_03_05_30_cod_motorista (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -1013,6 +1030,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_03_05_30_mapa (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -1023,6 +1041,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_base_bees_deliver_dia (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -1033,6 +1052,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_01_20_11 (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -1042,6 +1062,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_01_11 (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -1052,6 +1073,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_veiculos (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -1061,6 +1083,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_motoristas (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,
@@ -1070,6 +1093,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS log_ajudante (
     nome_arquivo VARCHAR(100) PRIMARY KEY,
+    ano int not null,
     data_upload DATETIME,
     hash_arquivo CHAR(64),
     sucesso BOOLEAN,

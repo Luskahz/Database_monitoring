@@ -1,6 +1,7 @@
-import fs from "fs/promisses";
+import fs from "fs/promises";
 import path from "path";
-import { fileHandlerController } from "../controller/fileHandlerController";
+import iconv from "iconv-lite";
+import { fileHandlerController } from "../controller/fileHandlerController.js";
 import csvtojson from "csvtojson";
 
 function isCsvFile(filePath) {
@@ -12,11 +13,15 @@ export default async function receiver(filePath, action, next) {
   try {
     if (isCsvFile(filePath)) {
       if (!path.basename(filePath).startsWith("~$") && !filePath.endsWith(".tmp")) {
-        const data = await fs.readFile(filePath, "utf8")
+        const buffer = await fs.readFile(filePath)
+        const data = iconv.decode(buffer, "latin1");
         const firstLine = data.split(/\r?\n/)[0];
+
+        
         if (firstLine.includes(",") || firstLine.includes(";")) {
-            const dataJson =  await csvtojson().fromString(data)
+            const dataJson =  await csvtojson({ delimiter: ";" }).fromString(data)
             fileHandlerController(filePath, dataJson, action) //AQUI CONTINUA O FLUXO PRO PROXIMO AGENTE
+            console.log("json do arquivo csv:", dataJson);
         } else {
           console.log(
             `Arquivo ignorado: ${filePath} - Não parece ser um CSV válido`
