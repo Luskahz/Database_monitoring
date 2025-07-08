@@ -21,7 +21,6 @@ export default async function receiver(filePath, action, next) {
         if (firstLine.includes(",") || firstLine.includes(";")) {
             const dataJson =  await csvtojson({ delimiter: ";" }).fromString(data)
             fileHandlerController(filePath, dataJson, action) //AQUI CONTINUA O FLUXO PRO PROXIMO AGENTE
-            console.log("json do arquivo csv:", dataJson);
         } else {
           console.log(
             `Arquivo ignorado: ${filePath} - Não parece ser um CSV válido`

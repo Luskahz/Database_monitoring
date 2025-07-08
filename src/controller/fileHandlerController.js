@@ -2,93 +2,70 @@ import path from "path";
 import crypto from "crypto";
 import chokidarErrorHandler from "../middleware/errorHandler.js";
 import hashValidatorController from "./hashValidatorController.js";
-import { insertLog } from "../model/logModel.js";
-// import { insertIntoTable } from "../services/dbService.js";
-// import { registrarLog } from "../services/logService.js";
+import { getAllRegistersFromTable, getColunsFromTable, insertLog } from "../model/logModel.js";
+import { dataFromBasesValidatorController,normalizar } from "./dataFromBasesValidatorController.js";
 
 export async function  fileHandlerController(filePath, dataJson, action) {
   try {
-    // mateamento do arquivo, oque está sendo adicionado, e onde o usuario pretende atualizar a base
-    console.log(`\x1b[36mcaminho arquivo:\x1b[0m ${filePath}`);                //ex: /Banco/rotinas/03_11_40/2025/junho.csv     
     const fileName = path.basename(filePath);                                  //ex: junho.csv
     const baseAno = path.basename(path.dirname(filePath));                     //ex: 2023
     const baseMes = path.basename(filePath, path.extname(filePath))            //ex: junho
     const tabelaName = path.basename(path.dirname(path.dirname(filePath)));    //ex: 03_11_40
+    const colunsTable = await getColunsFromTable(tabelaName)
+    const colunsJson = Object.keys(dataJson[0] || {}).map((col) => normalizar(col));
+    const metadados = { //infos pra adcionar no log
+      nome_arquivo: fileName,
+      ano: baseAno,
+      mes: baseMes,
+      tabela: tabelaName,
+      data_json: dataJson,
+      acao: action
+    }
+    const dataColuns = await dataFromBasesValidatorController(metadados); // pega as colunas de data da tabela
+    const hash = crypto.createHash("sha256").update(JSON.stringify(dataJson)).digest("hex");
 
-    //logs para teste console
     console.log(`\x1b[36mAção:\x1b[0m ${action}`);
     console.log(`\x1b[36mNome do arquivo:\x1b[0m ${fileName}`);
     console.log(`\x1b[33mAno:\x1b[0m ${baseAno}`);
     console.log(`\x1b[33mMes:\x1b[0m ${baseMes}`);
     console.log(`\x1b[33mTabela:\x1b[0m ${tabelaName}`);
-
-    //criando o hash do arquivo para futura validação de update
-    const hash = crypto.createHash("sha256").update(JSON.stringify(dataJson)).digest("hex");
     console.log (`\x1b[36mHash do arquivo:\x1b[0m ${hash}`);
+    console.log(`\x1b[36mColunas de data encontradas na tabela:\x1b[0m`, tabelaName,  dataColuns);
+    //console.log(`\x1b[36mColunas da tabela:\x1b[0m`, colunsTable);
+    //console.log(`\x1b[36mColunas do JSON:\x1b[0m`, colunsJson);
+    
+
 
     // 3. Verificar na tabela de ingestão se o arquivo já foi processado
-    const resultado = await hashValidatorController(fileName, baseAno, tabelaName, hash, chokidarErrorHandler)
-    if (resultado === "inserir") {
+    const resultado = await hashValidatorController(fileName, tabelaName, hash, chokidarErrorHandler)
+
+    if (resultado === "inserir" && action === "created") {
+
+
+      
+
+
       const logData = {
-      nome_arquivo: fileName,
-      ano: baseAno,
-      data_upload: new Date(), // ou uma string datetime se preferir
-      hash_arquivo: hash,
-      sucesso: true,
-      mensagem_erro: null
+      tabela_destino: tabelaName,     
+      nome_arquivo: fileName,        
+      ano: parseInt(baseAno),         
+      data_upload: new Date(),        
+      hash_arquivo: hash,             
+      sucesso: true,                  
+      mensagem_erro: null             
     };
-      const result = await insertLog(logData, tabelaName); // Insere o log na tabela correspondente
+      const result = await insertLog(logData); // Insere o log na tabela correspondente
 
 
     } else if (resultado === "reprocessar") {
-
+      // logica de reprocessamento, caso o arquivo já exista mas tenha sido modificado
     } else {
-
-    return;
+      console.log(`\x1b[33m[ARQUIVO IGNORADO]\x1b[0m ${fileName} já existe e não foi modificado.`);
+      return; // Se for ignorar, não faz nada por enquanto, depois faremos um log txt
     }
-
-    // Exemplo fictício:
-    /*
-    const jaExiste = await db.ingestao.findFirst({
-      where: { nome_arquivo: fileName, hash_arquivo: hash }
-    });
-    if (jaExiste) {
-      console.log("Arquivo já processado, ignorando...");
-      return;
-    }
-    */
-
-    // 4. Inserir dados no banco
-    // await insertIntoTable(tableName, dataJson);
-
-    // 5. Registrar na tabela de controle de ingestão
-    /*
-    await db.ingestao.create({
-      data: {
-        nome_arquivo: fileName,
-        data_upload: new Date(),
-        hash_arquivo: hash,
-        sucesso: true,
-        mensagem_erro: null
-      }
-    });
-    */
-
-    // 6. Log de sucesso
-    console.log(`Arquivo ${fileName} inserido com sucesso na tabela ${tableName}.`);
 
   } catch (error) {
-    // Em caso de erro, registra log e lança
     console.error(`Erro ao processar arquivo: ${error.message}`);
-    /*
-    await registrarLog({
-      nome_arquivo: fileName,
-      data_upload: new Date(),
-      hash_arquivo: hash,
-      sucesso: false,
-      mensagem_erro: error.message
-    });
-    */
     throw error;
   }
 }
