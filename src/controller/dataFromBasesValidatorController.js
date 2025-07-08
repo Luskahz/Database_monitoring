@@ -10,14 +10,13 @@ export function normalizar(nome) {
 }
 
 
-export async function dataFromBasesValidatorController(metadados) {
+export async function dataFromBasesValidatorController(tabela, data_json) {
   try {
-    const { tabela, data_json } = metadados;
     const results = await getDateColumnsFromTable(tabela);
     console.log(`\x1b[36mColunas de data encontradas na tabela ${tabela}:\x1b[0m`, results);
 
     if (!results || results.length === 0) {
-      return null;
+      return null
     }
 
     const primeiraLinha = data_json?.[0] || {};

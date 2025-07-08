@@ -19,7 +19,8 @@ export default async function receiver(filePath, action, next) {
 
         
         if (firstLine.includes(",") || firstLine.includes(";")) {
-            const dataJson =  await csvtojson({ delimiter: ";" }).fromString(data)
+            const delimiter = firstLine.includes(";") ? ";" : ",";
+            const dataJson =  await csvtojson({ delimiter }).fromString(data)
             fileHandlerController(filePath, dataJson, action) //AQUI CONTINUA O FLUXO PRO PROXIMO AGENTE
         } else {
           console.log(
@@ -27,7 +28,7 @@ export default async function receiver(filePath, action, next) {
           );
         }
       } else {
-        console.log(`Arquivo ignorado: ${filePath} - Arquivo temporário`);
+        console.log(`Arquivo ignorado: ${filePath} - Arquivo  temporário`);
       }
     } else {
       console.log(`Arquivo ignorado: ${filePath} - Não é um arquivo CSV`);

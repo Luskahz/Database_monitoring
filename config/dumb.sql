@@ -86,13 +86,13 @@ CREATE TABLE -- colunas data: 1
     
   );
 
-CREATE TABLE -- colunas data: 2 -- validar
+CREATE TABLE -- colunas data: 1
   IF NOT EXISTS `03_01_46_06` ( 
     id_pedido bigint,
     unb bigint,
     cliente bigint,
     razao_social VARCHAR(25),
-    data_criacao date,
+    data_criacao varchar(25),
     hora_criacao time,
     data_entrega date,
     data_ultima_modificacao datetime,
@@ -131,7 +131,7 @@ CREATE TABLE -- colunas data: 2 -- validar
     
   );
 
-CREATE TABLE -- colunas data: 2 -- validar
+CREATE TABLE -- colunas data: 1
   IF NOT EXISTS `03_18_05` ( 
     unb int,
     descricao_unb VARCHAR(25),
@@ -139,7 +139,7 @@ CREATE TABLE -- colunas data: 2 -- validar
     nome_cliente VARCHAR(25),
     solicitacao_reposicao int,
     tipo_solicitacao VARCHAR(25),
-    data_solicitacao date,
+    data_solicitacao Varchar(25),
     hora time,
     status_solicitacao VARCHAR(25),
     data_acao date,
@@ -289,9 +289,6 @@ CREATE TABLE -- colunas data: 1
    
   );
 
-CREATE TABLE -- colunas data: 0
-  IF NOT EXISTS expurgos (mapa INT primary key);
-
 CREATE TABLE -- colunas data: 1
   IF NOT EXISTS jornada_laboral ( 
     data date,
@@ -305,7 +302,7 @@ CREATE TABLE -- colunas data: 1
     
   );
 
-CREATE TABLE -- colunas data: 1 
+CREATE TABLE -- colunas data: 1
   IF NOT EXISTS `03_01_47_01` ( 
     cod_puxada int,
     nome_filial VARCHAR(25),
@@ -405,14 +402,14 @@ CREATE TABLE -- colunas data: 1
     hora time
   );
 
-CREATE TABLE -- colunas data: 2 -- verificar
+CREATE TABLE -- colunas data: 1
   IF NOT EXISTS `03_02_37_operacao_veiculo_mapa` ( 
     empresa int,
     filial int,
     operacao int,
     codigo_vei int,
     mapa int,
-    dt_operacao date,
+    dt_operacao varchar(25),
     emissao date,
     nota bigint,
     serie int,
@@ -504,12 +501,12 @@ CREATE TABLE -- colunas data: 2 -- verificar
     campo_extra VARCHAR(10)
   )ROW_FORMAT=DYNAMIC;
 
-CREATE TABLE -- colunas data: 2 -- verificar
+CREATE TABLE -- colunas data: 1
   IF NOT EXISTS `03_02_37_tipo_movto` ( 
     empresa int,
     filial int,
     tipo_movto int,
-    dt_operacao date,
+    dt_operacao varchar(25),
     emissao date,
     nota bigint,
     serie int,
@@ -600,7 +597,7 @@ CREATE TABLE -- colunas data: 2 -- verificar
     cod_situacao_tributaria VARCHAR(25)
   )ROW_FORMAT=DYNAMIC;
 
-CREATE TABLE -- colunas data: 1 
+CREATE TABLE -- colunas data: 1
   IF NOT EXISTS `03_05_30_cliente` ( 
     cod_cliente int,
     descricao VARCHAR(25),
@@ -851,6 +848,9 @@ CREATE TABLE -- colunas data: 0 -- verificar
     cpf VARCHAR(20),
     status VARCHAR(25)
   );
+
+CREATE TABLE -- colunas data: 0 -- verificar
+  IF NOT EXISTS expurgos (mapa INT primary key);
 
 -- log tabelas'
 CREATE TABLE
