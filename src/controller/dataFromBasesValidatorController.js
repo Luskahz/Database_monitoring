@@ -1,14 +1,13 @@
-import { getDateColumnsFromTable } from "../model/logModel.js";
+import { getDateColumnsFromTable } from "../model/tableModel.js";
 
 export function normalizar(nome) {
   return nome
-    .normalize("NFD")                    // remove acento
-    .replace(/[\u0300-\u036f]/g, "")    // remove acento
-    .replace(/\s+/g, "_")               // espaço → underline
-    .replace(/[^\w]/g, "")              // remove tudo que não é letra/número/_
-    .toLowerCase()
+    .normalize("NFD") // remove acento
+    .replace(/[\u0300-\u036f]/g, "") // remove acento
+    .replace(/\s+/g, "_") // espaço → underline
+    .replace(/[^\w]/g, "") // remove tudo que não é letra/número/_
+    .toLowerCase();
 }
-
 
 export async function dataFromBasesValidatorController(tabela, data_json) {
   try {
@@ -16,7 +15,7 @@ export async function dataFromBasesValidatorController(tabela, data_json) {
     console.log(`\x1b[36mColunas de data encontradas na tabela ${tabela}:\x1b[0m`, results);
 
     if (!results || results.length === 0) {
-      return null
+      return null;
     }
 
     const primeiraLinha = data_json?.[0] || {};

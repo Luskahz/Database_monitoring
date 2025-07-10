@@ -1,18 +1,30 @@
-import { insertRegisterinTable, deletePeriodoDispFromTable,  listPeriodoDispFromTable, insertValidator } from "../model/logModel.js";
+import {
+  insertRegisterinTable,
+  deletePeriodoDispFromTable,
+  listPeriodoDispFromTable,
+  insertValidator,
+} from "../model/tableModel.js";
 
-export async function insertDataController(metadados) {
-  const { data_json, tabela, coluna_data, mes, ano } = metadados;
+/**
+ * @param {{
+ *    nome_arquivo: string,
+ *    ano: number,
+ *    mes: string,
+ *    tabela: string,
+ *    data_json: object
+ *    coluna_data: string,
+ *    acao: string,
+ *    colunas_tabela: object
+ *    colunas_json: object
+ * }} metadados
+ */
+export async function managerDataController(metadados) {
   //list de todas as linhas da tabela
   const listFromTable = await listPeriodoDispFromTable(metadados);
-  const validator = await insertValidator(listFromTable, data_json);
+  const validator = await insertValidator(listFromTable, metadados.data_json);
 
   if (validator === "substituir") {
-    const result = await deletePeriodoDispFromTable(
-      tabela,
-      coluna_data,
-      mes,
-      ano
-    );
+    const result = await deletePeriodoDispFromTable(metadados.tabela ,metadados.coluna_data, metadados.mes, metadados.ano);
     if (!result.error) {
       const erros = [];
       let sucesso = 0;
