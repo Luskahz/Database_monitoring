@@ -1,7 +1,7 @@
 import {
   insertRegisterinTable,
-  deletePeriodoDispFromTable,
-  listPeriodoDispFromTable,
+  deletePeriodInTable,
+  listPeriodInTable,
   insertValidator,
 } from "../model/tableModel.js";
 
@@ -19,36 +19,47 @@ import {
  * }} metadados
  */
 export async function managerDataController(metadados) {
-  //list de todas as linhas da tabela
-  const listFromTable = await listPeriodoDispFromTable(metadados);
-  const validator = await insertValidator(listFromTable, metadados.data_json);
+  const listFromTable = await listPeriodInTable(metadados);
+  const validator = await insertValidator(listFromTable, metadados);
 
+  const erros = [];
+  let sucesso = 0;
+
+  // Se for para substituir, primeiro deleta o período
   if (validator === "substituir") {
-    const result = await deletePeriodoDispFromTable(metadados.tabela ,metadados.coluna_data, metadados.mes, metadados.ano);
-    if (!result.error) {
-      const erros = [];
-      let sucesso = 0;
-
-      for (let i = 0; i < data_json.length; i++) {
-        try {
-          const result = await insertRegisterinTable(data_json[i], tabela);
-          sucesso++;
-        } catch (error) {
-          console.error(`Erro ao inserir linha ${i}:`, error.message);
-
-          erros.push({
-            linha: i,
-            erro: error.message,
-            dados: data_json[i],
-          });
-        }
-      }
+    try {
+      await deletePeriodInTable(metadados);
+    } catch (error) {
+      console.error("Erro ao deletar período:", error.message);
       return {
-        total: data_json.length,
-        inseridos: sucesso,
-        falhas: erros.length,
-        detalhes_erros: erros,
+        erro: true,
+        mensagem: "Erro ao deletar período antes da reinserção",
+        detalhes_erro: error.message,
       };
     }
   }
+
+  // Independente do modo, sempre insere
+  for (let i = 0; i < metadados.data_json.length; i++) {
+    try {
+      await insertRegisterinTable(metadados, i);
+      sucesso++;
+    } catch (error) {
+      console.error(`Erro ao inserir linha ${i}:`, error.message);
+      erros.push({
+        linha: i,
+        erro: error.message,
+        dados: metadados.data_json[i],
+      });
+    }
+  }
+
+  return {
+    total: metadados.data_json.length,
+    inseridos: sucesso,
+    falhas: erros.length,
+    detalhes_erros: erros,
+  };
 }
+
+

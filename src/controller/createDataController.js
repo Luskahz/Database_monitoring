@@ -9,7 +9,7 @@ export default async function createDataController(filePath, dataJson, action){
   const baseAno = path.basename(path.dirname(filePath));                                      //ex: 2023
   const baseMes = path.basename(filePath, path.extname(filePath));                            //ex: junho
   const tabelaName = path.basename(path.dirname(path.dirname(filePath)));                     //ex: 03_11_40
-  const dataColun = await dataFromBasesValidatorController(tabelaName, dataJson);             //??
+  const dataColun = await dataFromBasesValidatorController(tabelaName, dataJson);             //ex: 
   const hash = crypto.createHash("sha256").update(JSON.stringify(dataJson)).digest("hex");
   const colunsTable = await getColunsFromTable(tabelaName);
   const colunsJson = Object.keys(dataJson[0] || {}).map((col) =>normalizar(col));

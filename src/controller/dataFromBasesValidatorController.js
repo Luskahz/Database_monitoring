@@ -11,15 +11,14 @@ export function normalizar(nome) {
 
 export async function dataFromBasesValidatorController(tabela, data_json) {
   try {
-    const results = await getDateColumnsFromTable(tabela);
-    console.log(`\x1b[36mColunas de data encontradas na tabela ${tabela}:\x1b[0m`, results);
+    const dataCol = await getDateColumnsFromTable(tabela); // retorna a coluna data em string da tabela destino
+    console.log(`\x1b[36mColuna de data encontrada na tabela ${tabela}:\x1b[0m`, dataCol);
 
-    if (!results || results.length === 0) {
+    if (!dataCol) {
       return null;
     }
-
+    
     const primeiraLinha = data_json?.[0] || {};
-    const dataColunas = results.map((col) => col.COLUMN_NAME);
 
     const colunasComIndex = dataColunas.map((colName) => {
       const chavesJson = Object.keys(primeiraLinha);

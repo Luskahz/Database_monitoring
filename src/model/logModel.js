@@ -1,24 +1,49 @@
-export async function getLogByFile(fileName, tabela) {
+/**
+ * @param {{
+ *    nome_arquivo: string,
+ *    ano: number,
+ *    mes: string,
+ *    tabela: string,
+ *    data_json: object
+ *    coluna_data: string,
+ *    acao: string,
+ *    colunas_tabela: object
+ *    colunas_json: object
+ * }} metadados
+ */
+export async function getLogByData(metadados) {
   const [result] = await db.query(
     `
     SELECT * FROM log_ingestao
-    WHERE tabela_destino = ? AND nome_arquivo = ?
+    WHERE tabela_destino = ? AND nome_arquivo = ? AND ano = ?
     ORDER BY data_upload DESC
   `,
-    [tabela, fileName]
+    [metadados.tabela, metadados.nome_arquivo, metadados.ano]
   );
 
   return result //retorna todas as linhas referente ao log daquele mes naquela tabela
 }
 
-
-export async function getAllHashesFromTable(tabela) {
+/**
+ * @param {{
+ *    nome_arquivo: string,
+ *    ano: number,
+ *    mes: string,
+ *    tabela: string,
+ *    data_json: object
+ *    coluna_data: string,
+ *    acao: string,
+ *    colunas_tabela: object
+ *    colunas_json: object
+ * }} metadados
+ */
+export async function getAllHashesFromTable(metadados) {
   const [result] = await db.query(
     `
     SELECT hash_arquivo FROM log_ingestao
     WHERE tabela_destino = ?
   `,
-    [tabela]
+    [metadados.tabela]
   );
   return result;
 }

@@ -15,10 +15,6 @@ const meses = {
   dezembro: 12,
 };
 
-
-
-
-
 export async function getAllRegistersFromTable(tabela) {
   const [result] = await db.query(`
     SELECT * FROM ${tabela}`);
@@ -38,17 +34,15 @@ export async function getDateColumnsFromTable(tabela) {
     );
 
     if (results.length === 0) {
-      return null; // ✅ Retorna null se não houver colunas de data
+      return null; // Retorna null se não houver colunas de data
+    } else {
+      return results[0].COLUMN_NAME; // Retorna o nome da primeira coluna
     }
-
-    return results[0].COLUMN_NAME; // ✅ Retorna o nome da primeira coluna
   } catch (error) {
     console.error("Erro ao consultar colunas de data:", error);
     throw error;
   }
 }
-
-
 
 export async function getColunsFromTable(tabela) {
   try {
@@ -68,29 +62,55 @@ export async function getColunsFromTable(tabela) {
   }
 }
 
-export async function insertRegisterinTable(line, tabela) {
+/**
+ * @param {{
+ *    nome_arquivo: string,
+ *    ano: number,
+ *    mes: string,
+ *    tabela: string,
+ *    data_json: object
+ *    coluna_data: string,
+ *    acao: string,
+ *    colunas_tabela: object
+ *    colunas_json: object
+ * }} metadados
+ */
+export async function insertRegisterinTable(metadados, i) {
   try {
-    const colunas = await getColunsFromTable(tabela);
-    const valores = colunas.map((col) => line[col]);
+    const colunas = await getColunsFromTable(metadados.tabela);
+    const valores = colunas.map((col) =>{
+      const valor =  metadados.data_json[i][col];
+      return valor === undefined ? null : valor
+    })
     const colunasSql = colunas.map((col) => `\`${col}\``).join(", ");
     const placeholders = colunas.map(() => "?").join(", ");
-    const sql = `INSERT INTO \`${tabela}\` (${colunasSql}) VALUES (${placeholders})`;
+    const sql = `INSERT INTO \`${metadados.tabela}\` (${colunasSql}) VALUES (${placeholders})`;
     const result = await db.query(sql, valores);
     return result;
   } catch (error) {
-    console.error("Erro ao inserir colunas da tabela:", error);
     throw error;
   }
 }
 
-export async function listPeriodoDispFromTable(metadados) {
-
-
-  if (!coluna_data) throw new Error("Coluna de data não especificada");
+/**
+ * @param {{
+ *    nome_arquivo: string,
+ *    ano: number,
+ *    mes: string,
+ *    tabela: string,
+ *    data_json: object
+ *    coluna_data: string,
+ *    acao: string,
+ *    colunas_tabela: object
+ *    colunas_json: object
+ * }} metadados
+ */
+export async function listPeriodInTable(metadados) {
+  if (!metadados.coluna_data) throw new Error("Coluna de data não especificada");
 
   try {
     const [result] = await db.query(
-      `SELECT \`${coluna_data}\` FROM \`${tabela}\``
+      `SELECT \`${metadados.coluna_data}\` FROM \`${metadados.tabela}\``
     );
     return result || [];
   } catch (error) {
@@ -99,24 +119,34 @@ export async function listPeriodoDispFromTable(metadados) {
   }
 }
 
-export async function deletePeriodoDispFromTable(tabela, colunaData, mes, ano) {
+/**
+ * @param {{
+ *    nome_arquivo: string,
+ *    ano: number,
+ *    mes: string,
+ *    tabela: string,
+ *    data_json: object
+ *    coluna_data: string,
+ *    acao: string,
+ *    colunas_tabela: object
+ *    colunas_json: object
+ * }} metadados
+ */
+export async function deletePeriodInTable(metadados) {
   try {
-    const numeroMes = meses[mes.toLowerCase()];
-
+    const numeroMes = meses[metadados.mes.toLowerCase()];
     if (!numeroMes) {
       throw new Error(`Mês inválido: ${mes}`);
     }
 
     const sql = `
-      DELETE FROM \`${tabela}\`
-      WHERE MONTH(\`${colunaData}\`) = ?
-        AND YEAR(\`${colunaData}\`) = ?
+      DELETE FROM \`${metadados.tabela}\`
+      WHERE MONTH(\`${metadados.coluna_data}\`) = ?
+        AND YEAR(\`${metadados.coluna_data}\`) = ?
     `;
 
-    const result = await db.query(sql, [numeroMes, ano]);
-    console.log(
-      `\x1b[33mPeríodo deletado: ${mes}/${ano} da tabela ${tabela}\x1b[0m`
-    );
+    const result = await db.query(sql, [numeroMes, metadados.ano]);
+    console.log(`\x1b[33mPeríodo deletado: ${metadados.mes}/${metadados.ano} da tabela ${metadados.tabela}\x1b[0m`);
     return result;
   } catch (error) {
     console.error("Erro ao deletar período da tabela:", error.message);
@@ -124,25 +154,36 @@ export async function deletePeriodoDispFromTable(tabela, colunaData, mes, ano) {
   }
 }
 
-export async function insertValidator(list, dataJson, colunaData) {
+/**
+ * @param {{
+ *    nome_arquivo: string,
+ *    ano: number,
+ *    mes: string,
+ *    tabela: string,
+ *    data_json: object
+ *    coluna_data: string,
+ *    acao: string,
+ *    colunas_tabela: object
+ *    colunas_json: object
+ * }} metadados
+ */
+export async function insertValidator(list, metadados) {
   try {
     const datasBanco = new Set(
-      list.map((d) => new Date(d[colunaData]).toISOString().split("T")[0]) // yyyy-mm-dd
+      list.map((d) => new Date(d[metadados.coluna_data]).toISOString().split("T")[0]) // yyyy-mm-dd
     );
 
     const datasCsv = new Set(
-      dataJson.map(
-        (linha) => new Date(linha[colunaData]).toISOString().split("T")[0]
+      metadados.data_json.map(
+        (linha) => new Date(linha[metadados.coluna_data]).toISOString().split("T")[0]
       )
     );
 
-    // Verifica se há interseção
+    // Verifica se há alguma data que bate do csv com as datas do banco
     const conflito = [...datasCsv].some((data) => datasBanco.has(data));
 
     if (conflito) {
-      console.log(
-        "Conflito de datas detectado. Dados do mês já existem no banco."
-      );
+      console.log( "Conflito de datas detectado. Dados do mês já existem no banco.");
       return "substituir";
     } else {
       return "inserir";
