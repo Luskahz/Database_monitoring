@@ -17,7 +17,7 @@ import { getLogByData, getAllHashesFromTable } from "../model/logModel.js";
 *    nome_arquivo: string
 *    ano: int
 *    data_upload: date
-*    hash_Arquivo: char64
+*    hash_arquivo: char64
 *    sucesso: boolean
 *    mensagem_erro: string 
 * }} logData
@@ -28,7 +28,7 @@ export default async function fluxoValidatorController(metadados, logData, next)
     const logs = await getLogByData(metadados); //todas as linhas referente ao log desse arquivo
     const allHashes = await getAllHashesFromTable(metadados); // todos os hashs presentes na tabela
     const hashJaExiste = allHashes.some((entry) => entry.hash_arquivo === logData.hash_Arquivo);
-    if (!logData.hash_Arquivo) {
+    if (!logData.hash_arquivo) {
       throw new Error("Hash do arquivo não foi definido.");
     }
 

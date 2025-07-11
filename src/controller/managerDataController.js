@@ -5,6 +5,8 @@ import {
   insertValidator,
 } from "../model/tableModel.js";
 
+import { tiparLinha } from "../model/createSchemaMode.js";
+
 /**
  * @param {{
  *    nome_arquivo: string,
@@ -40,9 +42,10 @@ export async function managerDataController(metadados) {
   }
 
   // Independente do modo, sempre insere
-  for (let i = 0; i < metadados.data_json.length; i++) {
+  for (let i = 0; i < metadados.data_json.length; i++) { // aqui que vou realizar a tipagem
     try {
-      await insertRegisterinTable(metadados, i);
+      const linhaTipada = await tiparLinha(metadados.data_json[i], metadados.colunas_tabela)
+      await insertRegisterinTable(metadados.tabela, linhaTipada) // PRECISA DE AJUSTE// PRECISA DE AJUSTE// PRECISA DE AJUSTE// PRECISA DE AJUSTE
       sucesso++;
     } catch (error) {
       console.error(`Erro ao inserir linha ${i}:`, error.message);

@@ -1,4 +1,5 @@
 import db from "../../config/db.js";
+import { normalizar } from "../controller/dataFromBasesValidatorController.js";
 
 const meses = {
   janeiro: 1,
@@ -75,16 +76,13 @@ export async function getColunsFromTable(tabela) {
  *    colunas_json: object
  * }} metadados
  */
-export async function insertRegisterinTable(metadados, i) {
+export async function insertRegisterinTable(tabela, linhaTipada) {
   try {
-    const colunas = await getColunsFromTable(metadados.tabela);
-    const valores = colunas.map((col) =>{
-      const valor =  metadados.data_json[i][col];
-      return valor === undefined ? null : valor
-    })
+    const colunas = await getColunsFromTable(tabela); // nomes reais do banco
+    const valores = colunas.map((col) => linhaTipada[col] ?? null);
     const colunasSql = colunas.map((col) => `\`${col}\``).join(", ");
     const placeholders = colunas.map(() => "?").join(", ");
-    const sql = `INSERT INTO \`${metadados.tabela}\` (${colunasSql}) VALUES (${placeholders})`;
+    const sql = `INSERT INTO \`${tabela}\` (${colunasSql}) VALUES (${placeholders})`;
     const result = await db.query(sql, valores);
     return result;
   } catch (error) {
@@ -170,20 +168,37 @@ export async function deletePeriodInTable(metadados) {
 export async function insertValidator(list, metadados) {
   try {
     const datasBanco = new Set(
-      list.map((d) => new Date(d[metadados.coluna_data]).toISOString().split("T")[0]) // yyyy-mm-dd
+      list
+        .map((d, i) => {
+          const raw = d[metadados.coluna_data];
+          const date = new Date(raw);
+          if (isNaN(date)) {
+            console.warn(`Valor inválido no banco na linha ${i}:`, raw);
+            return null;
+          }
+          return date.toISOString().split("T")[0];
+        })
+        .filter(Boolean)
     );
 
     const datasCsv = new Set(
-      metadados.data_json.map(
-        (linha) => new Date(linha[metadados.coluna_data]).toISOString().split("T")[0]
-      )
+      metadados.data_json
+        .map((linha, i) => {
+          const raw = linha[metadados.coluna_data];
+          const date = new Date(raw);
+          if (isNaN(date)) {
+            console.warn(`Valor inválido no CSV na linha ${i}:`, raw);
+            return null;
+          }
+          return date.toISOString().split("T")[0];
+        })
+        .filter(Boolean)
     );
 
-    // Verifica se há alguma data que bate do csv com as datas do banco
     const conflito = [...datasCsv].some((data) => datasBanco.has(data));
 
     if (conflito) {
-      console.log( "Conflito de datas detectado. Dados do mês já existem no banco.");
+      console.log("Conflito de datas detectado. Dados do mês já existem no banco.");
       return "substituir";
     } else {
       return "inserir";
@@ -192,4 +207,34 @@ export async function insertValidator(list, metadados) {
     console.error("Erro ao validar datas para inserção:", error);
     throw error;
   }
+}
+export async function getTiposFromTable(tabela) {
+  try {
+    const [results] = await db.query(
+      `
+      SELECT COLUMN_NAME, DATA_TYPE
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_NAME = ?
+    `,
+      [tabela]
+    );
+
+    const tipos = {};
+    results.forEach(({ COLUMN_NAME, DATA_TYPE }) => {
+      tipos[normalizar(COLUMN_NAME)] = mapearTipo(DATA_TYPE);
+    });
+
+    return tipos;
+  } catch (error) {
+    console.error("Erro ao consultar tipos da tabela:", error);
+    throw error;
+  }
+}
+
+function mapearTipo(tipoSql) {
+  if (["int", "bigint", "smallint", "mediumint"].includes(tipoSql)) return "int";
+  if (["decimal", "float", "double"].includes(tipoSql)) return "decimal";
+  if (["date"].includes(tipoSql)) return "date";
+  if (["time"].includes(tipoSql)) return "time";
+  return "string";
 }

@@ -9,7 +9,7 @@ export default async function createDataController(filePath, dataJson, action){
   const baseAno = path.basename(path.dirname(filePath));                                      //ex: 2023
   const baseMes = path.basename(filePath, path.extname(filePath));                            //ex: junho
   const tabelaName = path.basename(path.dirname(path.dirname(filePath)));                     //ex: 03_11_40
-  const dataColun = await dataFromBasesValidatorController(tabelaName, dataJson);             //ex: 
+  const dataColun = await dataFromBasesValidatorController(tabelaName, dataJson);             //ex: { index: 0, name: "dt_entrega" }
   const hash = crypto.createHash("sha256").update(JSON.stringify(dataJson)).digest("hex");
   const colunsTable = await getColunsFromTable(tabelaName);
   const colunsJson = Object.keys(dataJson[0] || {}).map((col) =>normalizar(col));
@@ -38,14 +38,14 @@ export default async function createDataController(filePath, dataJson, action){
 
   //log para testes:
   console.log(`\x1b[36mAção:\x1b[0m ${action}`);
-  console.log(`\x1b[36mNome do arquivo:\x1b[0m ${fileName}`);
+  console.log(`\x1b[36mNome do arquivo:\x1b[0m ${fileName}`)
   console.log(`\x1b[33mAno:\x1b[0m ${baseAno}`);
   console.log(`\x1b[33mMes:\x1b[0m ${baseMes}`);
   console.log(`\x1b[33mTabela:\x1b[0m ${tabelaName}`);
   console.log(`\x1b[36mColunas de data encontradas na tabela:\x1b[0m`, tabelaName, dataColun);
   console.log(`\x1b[36mHash do arquivo:\x1b[0m ${hash}`);
-  //console.log(`\x1b[36mColunas da tabela:\x1b[0m`, colunsTable);
-  //console.log(`\x1b[36mColunas do JSON:\x1b[0m`, colunsJson);
+  console.log(`\x1b[36mColunas da tabela:\x1b[0m`, colunsTable);
+  console.log(`\x1b[36mColunas do JSON:\x1b[0m`, colunsJson);
   
 
   return {metadados, logData};

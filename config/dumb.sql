@@ -648,8 +648,8 @@ CREATE TABLE -- colunas data: 1
   );
 
 CREATE TABLE -- colunas data: 1
-    cod_motorista int,
   IF NOT EXISTS `03_05_30_cod_motorista` (
+    cod_motorista int,
     descricao VARCHAR(25),
     data date,
     mapa int,
@@ -852,7 +852,7 @@ CREATE TABLE -- colunas data: 0 -- verificar
 CREATE TABLE -- colunas data: 0 -- verificar
   IF NOT EXISTS expurgos (mapa INT primary key);
 
--- log tabelas'
+-- log tabelas
 CREATE TABLE
  IF NOT EXISTS log_ingestao (
   id INT AUTO_INCREMENT PRIMARY KEY,

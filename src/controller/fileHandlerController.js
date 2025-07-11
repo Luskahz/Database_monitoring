@@ -1,5 +1,5 @@
 import fluxoValidatorController from "./fluxoValidatorController.js";
-import { insertLog } from "../model/tableModel.js";
+import { insertLog } from "../model/logModel.js";
 import { managerDataController } from "./managerDataController.js";
 import createDataController from "./createDataController.js";
 
@@ -12,11 +12,12 @@ export async function fileHandlerController(filePath, dataJson, action, next) {
       try {
         const resultado = await managerDataController(metadados); //realiza a inserção e espera erros ou não
         if (resultado?.erro) {// se houveram erros, ele loga 
-          logData.sucesso = false;
+          logData.sucesso = false
           logData.mensagem_erro = resultado.mensagem || "Erro durante a ingestão dos dados.";
         } else {
           logData.sucesso = true;
-          logData.mensagem_erro = null;
+          logData.mensagem_erro = null
+          
         }
 
         await insertLog(logData); // log sempre, com status real

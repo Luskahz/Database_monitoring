@@ -9,7 +9,7 @@ import chokidarErrorHandler from "./middleware/errorHandler.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export function startMonitoring() {
-  const monitorPath = path.resolve(__dirname, "../../"); // Caminho da pasta de arquivos
+  const monitorPath = path.resolve(__dirname, "../../");
   let isReady = false;
 
   const watcher = chokidar.watch(monitorPath, {
@@ -28,7 +28,7 @@ export function startMonitoring() {
     })
     .on("unlink", (filePath) => {
       console.log(`Arquivo removido: ${filePath}`);
-      /* arquivo removido */
+
     })
     .on("error", (error) => {
       console.error(`Erro no monitoramento: ${error}`);

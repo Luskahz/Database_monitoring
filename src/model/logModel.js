@@ -1,3 +1,5 @@
+import db from "../../config/db.js";
+
 /**
  * @param {{
  *    nome_arquivo: string,
