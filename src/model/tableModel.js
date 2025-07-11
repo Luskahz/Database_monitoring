@@ -52,6 +52,7 @@ export async function getColunsFromTable(tabela) {
       SELECT COLUMN_NAME
       FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = ?
+        AND TABLE_SCHEMA = DATABASE()
     `,
       [tabela]
     );
@@ -78,15 +79,19 @@ export async function getColunsFromTable(tabela) {
  */
 export async function insertRegisterinTable(tabela, linhaTipada) {
   try {
-    const colunas = await getColunsFromTable(tabela); // nomes reais do banco
-    const valores = colunas.map((col) => linhaTipada[col] ?? null);
+    const colunas = await getColunsFromTable(tabela);
+    const valores = colunas.map((col) => {
+      const chaveNormalizada = normalizar(col);
+      return linhaTipada[chaveNormalizada] ?? null
+    })
+    console.log(`valor dessa variavel: ${valores}`);
     const colunasSql = colunas.map((col) => `\`${col}\``).join(", ");
     const placeholders = colunas.map(() => "?").join(", ");
     const sql = `INSERT INTO \`${tabela}\` (${colunasSql}) VALUES (${placeholders})`;
     const result = await db.query(sql, valores);
     return result;
   } catch (error) {
-    throw error;
+    throw error
   }
 }
 
@@ -104,7 +109,8 @@ export async function insertRegisterinTable(tabela, linhaTipada) {
  * }} metadados
  */
 export async function listPeriodInTable(metadados) {
-  if (!metadados.coluna_data) throw new Error("Coluna de data não especificada");
+  if (!metadados.coluna_data)
+    throw new Error("Coluna de data não especificada");
 
   try {
     const [result] = await db.query(
@@ -144,7 +150,9 @@ export async function deletePeriodInTable(metadados) {
     `;
 
     const result = await db.query(sql, [numeroMes, metadados.ano]);
-    console.log(`\x1b[33mPeríodo deletado: ${metadados.mes}/${metadados.ano} da tabela ${metadados.tabela}\x1b[0m`);
+    console.log(
+      `\x1b[33mPeríodo deletado: ${metadados.mes}/${metadados.ano} da tabela ${metadados.tabela}\x1b[0m`
+    );
     return result;
   } catch (error) {
     console.error("Erro ao deletar período da tabela:", error.message);
@@ -198,7 +206,9 @@ export async function insertValidator(list, metadados) {
     const conflito = [...datasCsv].some((data) => datasBanco.has(data));
 
     if (conflito) {
-      console.log("Conflito de datas detectado. Dados do mês já existem no banco.");
+      console.log(
+        "Conflito de datas detectado. Dados do mês já existem no banco."
+      );
       return "substituir";
     } else {
       return "inserir";
@@ -232,7 +242,8 @@ export async function getTiposFromTable(tabela) {
 }
 
 function mapearTipo(tipoSql) {
-  if (["int", "bigint", "smallint", "mediumint"].includes(tipoSql)) return "int";
+  if (["int", "bigint", "smallint", "mediumint"].includes(tipoSql))
+    return "int";
   if (["decimal", "float", "double"].includes(tipoSql)) return "decimal";
   if (["date"].includes(tipoSql)) return "date";
   if (["time"].includes(tipoSql)) return "time";

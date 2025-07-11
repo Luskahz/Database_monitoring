@@ -8,6 +8,6 @@ export default function chokidarErrorHandler(error) {
   } else if (error.code === "ENOSPC") {
     console.error("Erro: Espaço insuficiente no dispositivo.");
   } else {
-    console.error(`Erro desconhecido: ${error.message}`);
+    console.error(`Erro desconhecido: ${error.message}`)
   }
 }

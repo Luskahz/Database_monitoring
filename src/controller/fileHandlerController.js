@@ -6,7 +6,7 @@ import createDataController from "./createDataController.js";
 export async function fileHandlerController(filePath, dataJson, action, next) {
   try {
     const { metadados, logData } = await createDataController(filePath, dataJson, action); // cria os docs
-    const fluxo = await fluxoValidatorController(metadados, logData, next); //define o fluxo com base no arquivo
+    const fluxo = await fluxoValidatorController(metadados, logData, next) //define o fluxo com base no arquivo
 
     if (fluxo === "inserir" || fluxo === "reprocessar") { //inicio do fluxo
       try {

@@ -8,8 +8,6 @@ import { getTiposFromTable } from "../model/tableModel.js";
 
 import Papa from "papaparse";
 
-
-
 function isCsvFile(filePath) {
   return (
     path.extname(filePath).toLowerCase() === ".csv" ||
@@ -18,7 +16,7 @@ function isCsvFile(filePath) {
 }
 
 export default async function receiver(filePath, action, next) {
-    const tabelaName = path.basename(path.dirname(path.dirname(filePath)));   
+  const tabelaName = path.basename(path.dirname(path.dirname(filePath)));
   try {
     if (isCsvFile(filePath)) {
       if (
@@ -38,17 +36,24 @@ export default async function receiver(filePath, action, next) {
             delimiter,
             skipEmptyLines: true,
             transformHeader: (h) => h.trim(),
-          })
+            transform: (value) => value.trim(),
+          });
 
           if (parsed.errors.length) {
-            console.error("Erro ao interpretar CSV:", parsed.errors);
-            return next(new Error("Erro ao interpretar CSV"));
+            console.warn(
+              "Aviso: erros encontrados no CSV, algumas linhas serão ignoradas."
+            );
+            console.table(parsed.errors.slice(0, 5)); // exibe só os 5 primeiros erros
           }
+          const linhasValidas = parsed.data.filter((linha) => {
+            const valores = Object.values(linha);
+            const preenchidos = valores.filter((v) => v?.trim() !== "").length;
+            return preenchidos >= 3;
+          });
 
-          const dataJson = parsed.data;
-          const tiposEsperados = await getTiposFromTable(tabelaName); 
+          const tiposEsperados = await getTiposFromTable(tabelaName);
 
-          const dataJsonNormalized = dataJson.map((linha) => {
+          const dataJsonNormalized = linhasValidas.map((linha) => {
             const novaLinha = {};
             for (const chave in linha) {
               novaLinha[normalizar(chave)] = linha[chave];
@@ -57,10 +62,6 @@ export default async function receiver(filePath, action, next) {
           });
           const dataSanitized = dataJsonNormalized.map((linha) =>
             sanitizeRow(linha, tiposEsperados)
-          );
-          console.log(
-            "Linha 11:",
-            JSON.stringify(dataSanitized[10], null, 2)
           );
           fileHandlerController(filePath, dataSanitized, action, next); //AQUI CONTINUA O FLUXO PRO PROXIMO AGENTE
         } else {

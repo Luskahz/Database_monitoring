@@ -12,7 +12,7 @@ export function normalizar(nome) {
 
 export async function dataFromBasesValidatorController(tabela, data_json) {
   try {
-    const dataCol = await getDateColumnsFromTable(tabela); // ex: "dt_entrega"
+    const dataCol = await getDateColumnsFromTable(tabela); // ex: "dt_entrega"!
     console.log(`\x1b[36mColuna de data encontrada na tabela ${tabela}:\x1b[0m`, dataCol);
 
     if (!dataCol) return null;

@@ -27,7 +27,7 @@ export default async function fluxoValidatorController(metadados, logData, next)
     //₢onsulta o model para validar os hashs que existem na tabela destino
     const logs = await getLogByData(metadados); //todas as linhas referente ao log desse arquivo
     const allHashes = await getAllHashesFromTable(metadados); // todos os hashs presentes na tabela
-    const hashJaExiste = allHashes.some((entry) => entry.hash_arquivo === logData.hash_Arquivo);
+    const hashJaExiste = allHashes.some((entry) => entry.hash_arquivo === logData.hash_arquivo);
     if (!logData.hash_arquivo) {
       throw new Error("Hash do arquivo não foi definido.");
     }
