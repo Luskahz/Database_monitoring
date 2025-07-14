@@ -28,6 +28,7 @@ export function startMonitoring() {
     })
     .on("unlink", (filePath) => {
       console.log(`Arquivo removido: ${filePath}`);
+      
 
     })
     .on("error", (error) => {

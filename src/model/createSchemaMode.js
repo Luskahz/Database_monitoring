@@ -87,9 +87,10 @@ export async function tiparLinha(linha, schema) {
     }
   }
   return novaLinha;
+  
 }
 
-export function sanitizeValue(value, tipoEsperado) {
+function sanitizeValue(value, tipoEsperado) {
   if (value === "") return null;
 
   switch (tipoEsperado) {

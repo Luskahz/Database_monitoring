@@ -3,11 +3,37 @@ import { getDateColumnsFromTable } from "../model/tableModel.js"
 export function normalizar(nome) {
   return nome
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\./g, "_")             
-    .replace(/\s+/g, "_")
-    .replace(/[^\w]/g, "")
+    .replace(/[\u0300-\u036f]/g, "") // remove acentos
+    .replace(/%/g, "perc")           // % → perc
+    .replace(/\s*\.\s*/g, "_")       // ponto entre palavras → _
+    .replace(/\./g, "")              // outros pontos → remove
+    .replace(/[-\\/]/g, "_")   
+    .replace(/\s+/g, "_")            // espaço → _
+    .replace(/[^a-zA-Z0-9_]/g, "")   // remove outros símbolos
+    .replace(/_+/g, "_")             // evita múltiplos __
+    .replace(/^_+|_+$/g, "")         // remove _ início/fim
     .toLowerCase();
+}
+
+
+export function colunsValidator(json_coluns, table_coluns) {
+  let isEqual = true;
+
+  const maxLen = Math.max(json_coluns.length, table_coluns.length);
+  for (let i = 0; i < maxLen; i++) {
+    const jsonCol = json_coluns[i];
+    const tableCol = table_coluns[i];
+
+    if (jsonCol !== tableCol) {
+      isEqual = false;
+      console.warn(`❌ Diferença na posição ${i}:
+  → JSON:   '${jsonCol}'
+  → TABELA: '${tableCol}'`);
+    }
+  }
+
+  console.log("Colunas iguais? ➝", isEqual);
+  return isEqual;
 }
 
 export async function dataFromBasesValidatorController(tabela, data_json) {

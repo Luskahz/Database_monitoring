@@ -24,7 +24,7 @@ export async function fileHandlerController(filePath, dataJson, action, next) {
       } catch (error) {
         logData.sucesso = false;
         logData.mensagem_erro = error.message || "Falha inesperada no controller.";
-        await insertLog(logData);
+        await insertLog(logData)
         console.error(`Erro durante a execução do managerDataController:`, error.message);
       }
 

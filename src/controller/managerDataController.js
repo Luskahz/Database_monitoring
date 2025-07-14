@@ -22,8 +22,8 @@ import { tiparLinha } from "../model/createSchemaMode.js";
  * }} metadados
  */
 export async function managerDataController(metadados) {
-  const listFromTable = await listPeriodInTable(metadados)
-  const validator = await insertValidator(listFromTable, metadados)
+  const listFromTable = await listPeriodInTable(metadados);
+  const validator = await insertValidator(listFromTable, metadados);
 
   const erros = [];
   let sucesso = 0;
@@ -43,10 +43,15 @@ export async function managerDataController(metadados) {
   }
 
   // Independente do modo, sempre insere
-  for (let i = 0; i < metadados.data_json.length; i++) { // aqui que vou realizar a tipagem
+
+  for (let i = 0; i < metadados.data_json.length; i++) {
+    // aqui que vou realizar a tipagem
     try {
-      const linhaTipada = await tiparLinha(metadados.data_json[i], metadados.tipos_esperados)
-      await insertRegisterinTable(metadados.tabela, linhaTipada) // PRECISA DE AJUSTE// PRECISA DE AJUSTE// PRECISA DE AJUSTE// PRECISA DE AJUSTE
+      const linhaTipada = await tiparLinha(
+        metadados.data_json[i],
+        metadados.tipos_esperados
+      );
+      await insertRegisterinTable(metadados.tabela, linhaTipada); // PRECISA DE AJUSTE// PRECISA DE AJUSTE// PRECISA DE AJUSTE// PRECISA DE AJUSTE
       sucesso++;
     } catch (error) {
       console.error(`Erro ao inserir linha ${i}:`, error.message)
@@ -65,5 +70,3 @@ export async function managerDataController(metadados) {
     detalhes_erros: erros,
   };
 }
-
-

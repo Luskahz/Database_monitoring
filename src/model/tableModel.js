@@ -82,16 +82,15 @@ export async function insertRegisterinTable(tabela, linhaTipada) {
     const colunas = await getColunsFromTable(tabela);
     const valores = colunas.map((col) => {
       const chaveNormalizada = normalizar(col);
-      return linhaTipada[chaveNormalizada] ?? null
-    })
-    console.log(`valor dessa variavel: ${valores}`);
+      return linhaTipada[chaveNormalizada] ?? null;
+    });
     const colunasSql = colunas.map((col) => `\`${col}\``).join(", ");
     const placeholders = colunas.map(() => "?").join(", ");
     const sql = `INSERT INTO \`${tabela}\` (${colunasSql}) VALUES (${placeholders})`;
     const result = await db.query(sql, valores);
     return result;
   } catch (error) {
-    throw error
+    throw error;
   }
 }
 
