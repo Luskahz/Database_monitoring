@@ -11,6 +11,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export function startMonitoring() {
   const monitorPath = path.resolve(__dirname, "../../");
   let isReady = false;
+  
 
   const watcher = chokidar.watch(monitorPath, {
     persistent: true,
@@ -28,8 +29,7 @@ export function startMonitoring() {
     })
     .on("unlink", (filePath) => {
       console.log(`Arquivo removido: ${filePath}`);
-      
-
+      deleter(filePath, "deleted", chokidarErrorHandler);
     })
     .on("error", (error) => {
       console.error(`Erro no monitoramento: ${error}`);

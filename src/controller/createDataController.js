@@ -45,6 +45,7 @@ export default async function createDataController(filePath, dataJson, action) {
     tabela_destino: tabelaName,
     nome_arquivo: fileName,
     ano: parseInt(baseAno),
+    mes: baseMes,
     data_upload: new Date(),
     hash_arquivo: hash,
     sucesso: true,

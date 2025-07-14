@@ -23,7 +23,7 @@ export async function getLogByData(metadados) {
     [metadados.tabela, metadados.nome_arquivo, metadados.ano]
   );
 
-  return result //retorna todas as linhas referente ao log daquele mes naquela tabela
+  return result; //retorna todas as linhas referente ao log daquele mes naquela tabela
 }
 
 /**
@@ -55,6 +55,7 @@ export async function insertLog(logData) {
     tabela_destino,
     nome_arquivo,
     ano,
+    mes,
     data_upload,
     hash_arquivo,
     sucesso,
@@ -65,12 +66,13 @@ export async function insertLog(logData) {
     `
     INSERT INTO log_ingestao
       (tabela_destino, nome_arquivo, ano, data_upload, hash_arquivo, sucesso, mensagem_erro)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `,
     [
       tabela_destino,
       nome_arquivo,
       ano,
+      mes,
       data_upload,
       hash_arquivo,
       sucesso,
@@ -78,3 +80,33 @@ export async function insertLog(logData) {
     ]
   );
 }
+
+/**
+ * @param {{
+ *    nome_arquivo: string,
+ *    ano: number,
+ *    mes: string,
+ *    tabela: string,
+ *    data_json: object
+ *    coluna_data: string,
+ *    acao: string,
+ *    colunas_tabela: object
+ *    colunas_json: object
+ * }} metadados
+ */
+export async function deleteHashInTable(deleter) {
+  return db.query(
+    `
+    DELETE FROM log_ingestao WHERE hash_Arquivo = ?`,
+    [metadados.hash_arquivo]
+  );
+}
+
+
+export function createHashByData(filePath){
+    const hash = crypto
+      .createHash("sha256")
+      .update(JSON.stringify(dataJson))
+      .digest("hex")
+}
+
