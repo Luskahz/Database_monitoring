@@ -2,6 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { error } from "console";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -9,21 +10,30 @@ const __dirname = dirname(__filename);
 const cachePath = path.resolve(__dirname, "cache", "cacheHash.txt");
 
 async function initCacheFile() {
+  const dirPath = path.dirname(cachePath);
   await fs.mkdir(dirPath, { recursive: true });
   try {
-    await fs.access(filePath);
+    await fs.access(cachePath);
+    return cachePath
   } catch (err) {
-    await fs.writeFile(filePath, "", "utf8");
-    console.log("Arquivo de cache criado em:", filePath);
+    await fs.writeFile(cachePath, "", "utf8");
+    console.log("Arquivo de cache criado em:", cachePath);
+    return cachePath
   }
 }
 
 export async function insertHashInCache(logData) {
-  logData.identificador = `${logData.tabela_destino}_${logData.ano}_$${logData.mes}_${logData.nome_arquivo}`;
-  const jsonString = JSON.stringify(obj, null, 2);
-
-  await fs.appendFile(filePath, jsonString + "\n\n", "utf8");
-  console.log("Objeto salvo com sucesso!");
+  try {
+    const cachePath = await initCacheFile();
+    logData.identificador = `${logData.tabela_destino}_${logData.ano}_${logData.mes}_${logData.nome_arquivo}`;
+    const jsonString = JSON.stringify(logData, null, 2);
+    await fs.appendFile(cachePath, jsonString + "\n\n", "utf8");
+    console.log("Objeto salvo no cache com sucesso!");
+  } catch (error) {
+    console.error(
+      `houve um problema ao gerar registro no cache erro: ${error.message}`
+    );
+  }
 }
 
 export async function getRegisterFromCache(filePath) {
@@ -63,7 +73,37 @@ export async function getRegisterFromCache(filePath) {
   }
 }
 
+export async function deletRegisterFromCache(filePath) {
+  const registroAlvo = await getRegisterFromCache(filePath);
+  if (!registroAlvo) {
+    console.log("⚠️ Registro não encontrado no cache. Nada foi removido.");
+    return false;
+  }
 
-export async function deletRegisterFromCache(){
+  try {
+    const conteudo = await fs.readFile(cachePath, "utf8");
+    const blocos = conteudo
+      .split("\n\n")
+      .map((b) => b.trim())
+      .filter(Boolean);
 
+    const blocosMantidos = blocos.filter((bloco) => {
+      try {
+        const obj = JSON.parse(bloco);
+        return obj.identificador !== registroAlvo.identificador;
+      } catch {
+        return true;
+      }
+    });
+
+    const novoConteudo = blocosMantidos.join("\n\n") + "\n\n";
+    await fs.writeFile(cachePath, novoConteudo, "utf8");
+    console.log(
+      `✅ Registro '${registroAlvo.identificador}' removido com sucesso!`
+    )
+    return true;
+  } catch (err) {
+    console.error("❌ Erro ao tentar deletar registro do cache:", err.message);
+    return false;
+  }
 }

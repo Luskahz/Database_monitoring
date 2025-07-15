@@ -860,6 +860,7 @@ CREATE TABLE
   nome_arquivo VARCHAR(50) NOT NULL,           -- Ex: "janeiro.csv"
   ano INT NOT NULL,                             -- Ex: 2025
   mes int NOT NULL,
+  coluna_data varchar(25) not null,
   data_upload DATETIME NOT NULL,                -- Ex: NOW()
   hash_arquivo CHAR(64) NOT NULL,               -- SHA-256 hash
   sucesso BOOLEAN NOT NULL,                     -- true / false

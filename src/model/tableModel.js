@@ -159,6 +159,32 @@ export async function deletePeriodInTable(metadados) {
   }
 }
 
+export async function deletePeriodInTableByMonth(logData) {
+  try {
+    const numeroMes = meses[logData.mes.toLowerCase()];
+    if (!numeroMes) {
+      throw new Error(`Mês inválido: ${mes}`);
+    }
+
+    const sql = `
+      DELETE FROM \`${logData.tabela}\`
+      WHERE MONTH(\`${logData.coluna_data}\`) = ?
+        AND YEAR(\`${logData.coluna_data}\`) = ?
+    `;
+
+    const result = await db.query(sql, [numeroMes, metadados.ano]);
+    console.log(
+      `\x1b[33mPeríodo deletado: ${logData.mes}/${logData.ano} da tabela ${logData.tabela}\x1b[0m`
+    );
+    return result;
+  } catch (error) {
+    console.error("Erro ao deletar período da tabela:", error.message);
+    throw error;
+  }
+}
+
+
+
 /**
  * @param {{
  *    nome_arquivo: string,

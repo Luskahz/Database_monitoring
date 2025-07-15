@@ -1,4 +1,5 @@
 import db from "../../config/db.js";
+import crypto from "crypto";
 
 /**
  * @param {{
@@ -56,6 +57,7 @@ export async function insertLog(logData) {
     nome_arquivo,
     ano,
     mes,
+    coluna_data,
     data_upload,
     hash_arquivo,
     sucesso,
@@ -65,14 +67,15 @@ export async function insertLog(logData) {
   await db.query(
     `
     INSERT INTO log_ingestao
-      (tabela_destino, nome_arquivo, ano, data_upload, hash_arquivo, sucesso, mensagem_erro)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      (tabela_destino, nome_arquivo, ano, mes, coluna_data, data_upload, hash_arquivo, sucesso, mensagem_erro)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
     [
       tabela_destino,
       nome_arquivo,
       ano,
       mes,
+      coluna_data,
       data_upload,
       hash_arquivo,
       sucesso,
@@ -102,11 +105,16 @@ export async function deleteHashInTable(deleter) {
   );
 }
 
-
-export function createHashByData(filePath){
+export function createHashByData(dataJson) {
+  try {
     const hash = crypto
       .createHash("sha256")
       .update(JSON.stringify(dataJson))
-      .digest("hex")
+      .digest("hex");
+    return hash;
+  } catch (error) {
+    console.error(
+      `Houve um erro ao gerar o hash do arquivo, erro: ${error.message}`
+    );
+  }
 }
-

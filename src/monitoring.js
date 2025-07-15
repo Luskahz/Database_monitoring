@@ -3,33 +3,35 @@ import chokidar from "chokidar";
 import path from "path";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
-import receiver from "./middleware/receiverMiddleware.js";
 import chokidarErrorHandler from "./middleware/errorHandler.js";
+import { fileHandlerController, isCsvFile } from "./controller/fileHandlerController.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export function startMonitoring() {
   const monitorPath = path.resolve(__dirname, "../../");
   let isReady = false;
-  
 
   const watcher = chokidar.watch(monitorPath, {
     persistent: true,
-    ignored: /[\\\/]database_monitoring[\\\/]/,
+    ignored: (filePath) => {
+      const normalized = path.normalize(filePath);
+      return normalized.includes("database_monitoring") || !isCsvFile(filePath);
+    },
   });
 
   watcher
     .on("add", (filePath) => {
       console.log(`Arquivo adicionado: ${filePath}`);
-      receiver(filePath, "created", chokidarErrorHandler); //recebe o caminho do arquivo e a ação do usuario
+      fileHandlerController(filePath, "created", chokidarErrorHandler);
     })
     .on("change", (filePath) => {
       console.log(`Arquivo modificado: ${filePath}`);
-      receiver(filePath, "modified", chokidarErrorHandler); //recebe o caminho do arquivo e a ação do usuario
+      fileHandlerController(filePath, "modified", chokidarErrorHandler);
     })
     .on("unlink", (filePath) => {
       console.log(`Arquivo removido: ${filePath}`);
-      deleter(filePath, "deleted", chokidarErrorHandler);
+      fileHandlerController(filePath, "deleted", chokidarErrorHandler);
     })
     .on("error", (error) => {
       console.error(`Erro no monitoramento: ${error}`);
