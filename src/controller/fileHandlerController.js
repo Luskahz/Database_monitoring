@@ -1,4 +1,5 @@
 import fluxoValidatorController from "./fluxoValidatorController.js";
+import { addInfo, addErro, addAviso } from "../middleware/errorHandler.js";
 import { deleteHashInTable, insertLog } from "../model/logModel.js";
 import { managerDataController } from "./managerDataController.js";
 import createDataController, {
@@ -22,7 +23,7 @@ export function isCsvFile(filePath) {
   return isValidExtension && !isExcluded;
 }
 
-export async function fileHandlerController(filePath, action, next) {
+export async function fileHandlerController(filePath, action) {
   const isInsertAction = ["created", "modified"].includes(action);
   try {
     if (isInsertAction) {
@@ -36,7 +37,7 @@ export async function fileHandlerController(filePath, action, next) {
         );
 
         //define o fluxo
-        const fluxo = await fluxoValidatorController(metadados, logData, next);
+        const fluxo = await fluxoValidatorController(metadados, logData);
 
         //inicio do fluxo
         if (fluxo === "inserir" || fluxo === "reprocessar") {
@@ -50,6 +51,7 @@ export async function fileHandlerController(filePath, action, next) {
               logData.sucesso = false;
               logData.mensagem_erro =
                 resultado.mensagem || "Erro durante a ingestão dos dados.";
+              addErro(logData.mensagem_erro);
             } else {
               logData.sucesso = true;
               logData.mensagem_erro = null;
@@ -61,45 +63,42 @@ export async function fileHandlerController(filePath, action, next) {
             logData.sucesso = false;
             logData.mensagem_erro =
               error.message || "Falha inesperada no controller.";
+            addErro(logData.mensagem_erro);
             await insertLog(logData);
             await insertHashInCache(logData);
-            console.error(
-              `Erro durante a execução do managerDataController:`,
-              error.message
+            addErro(
+              `Erro durante a execução do managerDataController: ${error.message}`
             );
           }
         } else {
-          console.log(
-            `\x1b[33m[ARQUIVO IGNORADO]\x1b[0m ${metadados.nome_arquivo} já existe e não foi modificado.`
+          addInfo(
+            `[ARQUIVO IGNORADO] ${metadados.nome_arquivo} já existe e não foi modificado.`
           );
           // Opcional: registrar log com status "ignorado" no futuro
           return;
         }
       } else {
-        console.error("o csv originou um json vazio");
+        addAviso(`O arquivo originou um JSON vazio.`);
       }
-
     } else {
-      const destino = destinoByFilePath(filePath)
-      const logData = await getRegisterFromCache(destino); 
+      const destino = destinoByFilePath(filePath);
+      const logData = await getRegisterFromCache(destino);
       if (!logData) {
-        console.warn(`⚠️ Nenhum registro de cache encontrado para ${filePath}`);
+        addAviso(`⚠️ Nenhum registro de cache encontrado para ${filePath}`);
         return;
       }
       const resultado = await managerDataController(logData, action);
       if (resultado.erro === false) {
         try {
           await deleteHashInTable(logData);
-          await deletRegisterFromCache(destino)
+          await deletRegisterFromCache(destino);
         } catch (error) {
-          console.error(
-            `problema ao apagar o hash do banco, erro: ${error.message}`
-          );
+          addErro(`problema ao apagar o hash do banco, erro: ${error.message}`);
         }
       }
     }
   } catch (error) {
-    console.error(`Erro ao processar arquivo: ${error.message}`);
+    addErro(`Erro ao processar arquivo: ${error.message}`);
     throw error;
   }
 }

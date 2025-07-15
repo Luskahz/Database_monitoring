@@ -1,5 +1,6 @@
 import db, { schema } from "../../config/db.js";
 import { normalizar } from "../controller/dataFromBasesValidatorController.js";
+import { addErro } from "../middleware/errorHandler.js";
 
 const meses = {
   janeiro: 1,
@@ -17,10 +18,16 @@ const meses = {
 };
 
 export async function getAllRegistersFromTable(tabela) {
-  const [result] = await db.query(`
+  try {
+    const [result] = await db.query(`
       SELECT * FROM \`${schema}\`.\`${tabela}\`
     `);
-  return result;
+    return result;
+  } catch (e) {
+    addErro(
+      `Erro ao consultar os registros da tabela destino, erro: ${e.message} `
+    );
+  }
 }
 
 export async function getDateColumnsFromTable(tabela) {
@@ -41,9 +48,8 @@ export async function getDateColumnsFromTable(tabela) {
     } else {
       return results[0].COLUMN_NAME; // Retorna o nome da primeira coluna
     }
-  } catch (error) {
-    console.error("Erro ao consultar colunas de data:", error);
-    throw error;
+  } catch (e) {
+    addErro(`Erro ao consultar colunas de data: ${e.message}`);
   }
 }
 
@@ -60,9 +66,8 @@ export async function getColunsFromTable(tabela) {
     );
 
     return results.map((col) => col.COLUMN_NAME);
-  } catch (error) {
-    console.error("Erro ao consultar colunas da tabela:", error);
-    throw error;
+  } catch (e) {
+    addErro(`Erro ao consultar colunas da tabela: ${e.message}`);
   }
 }
 
@@ -80,19 +85,34 @@ export async function getColunsFromTable(tabela) {
  * }} metadados
  */
 export async function insertRegisterinTable(tabela, linhaTipada) {
+  let colunas;
   try {
-    const colunas = await getColunsFromTable(tabela);
-    const valores = colunas.map((col) => {
-      const chaveNormalizada = normalizar(col);
-      return linhaTipada[chaveNormalizada] ?? null;
-    });
-    const colunasSql = colunas.map((col) => `\`${col}\``).join(", ");
-    const placeholders = colunas.map(() => "?").join(", ");
-    const sql = `INSERT INTO \`${schema}\`.\`${tabela}\` (${colunasSql}) VALUES (${placeholders})`;
-    const result = await db.query(sql, valores);
+    colunas = await getColunsFromTable(tabela);
+  } catch (e) {
+    addErro(`erro ao coletar as colunas da tabela, erro: ${e.message}`);
+    return;
+  }
+  if (!colunas || colunas.length === 0) {
+    addErro(`Tabela '${tabela}' não possui colunas válidas.`);
+    return;
+  }
+
+  const valores = colunas.map((col) => {
+    const chaveNormalizada = normalizar(col);
+    return linhaTipada[chaveNormalizada] ?? null;
+  });
+  const colunasSql = colunas.map((col) => `\`${col}\``).join(", ");
+  const placeholders = colunas.map(() => "?").join(", ");
+  const sql = `INSERT INTO \`${schema}\`.\`${tabela}\` (${colunasSql}) VALUES (${placeholders})`;
+
+  try {
+    const [result] = await db.query(sql, valores);
     return result;
-  } catch (error) {
-    throw error;
+  } catch (e) {
+    addErro(
+      `erro ao realizar a query de insersão do registro, erro: ${e.message}`
+    );
+    return;
   }
 }
 
@@ -110,17 +130,22 @@ export async function insertRegisterinTable(tabela, linhaTipada) {
  * }} metadados
  */
 export async function listPeriodInTable(metadados) {
-  if (!metadados.coluna_data)
+  const { coluna_data, tabela } = metadados;
+
+  if (!coluna_data) {
     throw new Error("Coluna de data não especificada");
+  }
+
+  const query = `SELECT \`${coluna_data}\` FROM \`${schema}\`.\`${tabela}\``;
 
   try {
-    const [result] = await db.query(
-      `SELECT \`${metadados.coluna_data}\` FROM \`${schema}\`.\`${metadados.tabela}\``
-    );
+    const [result] = await db.query(query);
     return result || [];
   } catch (error) {
-    console.error("Erro ao listar datas:", error);
-    throw error;
+    // Aqui você apenas relança — quem chama decide o que fazer
+    throw new Error(
+      `Erro ao buscar período da tabela '${tabela}': ${error.message}`
+    );
   }
 }
 
@@ -138,50 +163,50 @@ export async function listPeriodInTable(metadados) {
  * }} metadados
  */
 export async function deletePeriodInTable(metadados) {
+  const { mes, ano, tabela, coluna_data } = metadados;
+
+  const numeroMes = meses[mes.toLowerCase()];
+  if (!numeroMes) {
+    throw new Error(`Mês inválido: ${mes}`);
+  }
+
+  const sql = `
+    DELETE FROM \`${schema}\`.\`${tabela}\`
+    WHERE MONTH(\`${coluna_data}\`) = ?
+      AND YEAR(\`${coluna_data}\`) = ?
+  `;
+
   try {
-    const numeroMes = meses[metadados.mes.toLowerCase()];
-    if (!numeroMes) {
-      throw new Error(`Mês inválido: ${mes}`);
-    }
-
-    const sql = `
-      DELETE FROM \`${schema}\`.\`${metadados.tabela}\`
-      WHERE MONTH(\`${metadados.coluna_data}\`) = ?
-        AND YEAR(\`${metadados.coluna_data}\`) = ?
-    `;
-
-    const result = await db.query(sql, [numeroMes, metadados.ano]);
-    console.log(
-      `\x1b[33mPeríodo deletado: ${metadados.mes}/${metadados.ano} da tabela ${metadados.tabela}\x1b[0m`
-    );
+    const [result] = await db.query(sql, [numeroMes, ano]);
     return result;
   } catch (error) {
-    console.error("Erro ao deletar período da tabela:", error.message);
-    throw error;
+    throw new Error(
+      `Erro ao deletar período de ${mes}/${ano} na tabela '${tabela}': ${error.message}`
+    );
   }
 }
 
 export async function deletePeriodInTableByMonth(logData) {
+  const { mes, ano, tabela_destino, coluna_data } = logData;
+
+  const numeroMes = meses[mes.toLowerCase()];
+  if (!numeroMes) {
+    throw new Error(`Mês inválido: ${mes}`);
+  }
+
+  const sql = `
+    DELETE FROM \`${schema}\`.\`${tabela_destino}\`
+    WHERE MONTH(\`${coluna_data}\`) = ?
+      AND YEAR(\`${coluna_data}\`) = ?
+  `;
+
   try {
-    const numeroMes = meses[logData.mes.toLowerCase()];
-    if (!numeroMes) {
-      throw new Error(`Mês inválido: ${logData.mes}`);
-    }
-
-    const sql = `
-      DELETE FROM \`${schema}\`.\`${logData.tabela_destino}\`
-      WHERE MONTH(\`${logData.coluna_data}\`) = ?
-        AND YEAR(\`${logData.coluna_data}\`) = ?
-    `;
-
-    const result = await db.query(sql, [numeroMes, logData.ano]);
-    console.log(
-      `\x1b[33mPeríodo deletado: ${logData.mes}/${logData.ano} da tabela ${logData.tabela_destino}\x1b[0m`
-    );
+    const [result] = await db.query(sql, [numeroMes, ano]);
     return result;
   } catch (error) {
-    console.error("Erro ao deletar período da tabela:", error.message);
-    throw error;
+    throw new Error(
+      `Erro ao deletar período ${mes}/${ano} da tabela '${tabela_destino}': ${error.message}`
+    );
   }
 }
 

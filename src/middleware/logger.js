@@ -1,14 +1,8 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { getAllErrors, clearAllErrors} from "./errorHandler.js"
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-
-
-
-export async function errorReceiver(error) {
-  
-}
 
 /**
  * @param {{
@@ -17,11 +11,13 @@ export async function errorReceiver(error) {
  *   ano: string,
  *   mes: string,
  *   acao: string,
- *   caminho_arquivo: string
+ *   caminho_arquivo: string,
+ *   coluna_data: date
  * }} metadados
  * @param {string[] | string} mensagens
  */
-export default async function loggerMaster(metadados, mensagens) {
+export default async function loggerMaster(metadados) {
+  const errorsMessages = getAllErrors()
   try {
     const now = new Date();
     const dataHora = now.toLocaleString("pt-BR");
@@ -34,9 +30,9 @@ export default async function loggerMaster(metadados, mensagens) {
       `Tabela: ${metadados.tabela}`,
       `Ano: ${metadados.ano} | Mês: ${metadados.mes}`,
       `hash: ${metadados.hash}`,
-      `Coluna de referencia: ${coluna_data}`,
+      `Coluna de referencia: ${metadados.coluna_data}`,
       `=============== Orientações referente a ação ===============`,
-      ...(Array.isArray(mensagens) ? mensagens : [mensagens]),
+      ...(errorsMessages.map(m => "⚠️ " + m))
       `==============================================================`,
     ].join("\n\n");
 
@@ -45,6 +41,7 @@ export default async function loggerMaster(metadados, mensagens) {
 
     await fs.appendFile(logPath, texto + "\n", "utf8");
     console.log(texto);
+    clearAllErrors()
   } catch (error) {
     console.log(`Erro ao gerar log, erro: ${error}`);
     throw error;
