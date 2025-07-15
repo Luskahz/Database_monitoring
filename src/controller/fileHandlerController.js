@@ -2,11 +2,15 @@ import fluxoValidatorController from "./fluxoValidatorController.js";
 import { deleteHashInTable, insertLog } from "../model/logModel.js";
 import { managerDataController } from "./managerDataController.js";
 import createDataController, {
-  createDeletDataController,
   createJsonController,
+  destinoByFilePath,
 } from "./createDataController.js";
-import { deletePeriodInTable } from "../model/tableModel.js";
-import { getRegisterFromCache, insertHashInCache } from "../model/cacheModel.js";
+import {
+  deletRegisterFromCache,
+  getRegisterFromCache,
+  insertHashInCache,
+} from "../model/cacheModel.js";
+import path from "path";
 
 export function isCsvFile(filePath) {
   const fileName = path.basename(filePath).toLowerCase();
@@ -19,8 +23,9 @@ export function isCsvFile(filePath) {
 }
 
 export async function fileHandlerController(filePath, action, next) {
+  const isInsertAction = ["created", "modified"].includes(action);
   try {
-    if (action === "created" || action === "modified") {
+    if (isInsertAction) {
       //cria os docs
       const dataJson = await createJsonController(filePath);
       if (dataJson && dataJson.length > 0) {
@@ -36,7 +41,10 @@ export async function fileHandlerController(filePath, action, next) {
         //inicio do fluxo
         if (fluxo === "inserir" || fluxo === "reprocessar") {
           try {
-            const resultado = await managerDataController(metadados, metadados.acao); //realiza a inserção e espera erros ou não
+            const resultado = await managerDataController(
+              metadados,
+              metadados.acao
+            ); //realiza a inserção e espera erros ou não
             if (resultado?.erro) {
               // se houveram erros, ele loga
               logData.sucesso = false;
@@ -71,12 +79,24 @@ export async function fileHandlerController(filePath, action, next) {
         console.error("o csv originou um json vazio");
       }
 
-
-// rota unlink// rota unlink// rota unlink// rota unlink// rota unlink// rota unlink// rota unlink// rota unlink// rota unlink// rota unlink// rota unlink// rota unlink  
-    } else { 
-      const logData = await getRegisterFromCache(filePath)
-      const resultado = managerDataController(dataDeleter, action)
-
+    } else {
+      const destino = destinoByFilePath(filePath)
+      const logData = await getRegisterFromCache(destino); 
+      if (!logData) {
+        console.warn(`⚠️ Nenhum registro de cache encontrado para ${filePath}`);
+        return;
+      }
+      const resultado = await managerDataController(logData, action);
+      if (resultado.erro === false) {
+        try {
+          await deleteHashInTable(logData);
+          await deletRegisterFromCache(destino)
+        } catch (error) {
+          console.error(
+            `problema ao apagar o hash do banco, erro: ${error.message}`
+          );
+        }
+      }
     }
   } catch (error) {
     console.error(`Erro ao processar arquivo: ${error.message}`);

@@ -1,5 +1,5 @@
 import { normalizar } from "../controller/dataFromBasesValidatorController.js";
-import db from "../../config/db.js";
+import db, { schema } from "../../config/db.js";
 
 
 

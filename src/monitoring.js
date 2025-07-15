@@ -4,43 +4,49 @@ import path from "path";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import chokidarErrorHandler from "./middleware/errorHandler.js";
-import { fileHandlerController, isCsvFile } from "./controller/fileHandlerController.js";
+import { fileHandlerController } from "./controller/fileHandlerController.js";
+import { isCsvFile } from "./controller/fileHandlerController.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export function startMonitoring() {
-  const monitorPath = path.resolve(__dirname, "../../");
+  const monitorPath = path.resolve(__dirname, "../..");
   let isReady = false;
 
   const watcher = chokidar.watch(monitorPath, {
     persistent: true,
-    ignored: (filePath) => {
-      const normalized = path.normalize(filePath);
-      return normalized.includes("database_monitoring") || !isCsvFile(filePath);
+    ignored: /[\\\/]database_monitoring[\\\/]/,
+    awaitWriteFinish: {
+      stabilityThreshold: 300,
+      pollInterval: 100,
     },
   });
 
   watcher
     .on("add", (filePath) => {
-      console.log(`Arquivo adicionado: ${filePath}`);
-      fileHandlerController(filePath, "created", chokidarErrorHandler);
+      if (isCsvFile(filePath)) {
+        console.log(`🟢 Arquivo adicionado: ${filePath}`);
+        fileHandlerController(filePath, "created", chokidarErrorHandler);
+      }
     })
     .on("change", (filePath) => {
-      console.log(`Arquivo modificado: ${filePath}`);
-      fileHandlerController(filePath, "modified", chokidarErrorHandler);
+      if (isCsvFile(filePath)) {
+        console.log(`🟡 Arquivo modificado: ${filePath}`);
+        fileHandlerController(filePath, "modified", chokidarErrorHandler);
+      }
     })
     .on("unlink", (filePath) => {
-      console.log(`Arquivo removido: ${filePath}`);
-      fileHandlerController(filePath, "deleted", chokidarErrorHandler);
+      if (isCsvFile(filePath)) {
+        console.log(`🔴 Arquivo removido: ${filePath}`);
+        fileHandlerController(filePath, "deleted", chokidarErrorHandler);
+      }
     })
     .on("error", (error) => {
-      console.error(`Erro no monitoramento: ${error}`);
+      console.error(`❌ Erro no monitoramento: ${error}`);
       /* erro no monitoramento */
     })
     .on("ready", () => {
-      console.log(`Monitoramento iniciado em: ${monitorPath}`);
+      console.log(`✅ Pronto! Monitorando alterações em: ${monitorPath}`);
       /* pronto para monitorar */
     });
-
-  console.log(`Monitorando alterações em: ${monitorPath}`);
 }

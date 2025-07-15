@@ -27,7 +27,6 @@
   "description": "",
   "dependencies": {
     "chokidar": "^4.0.3",
-    "csvtojson": "^2.0.10",
     "express": "^5.1.0",
     "iconv-lite": "^0.6.3",
     "mysql2": "^3.14.1",

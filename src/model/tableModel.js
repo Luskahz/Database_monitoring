@@ -1,4 +1,4 @@
-import db from "../../config/db.js";
+import db, { schema } from "../../config/db.js";
 import { normalizar } from "../controller/dataFromBasesValidatorController.js";
 
 const meses = {
@@ -18,7 +18,8 @@ const meses = {
 
 export async function getAllRegistersFromTable(tabela) {
   const [result] = await db.query(`
-    SELECT * FROM ${tabela}`);
+      SELECT * FROM \`${schema}\`.\`${tabela}\`
+    `);
   return result;
 }
 
@@ -29,9 +30,10 @@ export async function getDateColumnsFromTable(tabela) {
       SELECT COLUMN_NAME
       FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = ?
+        AND TABLE_SCHEMA = ?
         AND DATA_TYPE = 'date'
     `,
-      [tabela]
+      [tabela, schema]
     );
 
     if (results.length === 0) {
@@ -52,9 +54,9 @@ export async function getColunsFromTable(tabela) {
       SELECT COLUMN_NAME
       FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = ?
-        AND TABLE_SCHEMA = DATABASE()
+        AND TABLE_SCHEMA = ?
     `,
-      [tabela]
+      [tabela, schema]
     );
 
     return results.map((col) => col.COLUMN_NAME);
@@ -86,7 +88,7 @@ export async function insertRegisterinTable(tabela, linhaTipada) {
     });
     const colunasSql = colunas.map((col) => `\`${col}\``).join(", ");
     const placeholders = colunas.map(() => "?").join(", ");
-    const sql = `INSERT INTO \`${tabela}\` (${colunasSql}) VALUES (${placeholders})`;
+    const sql = `INSERT INTO \`${schema}\`.\`${tabela}\` (${colunasSql}) VALUES (${placeholders})`;
     const result = await db.query(sql, valores);
     return result;
   } catch (error) {
@@ -113,7 +115,7 @@ export async function listPeriodInTable(metadados) {
 
   try {
     const [result] = await db.query(
-      `SELECT \`${metadados.coluna_data}\` FROM \`${metadados.tabela}\``
+      `SELECT \`${metadados.coluna_data}\` FROM \`${schema}\`.\`${metadados.tabela}\``
     );
     return result || [];
   } catch (error) {
@@ -143,7 +145,7 @@ export async function deletePeriodInTable(metadados) {
     }
 
     const sql = `
-      DELETE FROM \`${metadados.tabela}\`
+      DELETE FROM \`${schema}\`.\`${metadados.tabela}\`
       WHERE MONTH(\`${metadados.coluna_data}\`) = ?
         AND YEAR(\`${metadados.coluna_data}\`) = ?
     `;
@@ -163,18 +165,18 @@ export async function deletePeriodInTableByMonth(logData) {
   try {
     const numeroMes = meses[logData.mes.toLowerCase()];
     if (!numeroMes) {
-      throw new Error(`Mês inválido: ${mes}`);
+      throw new Error(`Mês inválido: ${logData.mes}`);
     }
 
     const sql = `
-      DELETE FROM \`${logData.tabela}\`
+      DELETE FROM \`${schema}\`.\`${logData.tabela_destino}\`
       WHERE MONTH(\`${logData.coluna_data}\`) = ?
         AND YEAR(\`${logData.coluna_data}\`) = ?
     `;
 
-    const result = await db.query(sql, [numeroMes, metadados.ano]);
+    const result = await db.query(sql, [numeroMes, logData.ano]);
     console.log(
-      `\x1b[33mPeríodo deletado: ${logData.mes}/${logData.ano} da tabela ${logData.tabela}\x1b[0m`
+      `\x1b[33mPeríodo deletado: ${logData.mes}/${logData.ano} da tabela ${logData.tabela_destino}\x1b[0m`
     );
     return result;
   } catch (error) {
@@ -182,8 +184,6 @@ export async function deletePeriodInTableByMonth(logData) {
     throw error;
   }
 }
-
-
 
 /**
  * @param {{
@@ -198,7 +198,7 @@ export async function deletePeriodInTableByMonth(logData) {
  *    colunas_json: object
  * }} metadados
  */
-export async function insertValidator(list, metadados) {
+export function insertValidator(list, metadados) {
   try {
     const datasBanco = new Set(
       list
@@ -243,6 +243,7 @@ export async function insertValidator(list, metadados) {
     throw error;
   }
 }
+
 export async function getTiposFromTable(tabela) {
   try {
     const [results] = await db.query(
@@ -250,8 +251,9 @@ export async function getTiposFromTable(tabela) {
       SELECT COLUMN_NAME, DATA_TYPE
       FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = ?
+      AND TABLE_SCHEMA = ?
     `,
-      [tabela]
+      [tabela, schema]
     );
 
     const tipos = {};

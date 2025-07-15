@@ -1,6 +1,8 @@
 // models/database.js
 import mysql from "mysql2/promise";
 
+const schema = "diretorio";
+
 const connection = await mysql.createPool({
   host: "localhost",
   user: "root",
@@ -11,4 +13,4 @@ const connection = await mysql.createPool({
   queueLimit: 0,
 });
 
-export default connection;
+export { connection as default, schema };

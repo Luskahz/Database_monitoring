@@ -1,4 +1,4 @@
-import db from "../../config/db.js";
+import db, { schema } from "../../config/db.js";
 import crypto from "crypto";
 
 /**
@@ -17,7 +17,7 @@ import crypto from "crypto";
 export async function getLogByData(metadados) {
   const [result] = await db.query(
     `
-    SELECT * FROM log_ingestao
+    SELECT * FROM \`${schema}\`.log_ingestao
     WHERE tabela_destino = ? AND nome_arquivo = ? AND ano = ?
     ORDER BY data_upload DESC
   `,
@@ -43,7 +43,7 @@ export async function getLogByData(metadados) {
 export async function getAllHashesFromTable(metadados) {
   const [result] = await db.query(
     `
-    SELECT hash_arquivo FROM log_ingestao
+    SELECT hash_arquivo FROM \`${schema}\`.log_ingestao
     WHERE tabela_destino = ?
   `,
     [metadados.tabela]
@@ -66,7 +66,7 @@ export async function insertLog(logData) {
 
   await db.query(
     `
-    INSERT INTO log_ingestao
+    INSERT INTO \`${schema}\`.log_ingestao
       (tabela_destino, nome_arquivo, ano, mes, coluna_data, data_upload, hash_arquivo, sucesso, mensagem_erro)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
@@ -97,11 +97,11 @@ export async function insertLog(logData) {
  *    colunas_json: object
  * }} metadados
  */
-export async function deleteHashInTable(deleter) {
-  return db.query(
+export async function deleteHashInTable(logData) {
+  return await db.query(
     `
-    DELETE FROM log_ingestao WHERE hash_Arquivo = ?`,
-    [metadados.hash_arquivo]
+    DELETE FROM \`${schema}\`.log_ingestao WHERE hash_arquivo = ?`,
+    [logData.hash_arquivo]
   );
 }
 

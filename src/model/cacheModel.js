@@ -7,18 +7,18 @@ import { error } from "console";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const cachePath = path.resolve(__dirname, "cache", "cacheHash.txt");
+const cachePath = path.resolve(__dirname, "../cache", "cacheHash.txt");
 
 async function initCacheFile() {
   const dirPath = path.dirname(cachePath);
   await fs.mkdir(dirPath, { recursive: true });
   try {
     await fs.access(cachePath);
-    return cachePath
+    return cachePath;
   } catch (err) {
     await fs.writeFile(cachePath, "", "utf8");
     console.log("Arquivo de cache criado em:", cachePath);
-    return cachePath
+    return cachePath;
   }
 }
 
@@ -36,14 +36,8 @@ export async function insertHashInCache(logData) {
   }
 }
 
-export async function getRegisterFromCache(filePath) {
-  const fileName = path.basename(filePath); // exemplo: junho.csv
-  const baseMes = path.basename(filePath, path.extname(filePath)); //ex: junho
-  const baseAno = path.basename(path.dirname(filePath)); // exemplo: 2023
-  const tabelaName = path.basename(path.dirname(path.dirname(filePath))); // exemplo: 03_11_40
-
-  const identificador = `${tabelaName}_${baseAno}_${baseMes}_${fileName}`;
-
+export async function getRegisterFromCache(destino) {
+  const identificador = `${destino.tabela_destino}_${destino.ano}_${destino.mes}_${destino.nome_arquivo}`;
   try {
     const conteudo = await fs.readFile(cachePath, "utf8");
 
@@ -73,8 +67,8 @@ export async function getRegisterFromCache(filePath) {
   }
 }
 
-export async function deletRegisterFromCache(filePath) {
-  const registroAlvo = await getRegisterFromCache(filePath);
+export async function deletRegisterFromCache(destino) {
+  const registroAlvo = await getRegisterFromCache(destino);
   if (!registroAlvo) {
     console.log("⚠️ Registro não encontrado no cache. Nada foi removido.");
     return false;
@@ -100,7 +94,7 @@ export async function deletRegisterFromCache(filePath) {
     await fs.writeFile(cachePath, novoConteudo, "utf8");
     console.log(
       `✅ Registro '${registroAlvo.identificador}' removido com sucesso!`
-    )
+    );
     return true;
   } catch (err) {
     console.error("❌ Erro ao tentar deletar registro do cache:", err.message);

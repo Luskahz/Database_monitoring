@@ -4,7 +4,7 @@ USE diretorio;
 
 CREATE TABLE -- colunas data: 1
   IF NOT EXISTS `03_11_42` ( 
-    mapa INT,
+    mapa INT not null,
     veiculo INT,
     placa VARCHAR(20),
     dt_entrega DATE,
@@ -17,7 +17,7 @@ CREATE TABLE -- colunas data: 1
 
 CREATE TABLE -- colunas data: 1
   IF NOT EXISTS `03_11_40` ( 
-    mapa INT,
+    mapa INT not null,
     veiculo INT,
     placa VARCHAR(20),
     dt_entrega DATE,
@@ -859,7 +859,7 @@ CREATE TABLE
   tabela_destino VARCHAR(50) NOT NULL,         -- Ex: "03_11_40"
   nome_arquivo VARCHAR(50) NOT NULL,           -- Ex: "janeiro.csv"
   ano INT NOT NULL,                             -- Ex: 2025
-  mes int NOT NULL,
+  mes varchar(25),
   coluna_data varchar(25) not null,
   data_upload DATETIME NOT NULL,                -- Ex: NOW()
   hash_arquivo CHAR(64) NOT NULL,               -- SHA-256 hash
