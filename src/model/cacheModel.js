@@ -2,7 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import { error } from "console";
+import { addAviso, addInfo } from "../middleware/errorHandler.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -23,81 +23,107 @@ async function initCacheFile() {
 }
 
 export async function insertHashInCache(logData) {
+  const { tabela_destino, ano, mes, nome_arquivo } = logData;
+  let cachePath;
   try {
-    const cachePath = await initCacheFile();
-    logData.identificador = `${logData.tabela_destino}_${logData.ano}_${logData.mes}_${logData.nome_arquivo}`;
-    const jsonString = JSON.stringify(logData, null, 2);
+    cachePath = await initCacheFile();
+  } catch (e) {
+    throw new Error(`erro ao criar o arquivo do cache: ${e.message}`);
+  }
+
+  logData.identificador = `${tabela_destino}_${ano}_${mes}_${nome_arquivo}`;
+  const jsonString = JSON.stringify(logData, null, 2);
+
+  try {
     await fs.appendFile(cachePath, jsonString + "\n\n", "utf8");
-    console.log("Objeto salvo no cache com sucesso!");
-  } catch (error) {
-    console.error(
-      `houve um problema ao gerar registro no cache erro: ${error.message}`
-    );
+    addInfo("Objeto salvo no cache com sucesso!");
+  } catch (e) {
+    throw new Error(`erro ao inserir o logData no cache, erro: ${e.message}`);
   }
 }
 
 export async function getRegisterFromCache(destino) {
-  const identificador = `${destino.tabela_destino}_${destino.ano}_${destino.mes}_${destino.nome_arquivo}`;
+  const { tabela_destino, ano, mes, nome_arquivo } = destino;
+  const identificador = `${tabela_destino}_${ano}_${mes}_${nome_arquivo}`;
+
+  let conteudo;
   try {
-    const conteudo = await fs.readFile(cachePath, "utf8");
-
-    const blocos = conteudo
-      .split("\n\n")
-      .map((b) => b.trim())
-      .filter(Boolean);
-
-    const registros = blocos
-      .map((json) => {
-        try {
-          return JSON.parse(json);
-        } catch (err) {
-          console.warn(
-            "⚠️ Erro ao fazer parse de um bloco do cache:",
-            err.message
-          );
-          return null;
-        }
-      })
-      .filter(Boolean);
-
-    return registros.find((reg) => reg.identificador === identificador) || null;
-  } catch (err) {
-    console.error("❌ Erro ao ler o cache:", err.message);
-    return null;
+    conteudo = await fs.readFile(cachePath, "utf8");
+  } catch (e) {
+    throw new Error(
+      `Erro ao ler o arquivo no cache, caminho do cache: '${cachePath}' erro: ${e.message}`
+    );
   }
+  const blocos = conteudo
+    .split("\n\n")
+    .map((b) => b.trim())
+    .filter(Boolean);
+
+  const registros = blocos
+    .map((json) => {
+      try {
+        return JSON.parse(json);
+      } catch (e) {
+        addAviso(
+          `⚠️ Erro ao fazer parse de um bloco do cache, erro: ${e.message}`
+        );
+        return null;
+      }
+    })
+    .filter(Boolean);
+
+  const encontrado = registros.find(
+    (reg) => reg.identificador === identificador
+  );
+  if (!encontrado) {
+    addAviso(
+      `⚠️ Nenhum registro encontrado no cache com identificador '${identificador}'`
+    );
+  }
+  return encontrado || null;
 }
 
-export async function deletRegisterFromCache(destino) {
-  const registroAlvo = await getRegisterFromCache(destino);
-  if (!registroAlvo) {
-    console.log("⚠️ Registro não encontrado no cache. Nada foi removido.");
-    return false;
-  }
-
+export async function deleteRegisterFromCache(destino) {
+  let registroAlvo;
   try {
-    const conteudo = await fs.readFile(cachePath, "utf8");
-    const blocos = conteudo
-      .split("\n\n")
-      .map((b) => b.trim())
-      .filter(Boolean);
+    registroAlvo = await getRegisterFromCache(destino);
+  } catch (e) {
+    throw new Error(`Erro ao coletar os registros do cache, erro: ${e.message}`);
+  }
 
-    const blocosMantidos = blocos.filter((bloco) => {
-      try {
-        const obj = JSON.parse(bloco);
-        return obj.identificador !== registroAlvo.identificador;
-      } catch {
-        return true;
-      }
-    });
-
-    const novoConteudo = blocosMantidos.join("\n\n") + "\n\n";
-    await fs.writeFile(cachePath, novoConteudo, "utf8");
-    console.log(
-      `✅ Registro '${registroAlvo.identificador}' removido com sucesso!`
-    );
-    return true;
-  } catch (err) {
-    console.error("❌ Erro ao tentar deletar registro do cache:", err.message);
+  if (!registroAlvo) {
+    addAviso("Registro não encontrado no cache. Nada foi removido.");
     return false;
   }
+  let conteudo;
+  try {
+    conteudo = await fs.readFile(cachePath, "utf8");
+  } catch (e) {
+    throw new Error(`Erro ao ler o cache ${e.message}`);
+  }
+
+  const blocos = conteudo
+    .split("\n\n")
+    .map((b) => b.trim())
+    .filter(Boolean);
+
+  const blocosMantidos = blocos.filter((bloco) => {
+    try {
+      const obj = JSON.parse(bloco);
+      return obj.identificador !== registroAlvo.identificador;
+    } catch {
+      return true;
+    }
+  });
+
+  const novoConteudo = blocosMantidos.join("\n\n") + "\n\n";
+  try {
+    await fs.writeFile(cachePath, novoConteudo, "utf8");
+    addInfo(
+      `Registro '${registroAlvo.identificador}' removido com sucesso do cache!`
+    );
+  } catch (e) {
+    throw new Error(`Erro ao reescrever os dados sem o registro removido no cache!, erro: ${e.message}`);
+  }
+  return true;
 }

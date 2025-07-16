@@ -2,11 +2,12 @@ import {
   insertRegisterinTable,
   deletePeriodInTable,
   listPeriodInTable,
-  insertValidator,
   deletePeriodInTableByMonth,
 } from "../model/tableModel.js";
 
-import { tiparLinha } from "../model/createSchemaMode.js";
+import { insertValidator } from "./dataFromBasesValidatorController.js";
+import tiparLinha from "../utils/tiparLinha.js";
+import { addAviso, addErro } from "../middleware/errorHandler.js";
 
 /**
  * @param {{
@@ -25,67 +26,82 @@ import { tiparLinha } from "../model/createSchemaMode.js";
 export async function managerDataController(objDinamico, action) {
   const isInsertAction = ["created", "modified"].includes(action);
   if (isInsertAction) {
-    const listFromTable = await listPeriodInTable(objDinamico);
+    if (!Array.isArray(objDinamico.data_json) || objDinamico.data_json.length === 0) {
+      addAviso("Nenhuma linha disponível para inserção.");
+      return {
+        erro: true,
+        mensagem: "Nenhum dado encontrado para inserção.",
+        detalhes_erro: "data_json vazio ou inválido.",
+      };
+    }
+    let listFromTable;
+    try {
+      listFromTable = await listPeriodInTable(objDinamico);
+    } catch (e) {
+      addErro(`Erro ao consultar o período no banco: ${e.message}`);
+      throw e;
+    }
     const validator = insertValidator(listFromTable, objDinamico);
+
     const erros = [];
     let sucesso = 0;
 
     if (validator === "substituir") {
       try {
         await deletePeriodInTable(objDinamico);
-      } catch (error) {
-        console.error(
-          "Erro ao deletar período antes da reinserção:",
-          error.message
+      } catch (e) {
+        addErro(
+          `Erro ao deletar período antes da reinserção, erro: ${e.message}`
         );
         return {
           erro: true,
           mensagem: "Erro ao deletar período antes da reinserção",
-          detalhes_erro: error.message,
+          detalhes_erro: e.message,
         };
       }
     }
 
     for (let i = 0; i < objDinamico.data_json.length; i++) {
       try {
-        const linhaTipada = await tiparLinha(
+        const linhaTipada = tiparLinha(
           objDinamico.data_json[i],
           objDinamico.tipos_esperados
         );
         await insertRegisterinTable(objDinamico.tabela, linhaTipada);
         sucesso++;
-      } catch (error) {
-        console.error(`Erro ao inserir linha ${i}:`, error.message);
+      } catch (e) {
+        addErro(`Erro ao inserir linha ${i}, erro: ${e.message}`);
         erros.push({
           linha: i,
-          erro: error.message,
+          erro: e.message,
           dados: objDinamico.data_json[i],
         });
       }
     }
 
     return {
+      erro: erros.length > 0,
       total: objDinamico.data_json.length,
       inseridos: sucesso,
       falhas: erros.length,
+      mensagem: erros.length > 0 ? "Algumas linhas falharam" : null,
       detalhes_erros: erros,
     };
   } else {
     try {
-      await deletePeriodInTableByMonth(objDinamico);//logData extraido do cache
+      await deletePeriodInTableByMonth(objDinamico); //logData extraido do cache
       return {
         erro: false,
-        mensagem: "periodo excluido"
+        mensagem: "periodo excluido com sucesso",
       };
-    } catch (error) {
-      console.error(
-        "Erro ao deletar período no banco pós exclusão do arquivo",
-        error.message
+    } catch (e) {
+      addErro(
+        `Erro ao deletar período no banco pós exclusão do arquivo, erro: ${e.message}`
       );
       return {
         erro: true,
         mensagem: "Erro ao deletar período no banco pós exclusão do arquivo",
-        detalhes_erro: error.message,
+        detalhes_erro: e.message,
       };
     }
   }

@@ -4,8 +4,7 @@ import path from "path";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import { fileHandlerController } from "./controller/fileHandlerController.js";
-import { isCsvFile } from "./controller/fileHandlerController.js";
-
+import isCsvFile from "./utils/isCsvFile.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export function startMonitoring() {
@@ -33,6 +32,7 @@ export function startMonitoring() {
       if (isCsvFile(filePath)) {
         console.log(`🟢 Arquivo adicionado: ${filePath}`);
         fileHandlerController(filePath, "created");
+        
       }
     })
     .on("change", (filePath) => {

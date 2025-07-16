@@ -1,50 +1,63 @@
-import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
+import { addErro, addInfo } from "../middleware/errorHandler.js";
 import { getLogByData, getAllHashesFromTable } from "../model/logModel.js";
 
 /**
  * @param {{
-  *   nome_arquivo: string,
-  *   ano: number,
-  *   mes: string,
-  *   tabela: string,
-  *   data_json: object
-  *   coluna_data: string,
-  *   acao: string,
-  *   colunas_tabela: object
-  *   colunas_json: object
-* }} metadados
-* @param {{
-*    tabela_destino: string
-*    nome_arquivo: string
-*    ano: int
-*    data_upload: date
-*    hash_arquivo: char64
-*    sucesso: boolean
-*    mensagem_erro: string 
-* }} logData
-*/
+ *   nome_arquivo: string,
+ *   ano: number,
+ *   mes: string,
+ *   tabela: string,
+ *   data_json: object
+ *   coluna_data: string,
+ *   acao: string,
+ *   colunas_tabela: object
+ *   colunas_json: object
+ * }} metadados
+ * @param {{
+ *    tabela_destino: string
+ *    nome_arquivo: string
+ *    ano: int
+ *    data_upload: date
+ *    hash_arquivo: char64
+ *    sucesso: boolean
+ *    mensagem_erro: string
+ * }} logData
+ */
 export default async function fluxoValidatorController(metadados, logData) {
-  try {
-    //₢onsulta o model para validar os hashs que existem na tabela destino
-    const logs = await getLogByData(metadados); //todas as linhas referente ao log desse arquivo
-    const allHashes = await getAllHashesFromTable(metadados); // todos os hashs presentes na tabela
-    const hashJaExiste = allHashes.some((entry) => entry.hash_arquivo === logData.hash_arquivo);
-    if (!logData.hash_arquivo) {
-      addErro("Hash do arquivo não foi definido.");
-    }
+  let logs = [];
+  let allHashes = [];
 
-    if (hashJaExiste) {
-      addInfo(`\x1b[33m[ARQUIVO DUPLICADO]\x1b[0m O conteúdo de ${metadados.nome_arquivo} já está presente na base.`);
-      return "ignorar"; //esse arquivo já foi inserido, sem necessidade de uma nova inserção
-    } else if (!logs || logs.length === 0){ //se não houverem logs referente a essa data
-      addInfo(`\x1b[32m[NOVO ARQUIVO]\x1b[0m ${metadados.nome_arquivo} será processado.`);
-      return "inserir"; //inserir os dados independentemente
-    } else{
-      addInfo(`\x1b[31m[ARQUIVO MODIFICADO]\x1b[0m ${metadados.nome_arquivo} já existia, mas foi alterado. Reprocessando.`);
-      return "reprocessar"; //caso não cair em nem um dos dois ifs, ele entende que existem hashs, mas nem um semelhante ao que estamos tentando inserir, logo é uma atualização
-    }
-    
+  try {
+    logs = await getLogByData(metadados);
   } catch (e) {
-    addErro(e.mensagem_erro);
+    addErro(`erro ao extrair os logs referentes a data, erro: ${e.message}`);
+  }
+
+  try {
+    allHashes = await getAllHashesFromTable(metadados);
+  } catch (e) {
+    addErro(`Erro ao extrair os hashs dos logs referentes a essa data`);
+  }
+
+  const hashJaExiste = allHashes.some(
+    (entry) => entry.hash_arquivo === logData.hash_arquivo
+  );
+  if (!logData.hash_arquivo) {
+    addErro("Hash do arquivo não foi definido.");
+  }
+
+  if (hashJaExiste) {
+    addInfo(
+      `[ARQUIVO DUPLICADO] O conteúdo de ${metadados.nome_arquivo} já está presente na base.`
+    );
+    return "ignorar";
+  } else if (!logs || logs.length === 0) {
+    addInfo(`[NOVO ARQUIVO] ${metadados.nome_arquivo} será processado.`);
+    return "inserir";
+  } else {
+    addInfo(
+      `[ARQUIVO MODIFICADO] ${metadados.nome_arquivo} já existia, mas foi alterado. Reprocessando.`
+    );
+    return "reprocessar";
   }
 }

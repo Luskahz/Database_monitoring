@@ -1,43 +1,51 @@
 import fluxoValidatorController from "./fluxoValidatorController.js";
 import { addInfo, addErro, addAviso } from "../middleware/errorHandler.js";
-import { deleteHashInTable, insertLog } from "../model/logModel.js";
+import { deleteLogByHash, insertLog } from "../model/logModel.js";
 import { managerDataController } from "./managerDataController.js";
 import createDataController, {
   createJsonController,
   destinoByFilePath,
 } from "./createDataController.js";
 import {
-  deletRegisterFromCache,
+  deleteRegisterFromCache,
   getRegisterFromCache,
   insertHashInCache,
 } from "../model/cacheModel.js";
-import path from "path";
-
-export function isCsvFile(filePath) {
-  const fileName = path.basename(filePath).toLowerCase();
-
-  const isValidExtension =
-    fileName.endsWith(".csv") || fileName.endsWith(".csv.inf");
-  const isExcluded = fileName.startsWith("~$") || fileName.endsWith(".tmp");
-
-  return isValidExtension && !isExcluded;
-}
+import loggerMaster from "../middleware/logger.js";
 
 export async function fileHandlerController(filePath, action) {
   const isInsertAction = ["created", "modified"].includes(action);
   try {
     if (isInsertAction) {
-      //cria os docs
-      const dataJson = await createJsonController(filePath);
+      let dataJson;
+      try {
+        dataJson = await createJsonController(filePath);
+      } catch (e) {
+        addErro(`Erro ao converter CSV para JSON: ${e.message}`);
+        throw e;
+      }
+
       if (dataJson && dataJson.length > 0) {
-        const { metadados, logData } = await createDataController(
-          filePath,
-          dataJson,
-          action
-        );
+        let metadados, logData;
+        try {
+          ({ metadados, logData } = await createDataController(
+            filePath,
+            dataJson,
+            action
+          ));
+        } catch (e) {
+          addErro(`Erro ao gerar metadados e logData: ${e.message}`);
+          throw e;
+        }
 
         //define o fluxo
-        const fluxo = await fluxoValidatorController(metadados, logData);
+        let fluxo;
+        try {
+          fluxo = await fluxoValidatorController(metadados, logData);
+        } catch (e) {
+          addErro(`Erro ao validar fluxo de ingestão: ${e.message}`);
+          throw e;
+        }
 
         //inicio do fluxo
         if (fluxo === "inserir" || fluxo === "reprocessar") {
@@ -45,36 +53,32 @@ export async function fileHandlerController(filePath, action) {
             const resultado = await managerDataController(
               metadados,
               metadados.acao
-            ); //realiza a inserção e espera erros ou não
+            );
+            logData.sucesso = !resultado?.erro;
+            logData.mensagem_erro = resultado?.mensagem || null;
             if (resultado?.erro) {
-              // se houveram erros, ele loga
-              logData.sucesso = false;
-              logData.mensagem_erro =
-                resultado.mensagem || "Erro durante a ingestão dos dados.";
               addErro(logData.mensagem_erro);
-            } else {
-              logData.sucesso = true;
-              logData.mensagem_erro = null;
             }
 
             await insertLog(logData);
             await insertHashInCache(logData);
-          } catch (error) {
+            await loggerMaster(metadados, action)
+          } catch (e) {
             logData.sucesso = false;
-            logData.mensagem_erro =
-              error.message || "Falha inesperada no controller.";
-            addErro(logData.mensagem_erro);
+            logData.mensagem_erro = `Erro durante execução do managerDataController: ${e.message}`;
+
+            addErro(
+              `Erro durante execução do managerDataController: ${e.message}`
+            );
             await insertLog(logData);
             await insertHashInCache(logData);
-            addErro(
-              `Erro durante a execução do managerDataController: ${error.message}`
-            );
+            await loggerMaster(metadados, action)
+            
           }
         } else {
           addInfo(
             `[ARQUIVO IGNORADO] ${metadados.nome_arquivo} já existe e não foi modificado.`
           );
-          // Opcional: registrar log com status "ignorado" no futuro
           return;
         }
       } else {
@@ -82,23 +86,27 @@ export async function fileHandlerController(filePath, action) {
       }
     } else {
       const destino = destinoByFilePath(filePath);
-      const logData = await getRegisterFromCache(destino);
-      if (!logData) {
-        addAviso(`⚠️ Nenhum registro de cache encontrado para ${filePath}`);
-        return;
-      }
-      const resultado = await managerDataController(logData, action);
-      if (resultado.erro === false) {
-        try {
-          await deleteHashInTable(logData);
-          await deletRegisterFromCache(destino);
-        } catch (error) {
-          addErro(`problema ao apagar o hash do banco, erro: ${error.message}`);
+      let logData;
+      try {
+        logData = await getRegisterFromCache(destino);
+        if (!logData) {
+          addAviso(`Nenhum registro de cache encontrado para ${filePath}`);
+          return;
         }
+
+        const resultado = await managerDataController(logData, action);
+        if (!resultado.erro) {
+          await deleteLogByHash(logData);
+          await deleteRegisterFromCache(destino);
+          await loggerMaster(logData)
+        }
+      } catch (e) {
+        addErro(`problema ao apagar o hash do banco, erro: ${e.message}`);
+        throw e;
       }
     }
-  } catch (error) {
-    addErro(`Erro ao processar arquivo: ${error.message}`);
-    throw error;
+  } catch (e) {
+    addErro(`[FATAL] Erro ao processar o arquivo '${filePath}': ${e.message}`);
+    throw e;
   }
 }

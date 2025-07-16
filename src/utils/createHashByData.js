@@ -1,0 +1,14 @@
+import crypto from "crypto";
+
+export default function createHashByData(dataJson) {
+  try {
+    const hash = crypto
+      .createHash("sha256")
+      .update(JSON.stringify(dataJson))
+      .digest("hex");
+    return hash;
+  } catch (e) {
+    addErro(`Houve um erro ao gerar o hash do arquivo, erro: ${e.message}`);
+    return null;
+  }
+}

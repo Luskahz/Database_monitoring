@@ -1,5 +1,5 @@
 import db, { schema } from "../../config/db.js";
-import crypto from "crypto";
+
 
 /**
  * @param {{
@@ -15,16 +15,24 @@ import crypto from "crypto";
  * }} metadados
  */
 export async function getLogByData(metadados) {
-  const [result] = await db.query(
-    `
+  const { tabela, nome_arquivo, ano } = metadados;
+  try {
+    const [result] = await db.query(
+      `
     SELECT * FROM \`${schema}\`.log_ingestao
-    WHERE tabela_destino = ? AND nome_arquivo = ? AND ano = ?
+    WHERE tabela_destino = ?
+     AND nome_arquivo = ?
+     AND ano = ?
     ORDER BY data_upload DESC
   `,
-    [metadados.tabela, metadados.nome_arquivo, metadados.ano]
-  );
-
-  return result; //retorna todas as linhas referente ao log daquele mes naquela tabela
+      [tabela, nome_arquivo, ano]
+    );
+    return result;
+  } catch (e) {
+    throw new Error(
+      `Erro ao puxar os logs referente ao mes requerido, erro: ${e.message}`
+    );
+  }
 }
 
 /**
@@ -41,14 +49,19 @@ export async function getLogByData(metadados) {
  * }} metadados
  */
 export async function getAllHashesFromTable(metadados) {
-  const [result] = await db.query(
-    `
-    SELECT hash_arquivo FROM \`${schema}\`.log_ingestao
-    WHERE tabela_destino = ?
-  `,
-    [metadados.tabela]
-  );
-  return result;
+  const { tabela } = metadados;
+  try {
+    const [result] = await db.query(
+      `
+      SELECT hash_arquivo FROM \`${schema}\`.log_ingestao
+      WHERE tabela_destino = ?
+      `,
+      [tabela]
+    );
+    return result;
+  } catch (e) {
+    throw new Error(`Erro ao puxar os hashs da tabela no log_ingestao`);
+  }
 }
 
 export async function insertLog(logData) {
@@ -60,28 +73,35 @@ export async function insertLog(logData) {
     coluna_data,
     data_upload,
     hash_arquivo,
+    caminho_original,
     sucesso,
     mensagem_erro,
   } = logData;
 
-  await db.query(
-    `
+  try {
+    await db.query(
+      `
     INSERT INTO \`${schema}\`.log_ingestao
       (tabela_destino, nome_arquivo, ano, mes, coluna_data, data_upload, hash_arquivo, sucesso, mensagem_erro)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
-    [
-      tabela_destino,
-      nome_arquivo,
-      ano,
-      mes,
-      coluna_data,
-      data_upload,
-      hash_arquivo,
-      sucesso,
-      mensagem_erro,
-    ]
-  );
+      [
+        tabela_destino,
+        nome_arquivo,
+        ano,
+        mes,
+        coluna_data,
+        data_upload,
+        hash_arquivo,
+        sucesso,
+        mensagem_erro,
+      ]
+    );
+  } catch (e) {
+    throw new Error(
+      `Erro ao inserir log na tabela de ingestaõ, erro: ${e.message}`
+    );
+  }
 }
 
 /**
@@ -97,24 +117,19 @@ export async function insertLog(logData) {
  *    colunas_json: object
  * }} metadados
  */
-export async function deleteHashInTable(logData) {
-  return await db.query(
-    `
-    DELETE FROM \`${schema}\`.log_ingestao WHERE hash_arquivo = ?`,
-    [logData.hash_arquivo]
-  );
-}
-
-export function createHashByData(dataJson) {
+export async function deleteLogByHash(logData) {
+  const { hash_arquivo } = logData;
   try {
-    const hash = crypto
-      .createHash("sha256")
-      .update(JSON.stringify(dataJson))
-      .digest("hex");
-    return hash;
-  } catch (error) {
-    console.error(
-      `Houve um erro ao gerar o hash do arquivo, erro: ${error.message}`
+    return await db.query(
+      `
+    DELETE FROM \`${schema}\`.log_ingestao WHERE hash_arquivo = ?`,
+      [hash_arquivo]
+    );
+  } catch (e) {
+    throw new Error(
+      `Erro ao deletar o log com base no hash, erro: ${e.message}`
     );
   }
 }
+
+

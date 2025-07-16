@@ -1,0 +1,44 @@
+==============================================================
+
+==== LOG EXCLUSÃO junho.csv - 16/07/2025, 17:20:21 ====
+
+Arquivo: junho.csv
+
+Evento/Ação: deleted
+
+Tabela: 03_11_40
+
+Ano: 2025 | Mês: junho
+
+hash: 571ffd9d57572c93ef61231266899c7e60c50ea5708000daf6b505880ca57d82
+
+Coluna de referencia: dt_entrega
+
+=============== Resultados da operação ===============
+
+🟩 Informações:
+ℹ️ Registro '03_11_40_2025_junho_junho.csv' removido com sucesso do cache!
+
+==============================================================
+==============================================================
+
+==== LOG EXCLUSÃO junho.csv - 16/07/2025, 17:22:03 ====
+
+Arquivo: junho.csv
+
+Evento/Ação: deleted
+
+Tabela: 03_11_40
+
+Ano: 2025 | Mês: junho
+
+hash: 571ffd9d57572c93ef61231266899c7e60c50ea5708000daf6b505880ca57d82
+
+Coluna de referencia: dt_entrega
+
+=============== Resultados da operação ===============
+
+🟩 Informações:
+ℹ️ Registro '03_11_40_2025_junho_junho.csv' removido com sucesso do cache!
+
+==============================================================

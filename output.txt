@@ -67,7 +67,6 @@ package.json --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\package.json
   "description": "",
   "dependencies": {
     "chokidar": "^4.0.3",
-    "csvtojson": "^2.0.10",
     "express": "^5.1.0",
     "iconv-lite": "^0.6.3",
     "mysql2": "^3.14.1",
@@ -105,7 +104,7 @@ USE diretorio;
 
 CREATE TABLE -- colunas data: 1
   IF NOT EXISTS `03_11_42` ( 
-    mapa INT,
+    mapa INT not null,
     veiculo INT,
     placa VARCHAR(20),
     dt_entrega DATE,
@@ -118,7 +117,7 @@ CREATE TABLE -- colunas data: 1
 
 CREATE TABLE -- colunas data: 1
   IF NOT EXISTS `03_11_40` ( 
-    mapa INT,
+    mapa INT not null,
     veiculo INT,
     placa VARCHAR(20),
     dt_entrega DATE,
@@ -960,7 +959,7 @@ CREATE TABLE
   tabela_destino VARCHAR(50) NOT NULL,         -- Ex: "03_11_40"
   nome_arquivo VARCHAR(50) NOT NULL,           -- Ex: "janeiro.csv"
   ano INT NOT NULL,                             -- Ex: 2025
-  mes int NOT NULL,
+  mes varchar(25),
   coluna_data varchar(25) not null,
   data_upload DATETIME NOT NULL,                -- Ex: NOW()
   hash_arquivo CHAR(64) NOT NULL,               -- SHA-256 hash
@@ -975,46 +974,57 @@ import chokidar from "chokidar";
 import path from "path";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
-import chokidarErrorHandler from "./middleware/errorHandler.js";
-import { fileHandlerController, isCsvFile } from "./controller/fileHandlerController.js";
-
+import { fileHandlerController } from "./controller/fileHandlerController.js";
+import isCsvFile from "./utils/isCsvFile.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export function startMonitoring() {
-  const monitorPath = path.resolve(__dirname, "../../");
-  let isReady = false;
+  const monitorPath = path.resolve(__dirname, "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL");
 
   const watcher = chokidar.watch(monitorPath, {
     persistent: true,
-    ignored: (filePath) => {
-      const normalized = path.normalize(filePath);
-      return normalized.includes("database_monitoring") || !isCsvFile(filePath);
+    ignoreInitial: false,
+    usePolling: true,
+    interval: 500,
+    depth: 10,
+    awaitWriteFinish: {
+      stabilityThreshold: 2000,
+      pollInterval: 100,
+    },
+    ignored: /[\\\/]database_monitoring[\\\/]/,
+    awaitWriteFinish: {
+      stabilityThreshold: 300,
+      pollInterval: 100,
     },
   });
 
   watcher
     .on("add", (filePath) => {
-      console.log(`Arquivo adicionado: ${filePath}`);
-      fileHandlerController(filePath, "created", chokidarErrorHandler);
+      if (isCsvFile(filePath)) {
+        console.log(`ðŸŸ¢ Arquivo adicionado: ${filePath}`);
+        fileHandlerController(filePath, "created");
+        
+      }
     })
     .on("change", (filePath) => {
-      console.log(`Arquivo modificado: ${filePath}`);
-      fileHandlerController(filePath, "modified", chokidarErrorHandler);
+      if (isCsvFile(filePath)) {
+        console.log(`ðŸŸ¡ Arquivo modificado: ${filePath}`);
+        fileHandlerController(filePath, "modified");
+      }
     })
     .on("unlink", (filePath) => {
-      console.log(`Arquivo removido: ${filePath}`);
-      fileHandlerController(filePath, "deleted", chokidarErrorHandler);
+      if (isCsvFile(filePath)) {
+        console.log(`ðŸ”´ Arquivo removido: ${filePath}`);
+        fileHandlerController(filePath, "deleted");
+      }
     })
     .on("error", (error) => {
-      console.error(`Erro no monitoramento: ${error}`);
-      /* erro no monitoramento */
+      console.error(`âŒ Erro no monitoramento: ${error}`);
+      chokidarErrorHandler(error)
     })
     .on("ready", () => {
-      console.log(`Monitoramento iniciado em: ${monitorPath}`);
-      /* pronto para monitorar */
+      console.log(`âœ… Pronto! Monitorando alteraÃ§Ãµes em: ${monitorPath}`);
     });
-
-  console.log(`Monitorando alteraÃ§Ãµes em: ${monitorPath}`);
 }
 
 ----------------------------
@@ -1025,11 +1035,18 @@ import { startMonitoring } from "./monitoring.js";
 const app = express();
 const port = 3000;
 
+
 startMonitoring();
+
 
 app.listen(port, () => {
   console.log(`Servidor rodando na porta ${port}`);
 });
+
+----------------------------
+cacheHash.txt --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash.txt
+
+
 
 ----------------------------
 createDataController.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\controller\createDataController.js
@@ -1037,90 +1054,68 @@ import path from "path";
 import fs from "fs/promises";
 import iconv from "iconv-lite";
 import Papa from "papaparse";
-
-import {
-  colunsValidator,
-  dataFromBasesValidatorController,
-  normalizar,
-} from "./dataFromBasesValidatorController.js";
+import { dataFromBasesValidatorController } from "./dataFromBasesValidatorController.js";
 import { getColunsFromTable, getTiposFromTable } from "../model/tableModel.js";
-import { sanitizeRow } from "../model/createSchemaMode.js";
-import { createHashByData } from "../model/logModel.js";
+import sanitizeRow from "../utils/sanitizeValue.js";
+import createHashByData from "../utils/createHashByData.js";
+import normalizar from "../utils/normalizar.js";
+import { addAviso, addErro } from "../middleware/errorHandler.js";
 
 export default async function createDataController(filePath, dataJson, action) {
-  //corrigir a rota desnecessaria desse action
   try {
-    const fileName = path.basename(filePath);
-    const baseAno = path.basename(path.dirname(filePath));
-    const baseMes = path.basename(filePath, path.extname(filePath));
-    const tabelaName = path.basename(path.dirname(path.dirname(filePath)));
+    const destino = destinoByFilePath(filePath);
+    const infos = await extractInfosByData(destino.tabela_destino, dataJson);
     const hash = createHashByData(dataJson);
-    const dataColun = await dataFromBasesValidatorController(
-      tabelaName,
-      dataJson
-    );
-    const tiposEsperados = await getTiposFromTable(tabelaName);
-    const colunsTable = await getColunsFromTable(tabelaName);
-    const colunsJson = Object.keys(dataJson[0] || {});
 
     const metadados = {
-      nome_arquivo: fileName,
-      ano: baseAno,
-      mes: baseMes,
-      tabela: tabelaName,
+      nome_arquivo: destino.nome_arquivo,
+      ano: destino.ano,
+      mes: destino.mes,
+      tabela: destino.tabela_destino,
       data_json: dataJson,
-      coluna_data: dataColun,
+      hash: hash,
+      coluna_data: infos.coluna_data,
       acao: action,
-      colunas_tabela: colunsTable,
-      colunas_json: colunsJson,
-      tipos_esperados: tiposEsperados,
+      colunas_tabela: infos.colunas_tabela,
+      colunas_json: infos.colunas_json,
+      tipos_esperados: infos.tipagem,
+      caminho_original: filePath,
     };
+
     const logData = {
-      tabela_destino: tabelaName,
-      nome_arquivo: fileName,
-      ano: parseInt(baseAno),
-      mes: baseMes,
-      coluna_data: dataColun,
+      tabela_destino: metadados.tabela,
+      nome_arquivo: metadados.nome_arquivo,
+      ano: parseInt(metadados.ano),
+      mes: metadados.mes,
+      coluna_data: metadados.coluna_data,
       data_upload: new Date(),
       hash_arquivo: hash,
       sucesso: true,
       mensagem_erro: null,
     };
 
-    //log para testes:
-    console.log(
-      `\x1b[33m--------------------------------------------------------------------------------\x1b[0m`
-    );
-    console.log(`\x1b[36mAÃ§Ã£o:\x1b[0m ${action}`);
-    console.log(`\x1b[36mNome do arquivo:\x1b[0m ${fileName}`);
-    console.log(`\x1b[33mAno:\x1b[0m ${baseAno}`);
-    console.log(`\x1b[33mMes:\x1b[0m ${baseMes}`);
-    console.log(`\x1b[33mTabela:\x1b[0m ${tabelaName}`);
-    console.log(
-      `\x1b[36mColunas de data encontradas na tabela:\x1b[0m`,
-      tabelaName,
-      dataColun
-    );
-    console.log(`\x1b[36mHash do arquivo:\x1b[0m ${hash}`);
-    //console.log(`\x1b[36mColunas da tabela:\x1b[0m`, colunsTable);
-    //console.log(`\x1b[36mColunas do JSON:\x1b[0m`, colunsJson);
-    colunsValidator(colunsJson, colunsTable);
-    console.log(
-      `\x1b[33m-------------------------------------------------------------------------------\x1b[0m`
-    );
-
     return { metadados, logData };
-  } catch (erro) {
-    console.error("Erro em createDataController:", erro);
-    throw erro;
+  } catch (e) {
+    addErro(
+      `Erro ao gerar os objetos fundamentais, metadados e logdata, erro: ${e.message}`
+    );
+    throw e;
   }
 }
 
 export async function createJsonController(filePath) {
-  const tabelaName = path.basename(path.dirname(path.dirname(filePath)));
-  const buffer = await fs.readFile(filePath);
+  const destino = destinoByFilePath(filePath);
+  let buffer;
+  try {
+    buffer = await fs.readFile(filePath);
+  } catch (e) {
+    addErro(`erro ao ler o arquivo, erro: ${e.message}`);
+    throw e
+  }
+
   const data = iconv.decode(buffer, "latin1");
   const firstLine = data.split(/\r?\n/)[0];
+  const { tabelaName } = destino;
 
   if (firstLine.includes(",") || firstLine.includes(";")) {
     const delimiter = firstLine.includes(";") ? ";" : ",";
@@ -1133,19 +1128,38 @@ export async function createJsonController(filePath) {
       transform: (value) => value.trim(),
     });
     if (parsed.errors.length) {
-      console.warn(
-        "Aviso: erros encontrados no CSV, algumas linhas serÃ£o ignoradas."
-      );
-      //console.table(parsed.errors);
+      const resumo = [
+        `${parsed.errors.length} erros detectados durante o parsing do CSV:`,
+      ];
+
+      parsed.errors.slice(0, 5).forEach((err, i) => {
+        resumo.push(`â†’ Linha ${err.row ?? "?"}: ${err.message}`);
+      });
+
+      if (parsed.errors.length > 5) {
+        resumo.push(
+          `â†’ ...e mais ${parsed.errors.length - 5} erro(s) nÃ£o exibido(s).`
+        );
+      }
+
+      addAviso(resumo.join("\n"));
     }
     const linhasValidas = parsed.data.filter((linha) => {
       const valores = Object.values(linha);
       const preenchidos = valores.filter((v) => v?.trim() !== "").length;
       return preenchidos >= 3;
     });
+    if (linhasValidas.length === 0) {
+      addAviso(`Nenhuma linha vÃ¡lida encontrada no arquivo ${filePath}.`);
+    }
+    let tiposEsperados;
+    try {
+      tiposEsperados = await getTiposFromTable(tabelaName);
+    } catch (e) {
+      addErro(`Erro ao gerar os tipos esperados erro: ${e.message}`);
+      throw e
+    }
 
-    const tiposEsperados = await getTiposFromTable(tabelaName);
-    //console.log(`colunas originais: `,JSON.stringify(Object.keys(linhasValidas[1]), null, 2));
     const dataJsonNormalized = linhasValidas.map((linha) => {
       const novaLinha = {};
       const nomesUsados = {}; // vai registrar quantas vezes um nome foi usado
@@ -1169,57 +1183,60 @@ export async function createJsonController(filePath) {
     const dataSanitized = dataJsonNormalized.map((linha) =>
       sanitizeRow(linha, tiposEsperados)
     );
+    addInfo(`${linhasValidas.length} linhas vÃ¡lidas extraÃ­das de ${filePath}`);
     return dataSanitized;
   } else {
-    console.log(`Arquivo ignorado: ${filePath} - NÃ£o Ã© um CSV vÃ¡lido`);
+    addErro(`Arquivo ignorado: ${filePath} - NÃ£o Ã© um CSV vÃ¡lido`);
+  }
+}
+
+export function destinoByFilePath(filePath) {
+  const fileName = path.basename(filePath);
+  const baseAno = path.basename(path.dirname(filePath));
+  const baseMes = path.basename(filePath, path.extname(filePath));
+  const tabelaName = path.basename(path.dirname(path.dirname(filePath)));
+
+  return {
+    nome_arquivo: fileName,
+    ano: baseAno,
+    mes: baseMes,
+    tabela_destino: tabelaName,
+  };
+}
+
+async function extractInfosByData(tabelaName, dataJson) {
+  try {
+    const dataColun = await dataFromBasesValidatorController(
+      tabelaName,
+      dataJson
+    );
+    const tiposEsperados = await getTiposFromTable(tabelaName);
+    const colunsTable = await getColunsFromTable(tabelaName);
+    const colunsJson = Object.keys(dataJson[0] || {});
+
+    return {
+      coluna_data: dataColun,
+      tipagem: tiposEsperados,
+      colunas_tabela: colunsTable,
+      colunas_json: colunsJson,
+    };
+  } catch (e) {
+    addErro(
+      `[FATAL] Erro ao extrair informaÃ§Ãµes da tabela destino ou colunas do Json csv, erro: ${e.message}`
+    );
+    throw e;
   }
 }
 
 ----------------------------
 dataFromBasesValidatorController.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\controller\dataFromBasesValidatorController.js
-import { getDateColumnsFromTable } from "../model/tableModel.js"
-
-export function normalizar(nome) {
-  return nome
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // remove acentos
-    .replace(/%/g, "perc")           // % â†’ perc
-    .replace(/\s*\.\s*/g, "_")       // ponto entre palavras â†’ _
-    .replace(/\./g, "")              // outros pontos â†’ remove
-    .replace(/[-\\/]/g, "_")   
-    .replace(/\s+/g, "_")            // espaÃ§o â†’ _
-    .replace(/[^a-zA-Z0-9_]/g, "")   // remove outros sÃ­mbolos
-    .replace(/_+/g, "_")             // evita mÃºltiplos __
-    .replace(/^_+|_+$/g, "")         // remove _ inÃ­cio/fim
-    .toLowerCase();
-}
-
-
-export function colunsValidator(json_coluns, table_coluns) {
-  let isEqual = true;
-
-  const maxLen = Math.max(json_coluns.length, table_coluns.length);
-  for (let i = 0; i < maxLen; i++) {
-    const jsonCol = json_coluns[i];
-    const tableCol = table_coluns[i];
-
-    if (jsonCol !== tableCol) {
-      isEqual = false;
-      console.warn(`âŒ DiferenÃ§a na posiÃ§Ã£o ${i}:
-  â†’ JSON:   '${jsonCol}'
-  â†’ TABELA: '${tableCol}'`);
-    }
-  }
-
-  console.log("Colunas iguais? âž", isEqual);
-  return isEqual;
-}
+import { addAviso, addErro } from "../middleware/errorHandler.js";
+import { getDateColumnsFromTable } from "../model/tableModel.js";
+import normalizar from "../utils/normalizar.js";
 
 export async function dataFromBasesValidatorController(tabela, data_json) {
   try {
-    const dataCol = await getDateColumnsFromTable(tabela); // ex: "dt_entrega"!
-    console.log(`\x1b[36mColuna de data encontrada na tabela ${tabela}:\x1b[0m`, dataCol);
-
+    const dataCol = await getDateColumnsFromTable(tabela);
     if (!dataCol) return null;
 
     const primeiraLinha = data_json?.[0] || {};
@@ -1230,58 +1247,131 @@ export async function dataFromBasesValidatorController(tabela, data_json) {
     );
 
     if (index === -1) {
-      console.warn(`\x1b[33mColuna de data '${dataCol}' nÃ£o encontrada no CSV.\x1b[0m`);
+      addAviso(`Coluna de data '${dataCol}' nÃ£o encontrada no CSV.`);
       return null;
     }
 
-    return dataCol
-    
-  } catch (error) {
-    console.error("Erro ao validar colunas de data:", error);
+    return dataCol;
+  } catch (e) {
+    addErro(`Erro ao extrair coluna data, erro: ${e.message}`);
+    throw e;
+  }
+}
+
+/**
+ * @param {{
+ *    nome_arquivo: string,
+ *    ano: number,
+ *    mes: string,
+ *    tabela: string,
+ *    data_json: object
+ *    coluna_data: string,
+ *    acao: string,
+ *    colunas_tabela: object
+ *    colunas_json: object
+ * }} metadados
+ */
+export function insertValidator(list, metadados) {
+  const { coluna_data, data_json } = metadados;
+  if (!Array.isArray(data_json) || data_json.length === 0) {
+    addAviso(
+      "JSON de dados estÃ¡ vazio. Nenhuma validaÃ§Ã£o de coluna de data serÃ¡ feita."
+    );
     return null;
   }
+  try {
+    const datasBanco = extrairDatasValidas(
+      list,
+      coluna_data,
+      "Banco"
+    );
+    const datasCsv = extrairDatasValidas(
+      data_json,
+      coluna_data,
+      "CSV"
+    );
+    const conflito = [...datasCsv].some((data) => datasBanco.has(data));
+
+    return conflito
+      ? (addAviso(
+          "Conflito detectado: datas do CSV jÃ¡ existem na base. Os dados serÃ£o reprocessados."
+        ),
+        "substituir")
+      : "inserir";
+  } catch (e) {
+    addErro(`Erro ao validar datas para inserÃ§Ã£o, Erro: ${e.message}`);
+    throw e;
+  }
+}
+
+function extrairDatasValidas(array, coluna, contexto = "CSV") {
+  return new Set(
+    array
+      .map((linha, i) => {
+        const raw = linha[coluna];
+        const date = new Date(raw);
+        if (isNaN(date)) {
+          addAviso(
+            `Linha ${i}: valor invÃ¡lido em '${coluna}' â†’ '${raw}'. Registro ignorado [${contexto}].`
+          );
+          return null;
+        }
+        return date.toISOString().split("T")[0];
+      })
+      .filter(Boolean)
+  );
 }
 
 ----------------------------
 fileHandlerController.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\controller\fileHandlerController.js
 import fluxoValidatorController from "./fluxoValidatorController.js";
-import { deleteHashInTable, insertLog } from "../model/logModel.js";
+import { addInfo, addErro, addAviso } from "../middleware/errorHandler.js";
+import { deletelogByHash, insertLog } from "../model/logModel.js";
 import { managerDataController } from "./managerDataController.js";
 import createDataController, {
   createJsonController,
+  destinoByFilePath,
 } from "./createDataController.js";
 import {
-  deletRegisterFromCache,
+  deleteRegisterFromCache,
   getRegisterFromCache,
   insertHashInCache,
 } from "../model/cacheModel.js";
-import path from "path";
+import loggerMaster from "../middleware/logger.js";
 
-export function isCsvFile(filePath) {
-  const fileName = path.basename(filePath).toLowerCase();
-
-  const isValidExtension =
-    fileName.endsWith(".csv") || fileName.endsWith(".csv.inf");
-  const isExcluded = fileName.startsWith("~$") || fileName.endsWith(".tmp");
-
-  return isValidExtension && !isExcluded;
-}
-
-export async function fileHandlerController(filePath, action, next) {
+export async function fileHandlerController(filePath, action) {
   const isInsertAction = ["created", "modified"].includes(action);
   try {
     if (isInsertAction) {
-      //cria os docs
-      const dataJson = await createJsonController(filePath);
+      let dataJson;
+      try {
+        dataJson = await createJsonController(filePath);
+      } catch (e) {
+        addErro(`Erro ao converter CSV para JSON: ${e.message}`);
+        throw e;
+      }
+
       if (dataJson && dataJson.length > 0) {
-        const { metadados, logData } = await createDataController(
-          filePath,
-          dataJson,
-          action
-        );
+        let metadados, logData;
+        try {
+          ({ metadados, logData } = await createDataController(
+            filePath,
+            dataJson,
+            action
+          ));
+        } catch (e) {
+          addErro(`Erro ao gerar metadados e logData: ${e.message}`);
+          throw e;
+        }
 
         //define o fluxo
-        const fluxo = await fluxoValidatorController(metadados, logData, next);
+        let fluxo;
+        try {
+          fluxo = await fluxoValidatorController(metadados, logData);
+        } catch (e) {
+          addErro(`Erro ao validar fluxo de ingestÃ£o: ${e.message}`);
+          throw e;
+        }
 
         //inicio do fluxo
         if (fluxo === "inserir" || fluxo === "reprocessar") {
@@ -1289,68 +1379,64 @@ export async function fileHandlerController(filePath, action, next) {
             const resultado = await managerDataController(
               metadados,
               metadados.acao
-            ); //realiza a inserÃ§Ã£o e espera erros ou nÃ£o
+            );
+            logData.sucesso = !resultado?.erro;
+            logData.mensagem_erro = resultado?.mensagem || null;
             if (resultado?.erro) {
-              // se houveram erros, ele loga
-              logData.sucesso = false;
-              logData.mensagem_erro =
-                resultado.mensagem || "Erro durante a ingestÃ£o dos dados.";
-            } else {
-              logData.sucesso = true;
-              logData.mensagem_erro = null;
+              addErro(logData.mensagem_erro);
             }
 
             await insertLog(logData);
             await insertHashInCache(logData);
-          } catch (error) {
+          } catch (e) {
             logData.sucesso = false;
-            logData.mensagem_erro =
-              error.message || "Falha inesperada no controller.";
+            logData.mensagem_erro = `Erro durante execuÃ§Ã£o do managerDataController: ${e.message}`;
+
+            addErro(
+              `Erro durante execuÃ§Ã£o do managerDataController: ${e.message}`
+            );
             await insertLog(logData);
             await insertHashInCache(logData);
-            console.error(
-              `Erro durante a execuÃ§Ã£o do managerDataController:`,
-              error.message
-            );
+            await loggerMaster(metadados, action)
           }
         } else {
-          console.log(
-            `\x1b[33m[ARQUIVO IGNORADO]\x1b[0m ${metadados.nome_arquivo} jÃ¡ existe e nÃ£o foi modificado.`
+          addInfo(
+            `[ARQUIVO IGNORADO] ${metadados.nome_arquivo} jÃ¡ existe e nÃ£o foi modificado.`
           );
-          // Opcional: registrar log com status "ignorado" no futuro
           return;
         }
       } else {
-        console.error("o csv originou um json vazio");
+        addAviso(`O arquivo originou um JSON vazio.`);
       }
-
-      // rota unlink// rota unlink// rota unlink// rota unlink// rota unlink// rota unlink// rota unlink// rota unlink// rota unlink// rota unlink// rota unlink// rota unlink
     } else {
-      const logData = await getRegisterFromCache(filePath); //aqui eu extraio o logdata
-      if (!logData) {
-        console.warn(`âš ï¸ Nenhum registro de cache encontrado para ${filePath}`);
-        return;
-      }
-      const resultado = await managerDataController(logData, action);
-      if (resultado.erro === false) {
-        try {
-          await deleteHashInTable(logData);
-          await deletRegisterFromCache(filePath)
-        } catch (error) {
-          console.error(
-            `problema ao apagar o hash do banco, erro: ${error.message}`
-          );
+      const destino = destinoByFilePath(filePath);
+      let logData;
+      try {
+        logData = await getRegisterFromCache(destino);
+        if (!logData) {
+          addAviso(`Nenhum registro de cache encontrado para ${filePath}`);
+          return;
         }
+
+        const resultado = await managerDataController(logData, action);
+        if (!resultado.erro) {
+          await deletelogByHash(logData);
+          await deleteRegisterFromCache(destino);
+        }
+      } catch (e) {
+        addErro(`problema ao apagar o hash do banco, erro: ${e.message}`);
+        throw e;
       }
     }
-  } catch (error) {
-    console.error(`Erro ao processar arquivo: ${error.message}`);
-    throw error;
+  } catch (e) {
+    addErro(`[FATAL] Erro ao processar o arquivo '${filePath}': ${e.message}`);
+    throw e;
   }
 }
 
 ----------------------------
 fluxoValidatorController.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\controller\fluxoValidatorController.js
+import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
 import { getLogByData, getAllHashesFromTable } from "../model/logModel.js";
 
 /**
@@ -1375,30 +1461,36 @@ import { getLogByData, getAllHashesFromTable } from "../model/logModel.js";
 *    mensagem_erro: string 
 * }} logData
 */
-export default async function fluxoValidatorController(metadados, logData, next) {
-  try {
-    //â‚¢onsulta o model para validar os hashs que existem na tabela destino
-    const logs = await getLogByData(metadados); //todas as linhas referente ao log desse arquivo
-    const allHashes = await getAllHashesFromTable(metadados); // todos os hashs presentes na tabela
-    const hashJaExiste = allHashes.some((entry) => entry.hash_arquivo === logData.hash_arquivo);
-    if (!logData.hash_arquivo) {
-      throw new Error("Hash do arquivo nÃ£o foi definido.");
-    }
-
-    if (hashJaExiste) {
-      console.log(`\x1b[33m[ARQUIVO DUPLICADO]\x1b[0m O conteÃºdo de ${metadados.nome_arquivo} jÃ¡ estÃ¡ presente na base.`);
-      return "ignorar"; //esse arquivo jÃ¡ foi inserido, sem necessidade de uma nova inserÃ§Ã£o
-    } else if (!logs || logs.length === 0){ //se nÃ£o houverem logs referente a essa data
-      console.log(`\x1b[32m[NOVO ARQUIVO]\x1b[0m ${metadados.nome_arquivo} serÃ¡ processado.`);
-      return "inserir"; //inserir os dados independentemente
-    } else{
-      console.log(`\x1b[31m[ARQUIVO MODIFICADO]\x1b[0m ${metadados.nome_arquivo} jÃ¡ existia, mas foi alterado. Reprocessando.`);
-      return "reprocessar"; //caso nÃ£o cair em nem um dos dois ifs, ele entende que existem hashs, mas nem um semelhante ao que estamos tentando inserir, logo Ã© uma atualizaÃ§Ã£o
-    }
-    
-  } catch (error) {
-    next(error);
+export default async function fluxoValidatorController(metadados, logData) {
+  try{
+    const logs = await getLogByData(metadados); 
+  }catch(e){
+    addErro(`erro ao extrair os logs referentes a data, erro: ${e.message}`)
   }
+  
+  try{
+    const allHashes = await getAllHashesFromTable(metadados); 
+  }catch(e){
+    addErro(`Erro ao extrair os hashs dos logs referentes a essa data`)
+  }
+  
+  const hashJaExiste = allHashes.some((entry) => entry.hash_arquivo === logData.hash_arquivo);
+  if (!logData.hash_arquivo) {
+    addErro("Hash do arquivo nÃ£o foi definido.");
+  }
+
+  if (hashJaExiste) {
+    addInfo(`[ARQUIVO DUPLICADO] O conteÃºdo de ${metadados.nome_arquivo} jÃ¡ estÃ¡ presente na base.`);
+    return "ignorar"; 
+  } else if (!logs || logs.length === 0){ 
+    addInfo(`[NOVO ARQUIVO] ${metadados.nome_arquivo} serÃ¡ processado.`);
+    return "inserir"; 
+  } else{
+    addInfo(`[ARQUIVO MODIFICADO] ${metadados.nome_arquivo} jÃ¡ existia, mas foi alterado. Reprocessando.`);
+    return "reprocessar"; 
+  }
+    
+
 }
 
 ----------------------------
@@ -1407,11 +1499,12 @@ import {
   insertRegisterinTable,
   deletePeriodInTable,
   listPeriodInTable,
-  insertValidator,
   deletePeriodInTableByMonth,
 } from "../model/tableModel.js";
 
-import { tiparLinha } from "../model/createSchemaMode.js";
+import { insertValidator } from "./dataFromBasesValidatorController.js";
+import tiparLinha from "../utils/tiparLinha.js";
+import { addErro } from "../middleware/errorHandler.js";
 
 /**
  * @param {{
@@ -1430,68 +1523,82 @@ import { tiparLinha } from "../model/createSchemaMode.js";
 export async function managerDataController(objDinamico, action) {
   const isInsertAction = ["created", "modified"].includes(action);
   if (isInsertAction) {
-    const listFromTable = await listPeriodInTable(objDinamico);
+    if (!Array.isArray(objDinamico.data_json) || objDinamico.data_json.length === 0) {
+      addAviso("Nenhuma linha disponÃ­vel para inserÃ§Ã£o.");
+      return {
+        erro: true,
+        mensagem: "Nenhum dado encontrado para inserÃ§Ã£o.",
+        detalhes_erro: "data_json vazio ou invÃ¡lido.",
+      };
+    }
+    let listFromTable;
+    try {
+      listFromTable = await listPeriodInTable(objDinamico);
+    } catch (e) {
+      addErro(`Erro ao consultar o perÃ­odo no banco: ${e.message}`);
+      throw e;
+    }
     const validator = insertValidator(listFromTable, objDinamico);
+
     const erros = [];
     let sucesso = 0;
 
     if (validator === "substituir") {
       try {
         await deletePeriodInTable(objDinamico);
-      } catch (error) {
-        console.error(
-          "Erro ao deletar perÃ­odo antes da reinserÃ§Ã£o:",
-          error.message
+      } catch (e) {
+        addErro(
+          `Erro ao deletar perÃ­odo antes da reinserÃ§Ã£o, erro: ${e.message}`
         );
         return {
           erro: true,
           mensagem: "Erro ao deletar perÃ­odo antes da reinserÃ§Ã£o",
-          detalhes_erro: error.message,
+          detalhes_erro: e.message,
         };
       }
     }
 
     for (let i = 0; i < objDinamico.data_json.length; i++) {
       try {
-        const linhaTipada = await tiparLinha(
+        const linhaTipada = tiparLinha(
           objDinamico.data_json[i],
           objDinamico.tipos_esperados
         );
         await insertRegisterinTable(objDinamico.tabela, linhaTipada);
         sucesso++;
-      } catch (error) {
-        console.error(`Erro ao inserir linha ${i}:`, error.message);
+      } catch (e) {
+        addErro(`Erro ao inserir linha ${i}, erro: ${e.message}`);
         erros.push({
           linha: i,
-          erro: error.message,
+          erro: e.message,
           dados: objDinamico.data_json[i],
         });
       }
     }
 
     return {
+      erro: erros.length > 0,
       total: objDinamico.data_json.length,
       inseridos: sucesso,
       falhas: erros.length,
+      mensagem: erros.length > 0 ? "Algumas linhas falharam" : null,
       detalhes_erros: erros,
     };
   } else {
-    //rota unlink
     try {
-      await deletePeriodInTableByMonth(objDinamico);//logData extraido do cache
+      await deletePeriodInTableByMonth(objDinamico); //logData extraido do cache
       return {
         erro: false,
-        mensagem: "periodo excluido"
+        mensagem: "periodo excluido com sucesso",
       };
-    } catch (error) {
-      console.error(
-        "Erro ao deletar perÃ­odo no banco pÃ³s exclusÃ£o do arquivo",
-        error.message
+    } catch (e) {
+      addErro(
+        `Erro ao deletar perÃ­odo no banco pÃ³s exclusÃ£o do arquivo, erro: ${e.message}`
       );
       return {
         erro: true,
         mensagem: "Erro ao deletar perÃ­odo no banco pÃ³s exclusÃ£o do arquivo",
-        detalhes_erro: error.message,
+        detalhes_erro: e.message,
       };
     }
   }
@@ -1499,17 +1606,96 @@ export async function managerDataController(objDinamico, action) {
 
 ----------------------------
 errorHandler.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\middleware\errorHandler.js
-export default function chokidarErrorHandler(error) {
-  if (error.code === "ENOENT") {
-    console.error("Erro: O caminho especificado nÃ£o existe.");
-  } else if (error.code === "EACCES") {
-    console.error(
-      "Erro: PermissÃ£o negada para acessar o caminho especificado."
-    );
-  } else if (error.code === "ENOSPC") {
-    console.error("Erro: EspaÃ§o insuficiente no dispositivo.");
-  } else {
-    console.error(`Erro desconhecido: ${error.message}`)
+const mensagens = {
+  erros: [],
+  infos: [],
+  avisos: [],
+};
+
+export function addErro(msg) {
+  mensagens.erros.push(msg);
+}
+
+export function addInfo(msg) {
+  mensagens.infos.push(msg);
+}
+
+export function addAviso(msg) {
+  mensagens.avisos.push(msg);
+}
+
+export function getAllErrors() {
+  return { ...mensagens }; // CÃ³pia segura
+}
+
+export function clearAllErrors() {
+  mensagens.erros = [];
+  mensagens.infos = [];
+  mensagens.avisos = [];
+}
+
+
+
+----------------------------
+logger.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\middleware\logger.js
+import fs from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
+import { getAllErrors, clearAllErrors, addErro } from "./errorHandler.js";
+import colunsValidator from "../utils/colunsValidator.js";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+/**
+ * @param {{
+ *   nome_arquivo: string,
+ *   tabela: string,
+ *   ano: string,
+ *   mes: string,
+ *   acao: string,
+ *   caminho_arquivo: string,
+ *   coluna_data: date
+ * }} metadados
+ * @param {string[] | string} mensagens
+ */
+export default async function loggerMaster(metadados, action) {
+  if (action === "created" || action === "modified") {
+    const errorsMessages = getAllErrors();
+    const now = new Date();
+    const dataHora = now.toLocaleString("pt-BR");
+    const blocoDeErros = errorsMessages.map((m) => "âš ï¸ " + m).join("\n");
+
+    const texto = [
+      `==============================================================`,
+      `==== LOG ${metadados.nome_arquivo} - ${dataHora} ====`,
+      `Arquivo: ${metadados.nome_arquivo}`,
+      `Evento/AÃ§Ã£o: ${metadados.acao}`,
+      `Tabela: ${metadados.tabela}`,
+      `Ano: ${metadados.ano} | MÃªs: ${metadados.mes}`,
+      `hash: ${metadados.hash}`,
+      `Coluna de referencia: ${metadados.coluna_data}`,
+      `=============== OrientaÃ§Ãµes referente a aÃ§Ã£o ===============`,
+      blocoDeErros,
+      `${colunsValidator(
+        metadados.colunas_json,
+        metadados.colunas_tabela
+      )}``==============================================================`,
+    ].join("\n\n");
+
+    const pasta = path.dirname(metadados.caminho_arquivo);
+    const logPath = path.join(pasta, "logger.txt");
+    try {
+      await fs.appendFile(logPath, texto + "\n", "utf8");
+    } catch (e) {
+      addErro(
+        `Erro ao escrever o log no logger, provavel problema com o arquivo`
+      );
+      throw e;
+    }
+    console.log(texto);
+
+    clearAllErrors();
+  } else{
+    //criar o logger para os arquivos deletados
   }
 }
 
@@ -1519,118 +1705,136 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import { error } from "console";
+import { addAviso, addInfo } from "../middleware/errorHandler.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const cachePath = path.resolve(__dirname, "cache", "cacheHash.txt");
+const cachePath = path.resolve(__dirname, "../cache", "cacheHash.txt");
 
 async function initCacheFile() {
   const dirPath = path.dirname(cachePath);
   await fs.mkdir(dirPath, { recursive: true });
   try {
     await fs.access(cachePath);
-    return cachePath
+    return cachePath;
   } catch (err) {
     await fs.writeFile(cachePath, "", "utf8");
     console.log("Arquivo de cache criado em:", cachePath);
-    return cachePath
+    return cachePath;
   }
 }
 
 export async function insertHashInCache(logData) {
+  const { tabela_destino, ano, mes, nome_arquivo } = logData;
+  let cachePath;
   try {
-    const cachePath = await initCacheFile();
-    logData.identificador = `${logData.tabela_destino}_${logData.ano}_${logData.mes}_${logData.nome_arquivo}`;
-    const jsonString = JSON.stringify(logData, null, 2);
+    cachePath = await initCacheFile();
+  } catch (e) {
+    throw new Error(`erro ao criar o arquivo do cache: ${e.message}`);
+  }
+
+  logData.identificador = `${tabela_destino}_${ano}_${mes}_${nome_arquivo}`;
+  const jsonString = JSON.stringify(logData, null, 2);
+
+  try {
     await fs.appendFile(cachePath, jsonString + "\n\n", "utf8");
-    console.log("Objeto salvo no cache com sucesso!");
-  } catch (error) {
-    console.error(
-      `houve um problema ao gerar registro no cache erro: ${error.message}`
+    addInfo("Objeto salvo no cache com sucesso!");
+  } catch (e) {
+    throw new Error(`erro ao inserir o logData no cache, erro: ${e.message}`);
+  }
+}
+
+export async function getRegisterFromCache(destino) {
+  const { tabela_destino, ano, mes, nome_arquivo } = destino;
+  const identificador = `${tabela_destino}_${ano}_${mes}_${nome_arquivo}`;
+
+  let conteudo;
+  try {
+    conteudo = await fs.readFile(cachePath, "utf8");
+  } catch (e) {
+    throw new Error(
+      `Erro ao ler o arquivo no cache, caminho do cache: '${cachePath}' erro: ${e.message}`
     );
   }
-}
+  const blocos = conteudo
+    .split("\n\n")
+    .map((b) => b.trim())
+    .filter(Boolean);
 
-export async function getRegisterFromCache(filePath) {
-  const fileName = path.basename(filePath); // exemplo: junho.csv
-  const baseMes = path.basename(filePath, path.extname(filePath)); //ex: junho
-  const baseAno = path.basename(path.dirname(filePath)); // exemplo: 2023
-  const tabelaName = path.basename(path.dirname(path.dirname(filePath))); // exemplo: 03_11_40
-
-  const identificador = `${tabelaName}_${baseAno}_${baseMes}_${fileName}`;
-
-  try {
-    const conteudo = await fs.readFile(cachePath, "utf8");
-
-    const blocos = conteudo
-      .split("\n\n")
-      .map((b) => b.trim())
-      .filter(Boolean);
-
-    const registros = blocos
-      .map((json) => {
-        try {
-          return JSON.parse(json);
-        } catch (err) {
-          console.warn(
-            "âš ï¸ Erro ao fazer parse de um bloco do cache:",
-            err.message
-          );
-          return null;
-        }
-      })
-      .filter(Boolean);
-
-    return registros.find((reg) => reg.identificador === identificador) || null;
-  } catch (err) {
-    console.error("âŒ Erro ao ler o cache:", err.message);
-    return null;
-  }
-}
-
-export async function deletRegisterFromCache(filePath) {
-  const registroAlvo = await getRegisterFromCache(filePath);
-  if (!registroAlvo) {
-    console.log("âš ï¸ Registro nÃ£o encontrado no cache. Nada foi removido.");
-    return false;
-  }
-
-  try {
-    const conteudo = await fs.readFile(cachePath, "utf8");
-    const blocos = conteudo
-      .split("\n\n")
-      .map((b) => b.trim())
-      .filter(Boolean);
-
-    const blocosMantidos = blocos.filter((bloco) => {
+  const registros = blocos
+    .map((json) => {
       try {
-        const obj = JSON.parse(bloco);
-        return obj.identificador !== registroAlvo.identificador;
-      } catch {
-        return true;
+        return JSON.parse(json);
+      } catch (e) {
+        addAviso(
+          `âš ï¸ Erro ao fazer parse de um bloco do cache, erro: ${e.message}`
+        );
+        return null;
       }
-    });
+    })
+    .filter(Boolean);
 
-    const novoConteudo = blocosMantidos.join("\n\n") + "\n\n";
-    await fs.writeFile(cachePath, novoConteudo, "utf8");
-    console.log(
-      `âœ… Registro '${registroAlvo.identificador}' removido com sucesso!`
-    )
-    return true;
-  } catch (err) {
-    console.error("âŒ Erro ao tentar deletar registro do cache:", err.message);
+  const encontrado = registros.find(
+    (reg) => reg.identificador === identificador
+  );
+  if (!encontrado) {
+    addAviso(
+      `âš ï¸ Nenhum registro encontrado no cache com identificador '${identificador}'`
+    );
+  }
+  return encontrado || null;
+}
+
+export async function deleteRegisterFromCache(destino) {
+  let registroAlvo;
+  try {
+    registroAlvo = await getRegisterFromCache(destino);
+  } catch (e) {
+    throw new Error(`Erro ao coletar os registros do cache, erro: ${e.message}`);
+  }
+
+  if (!registroAlvo) {
+    addAviso("Registro nÃ£o encontrado no cache. Nada foi removido.");
     return false;
   }
+  let conteudo;
+  try {
+    conteudo = await fs.readFile(cachePath, "utf8");
+  } catch (e) {
+    throw new Error(`Erro ao ler o cache ${e.message}`);
+  }
+
+  const blocos = conteudo
+    .split("\n\n")
+    .map((b) => b.trim())
+    .filter(Boolean);
+
+  const blocosMantidos = blocos.filter((bloco) => {
+    try {
+      const obj = JSON.parse(bloco);
+      return obj.identificador !== registroAlvo.identificador;
+    } catch {
+      return true;
+    }
+  });
+
+  const novoConteudo = blocosMantidos.join("\n\n") + "\n\n";
+  try {
+    await fs.writeFile(cachePath, novoConteudo, "utf8");
+    addInfo(
+      `Registro '${registroAlvo.identificador}' removido com sucesso do cache!`
+    );
+  } catch (e) {
+    throw new Error(`Erro ao reescrever os dados sem o registro removido no cache!, erro: ${e.message}`);
+  }
+  return true;
 }
 
 ----------------------------
 createSchemaMode.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\model\createSchemaMode.js
-import { normalizar } from "../controller/dataFromBasesValidatorController.js";
+import normalizar from "../utils/normalizar.js";
 import db, { schema } from "../../config/db.js";
-
-
 
 /**
  * @param {{
@@ -1639,17 +1843,19 @@ import db, { schema } from "../../config/db.js";
  * @returns {Promise<Object>} Mapeamento de colunas para tipos (string, int, date, decimal, etc.)
  */
 export async function createSchemaFromTable(metadados) {
+  const { tabela } = metadados;
   try {
-    const [results] = await db.query(
+    let results;
+    [results] = await db.query(
       `
       SELECT COLUMN_NAME, DATA_TYPE
       FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = ?
+      AND TABLE_SCHEMA = ?
     `,
-      [metadados.tabela]
+      [tabela, schema]
     );
-
-    const schema = {};
+    const tipagem = {};
     for (const col of results) {
       const coluna = col.COLUMN_NAME;
       const tipo = col.DATA_TYPE.toLowerCase();
@@ -1660,102 +1866,43 @@ export async function createSchemaFromTable(metadados) {
         case "bigint":
         case "smallint":
         case "tinyint":
-          schema[coluna] = "int";
+          tipagem[coluna] = "int";
           break;
         case "decimal":
         case "float":
         case "double":
         case "numeric":
-          schema[coluna] = "float";
+          tipagem[coluna] = "float";
           break;
         case "date":
         case "datetime":
         case "timestamp":
-          schema[coluna] = "date";
+          tipagem[coluna] = "date";
           break;
         case "time":
-          schema[coluna] = "time";
+          tipagem[coluna] = "time";
           break;
         default:
-          schema[coluna] = "string";
+          tipagem[coluna] = "string";
       }
     }
-
-    return schema;
-  } catch (error) {
-    console.error("Erro ao criar schema da tabela:", error.message);
-    throw error;
+    return tipagem;
+  } catch (e) {
+    throw new Error(`Erro ao criar tipagem da tabela: ${e.message}`);
   }
 }
 
 
 
-export async function tiparLinha(linha, schema) {
-  const novaLinha = {};
-  for (const col in schema) {
-    const valor = linha[col] ?? linha[normalizar(col)] ?? null;
-    const tipo = schema[col];
 
-    switch (tipo) {
-      case "int":
-        novaLinha[col] = parseInt(valor) || null;
-        break;
-      case "float":
-      case "decimal":
-        novaLinha[col] = parseFloat(valor?.toString().replace(",", ".")) || null;
-        break;
-      case "date":
-        const data = new Date(valor);
-        novaLinha[col] = isNaN(data) ? null : data.toISOString().split("T")[0];
-        break;
-      case "time":
-        novaLinha[col] = valor?.match(/^\d{2}:\d{2}(:\d{2})?$/) ? valor : null;
-        break;
-      default:
-        novaLinha[col] = valor || null;
-    }
-  }
-  return novaLinha;
-  
-}
 
-function sanitizeValue(value, tipoEsperado) {
-  if (value === "") return null;
 
-  switch (tipoEsperado) {
-    case "int":
-      return parseInt(value.replace(/\./g, ""), 10);
-
-    case "decimal":
-      return parseFloat(value.replace(/\./g, "").replace(",", "."));
-
-    case "date":
-      // de dd/MM/yyyy para yyyy-MM-dd
-      const [d, m, y] = value.split("/");
-      return y && m && d ? `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}` : null;
-
-    case "time":
-      return value.length >= 5 ? value.slice(-5) : null;
-
-    case "string":
-    default:
-      return value;
-  }
-}
-
-export function sanitizeRow(row, tipos) {
-  const novaLinha = {};
-  for (const campo in row) {
-    const tipo = tipos[campo] || "string";
-    novaLinha[campo] = sanitizeValue(row[campo], tipo);
-  }
-  return novaLinha;
-}
 
 ----------------------------
 logModel.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\model\logModel.js
 import db, { schema } from "../../config/db.js";
 import crypto from "crypto";
+import { addErro } from "../middleware/errorHandler.js";
 
 /**
  * @param {{
@@ -1771,16 +1918,24 @@ import crypto from "crypto";
  * }} metadados
  */
 export async function getLogByData(metadados) {
-  const [result] = await db.query(
-    `
+  const { tabela, nome_arquivo, ano } = metadados;
+  try {
+    const [result] = await db.query(
+      `
     SELECT * FROM \`${schema}\`.log_ingestao
-    WHERE tabela_destino = ? AND nome_arquivo = ? AND ano = ?
+    WHERE tabela_destino = ?
+     AND nome_arquivo = ?
+     AND ano = ?
     ORDER BY data_upload DESC
   `,
-    [metadados.tabela, metadados.nome_arquivo, metadados.ano]
-  );
-
-  return result; //retorna todas as linhas referente ao log daquele mes naquela tabela
+      [tabela, nome_arquivo, ano]
+    );
+    return result;
+  } catch (e) {
+    throw new Error(
+      `Erro ao puxar os logs referente ao mes requerido, erro: ${e.message}`
+    );
+  }
 }
 
 /**
@@ -1797,14 +1952,19 @@ export async function getLogByData(metadados) {
  * }} metadados
  */
 export async function getAllHashesFromTable(metadados) {
-  const [result] = await db.query(
-    `
-    SELECT hash_arquivo FROM \`${schema}\`.log_ingestao
-    WHERE tabela_destino = ?
-  `,
-    [metadados.tabela]
-  );
-  return result;
+  const { tabela } = metadados;
+  try {
+    const [result] = await db.query(
+      `
+      SELECT hash_arquivo FROM \`${schema}\`.log_ingestao
+      WHERE tabela_destino = ?
+      `,
+      [tabela]
+    );
+    return result;
+  } catch (e) {
+    throw new Error(`Erro ao puxar os hashs da tabela no log_ingestao`);
+  }
 }
 
 export async function insertLog(logData) {
@@ -1820,24 +1980,30 @@ export async function insertLog(logData) {
     mensagem_erro,
   } = logData;
 
-  await db.query(
-    `
+  try {
+    await db.query(
+      `
     INSERT INTO \`${schema}\`.log_ingestao
       (tabela_destino, nome_arquivo, ano, mes, coluna_data, data_upload, hash_arquivo, sucesso, mensagem_erro)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
-    [
-      tabela_destino,
-      nome_arquivo,
-      ano,
-      mes,
-      coluna_data,
-      data_upload,
-      hash_arquivo,
-      sucesso,
-      mensagem_erro,
-    ]
-  );
+      [
+        tabela_destino,
+        nome_arquivo,
+        ano,
+        mes,
+        coluna_data,
+        data_upload,
+        hash_arquivo,
+        sucesso,
+        mensagem_erro,
+      ]
+    );
+  } catch (e) {
+    throw new Error(
+      `Erro ao inserir log na tabela de ingestaÃµ, erro: ${e.message}`
+    );
+  }
 }
 
 /**
@@ -1853,32 +2019,28 @@ export async function insertLog(logData) {
  *    colunas_json: object
  * }} metadados
  */
-export async function deleteHashInTable(logData) {
-  return await db.query(
-    `
-    DELETE FROM \`${schema}\`.log_ingestao WHERE hash_arquivo = ?`,
-    [logData.hash_arquivo]
-  );
-}
-
-export function createHashByData(dataJson) {
+export async function deletelogByHash(logData) {
+  const { hash_arquivo } = logData;
   try {
-    const hash = crypto
-      .createHash("sha256")
-      .update(JSON.stringify(dataJson))
-      .digest("hex");
-    return hash;
-  } catch (error) {
-    console.error(
-      `Houve um erro ao gerar o hash do arquivo, erro: ${error.message}`
+    return await db.query(
+      `
+    DELETE FROM \`${schema}\`.log_ingestao WHERE hash_arquivo = ?`,
+      [hash_arquivo]
+    );
+  } catch (e) {
+    throw new Error(
+      `Erro ao deletar o log com base no hash, erro: ${e.message}`
     );
   }
 }
 
+
+
 ----------------------------
 tableModel.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\model\tableModel.js
 import db, { schema } from "../../config/db.js";
-import { normalizar } from "../controller/dataFromBasesValidatorController.js";
+import normalizar from "../utils/normalizar.js";
+import mapearTipo from "../utils/mapearTipos.js";
 
 const meses = {
   janeiro: 1,
@@ -1896,10 +2058,16 @@ const meses = {
 };
 
 export async function getAllRegistersFromTable(tabela) {
-  const [result] = await db.query(`
+  try {
+    const [result] = await db.query(`
       SELECT * FROM \`${schema}\`.\`${tabela}\`
     `);
-  return result;
+    return result;
+  } catch (e) {
+    throw new Error(
+      `Erro ao consultar os registros da tabela destino, erro: ${e.message} `
+    );
+  }
 }
 
 export async function getDateColumnsFromTable(tabela) {
@@ -1915,14 +2083,9 @@ export async function getDateColumnsFromTable(tabela) {
       [tabela, schema]
     );
 
-    if (results.length === 0) {
-      return null; // Retorna null se nÃ£o houver colunas de data
-    } else {
-      return results[0].COLUMN_NAME; // Retorna o nome da primeira coluna
-    }
-  } catch (error) {
-    console.error("Erro ao consultar colunas de data:", error);
-    throw error;
+    return results.length > 0 ? results[0].COLUMN_NAME : null;
+  } catch (e) {
+    throw new Error(`Erro ao consultar colunas de data: ${e.message}`);
   }
 }
 
@@ -1939,9 +2102,8 @@ export async function getColunsFromTable(tabela) {
     );
 
     return results.map((col) => col.COLUMN_NAME);
-  } catch (error) {
-    console.error("Erro ao consultar colunas da tabela:", error);
-    throw error;
+  } catch (e) {
+    throw new Error(`Erro ao consultar colunas da tabela: ${e.message}`);
   }
 }
 
@@ -1959,19 +2121,31 @@ export async function getColunsFromTable(tabela) {
  * }} metadados
  */
 export async function insertRegisterinTable(tabela, linhaTipada) {
+  let colunas;
   try {
-    const colunas = await getColunsFromTable(tabela);
-    const valores = colunas.map((col) => {
-      const chaveNormalizada = normalizar(col);
-      return linhaTipada[chaveNormalizada] ?? null;
-    });
-    const colunasSql = colunas.map((col) => `\`${col}\``).join(", ");
-    const placeholders = colunas.map(() => "?").join(", ");
-    const sql = `INSERT INTO \`${schema}\`.\`${tabela}\` (${colunasSql}) VALUES (${placeholders})`;
-    const result = await db.query(sql, valores);
+    colunas = await getColunsFromTable(tabela);
+  } catch (e) {
+    throw new Error(`erro ao coletar as colunas da tabela, erro: ${e.message}`);
+  }
+  if (!colunas || colunas.length === 0) {
+    throw new Error(`Tabela '${tabela}' nÃ£o possui colunas vÃ¡lidas.`);
+  }
+
+  const valores = colunas.map((col) => {
+    const chave = normalizar(col);
+    return linhaTipada[chave] ?? null;
+  });
+  const colunasSql = colunas.map((col) => `\`${col}\``).join(", ");
+  const placeholders = colunas.map(() => "?").join(", ");
+  const sql = `INSERT INTO \`${schema}\`.\`${tabela}\` (${colunasSql}) VALUES (${placeholders})`;
+
+  try {
+    const [result] = await db.query(sql, valores);
     return result;
-  } catch (error) {
-    throw error;
+  } catch (e) {
+    throw new Error(
+      `erro ao realizar a query de insersÃ£o do registro, erro: ${e.message}`
+    );
   }
 }
 
@@ -1989,17 +2163,21 @@ export async function insertRegisterinTable(tabela, linhaTipada) {
  * }} metadados
  */
 export async function listPeriodInTable(metadados) {
-  if (!metadados.coluna_data)
-    throw new Error("Coluna de data nÃ£o especificada");
+  const { coluna_data, tabela } = metadados;
+
+  if (!coluna_data) {
+    throw new Error(
+      "Logica para inserÃ§Ã£o de tabelas sem colunas data ainda nÃ£o desenvolvida"
+    );
+  }
+
+  const query = `SELECT \`${coluna_data}\` FROM \`${schema}\`.\`${tabela}\``;
 
   try {
-    const [result] = await db.query(
-      `SELECT \`${metadados.coluna_data}\` FROM \`${schema}\`.\`${metadados.tabela}\``
-    );
+    const [result] = await db.query(query);
     return result || [];
   } catch (error) {
-    console.error("Erro ao listar datas:", error);
-    throw error;
+    throw new Error(`Erro ao buscar perÃ­odo da tabela, erro: ${error.message}`);
   }
 }
 
@@ -2017,115 +2195,59 @@ export async function listPeriodInTable(metadados) {
  * }} metadados
  */
 export async function deletePeriodInTable(metadados) {
+  const { mes, ano, tabela, coluna_data } = metadados;
+
+  const numeroMes = meses[mes.toLowerCase()];
+  if (!numeroMes) {
+    throw new Error(`MÃªs invÃ¡lido: '${mes}' nÃ£o estÃ¡ mapeado`);
+  }
+
+  const sql = `
+    DELETE FROM \`${schema}\`.\`${tabela}\`
+    WHERE MONTH(\`${coluna_data}\`) = ?
+      AND YEAR(\`${coluna_data}\`) = ?
+  `;
+
   try {
-    const numeroMes = meses[metadados.mes.toLowerCase()];
-    if (!numeroMes) {
-      throw new Error(`MÃªs invÃ¡lido: ${mes}`);
-    }
-
-    const sql = `
-      DELETE FROM \`${schema}\`.\`${metadados.tabela}\`
-      WHERE MONTH(\`${metadados.coluna_data}\`) = ?
-        AND YEAR(\`${metadados.coluna_data}\`) = ?
-    `;
-
-    const result = await db.query(sql, [numeroMes, metadados.ano]);
-    console.log(
-      `\x1b[33mPerÃ­odo deletado: ${metadados.mes}/${metadados.ano} da tabela ${metadados.tabela}\x1b[0m`
-    );
+    const [result] = await db.query(sql, [numeroMes, ano]);
     return result;
-  } catch (error) {
-    console.error("Erro ao deletar perÃ­odo da tabela:", error.message);
-    throw error;
+  } catch (e) {
+    throw new Error(
+      `Erro ao deletar perÃ­odo de ${mes}/${ano} na tabela, erro: ${e.message}`
+    );
   }
 }
 
 export async function deletePeriodInTableByMonth(logData) {
-  try {
-    const numeroMes = meses[logData.mes.toLowerCase()];
-    if (!numeroMes) {
-      throw new Error(`MÃªs invÃ¡lido: ${logData.mes}`);
-    }
+  const { mes, ano, tabela_destino, coluna_data } = logData;
 
-    const sql = `
-      DELETE FROM \`${schema}\`.\`${logData.tabela}\`
-      WHERE MONTH(\`${logData.coluna_data}\`) = ?
-        AND YEAR(\`${logData.coluna_data}\`) = ?
-    `;
-
-    const result = await db.query(sql, [numeroMes, logData.ano]);
-    console.log(
-      `\x1b[33mPerÃ­odo deletado: ${logData.mes}/${logData.ano} da tabela ${logData.tabela}\x1b[0m`
+  const numeroMes = meses[mes.toLowerCase()];
+  if (!numeroMes) {
+    throw new Error(
+      `MÃªs invÃ¡lido: '${mes}' nÃ£o estÃ¡ mapeado, validar se dados nÃ£o foram alterados no cache`
     );
-    return result;
-  } catch (error) {
-    console.error("Erro ao deletar perÃ­odo da tabela:", error.message);
-    throw error;
   }
-}
 
-/**
- * @param {{
- *    nome_arquivo: string,
- *    ano: number,
- *    mes: string,
- *    tabela: string,
- *    data_json: object
- *    coluna_data: string,
- *    acao: string,
- *    colunas_tabela: object
- *    colunas_json: object
- * }} metadados
- */
-export function insertValidator(list, metadados) {
+  const sql = `
+    DELETE FROM \`${schema}\`.\`${tabela_destino}\`
+    WHERE MONTH(\`${coluna_data}\`) = ?
+      AND YEAR(\`${coluna_data}\`) = ?
+  `;
+
   try {
-    const datasBanco = new Set(
-      list
-        .map((d, i) => {
-          const raw = d[metadados.coluna_data];
-          const date = new Date(raw);
-          if (isNaN(date)) {
-            console.warn(`Valor invÃ¡lido no banco na linha ${i}:`, raw);
-            return null;
-          }
-          return date.toISOString().split("T")[0];
-        })
-        .filter(Boolean)
+    const [result] = await db.query(sql, [numeroMes, ano]);
+    return result;
+  } catch (e) {
+    throw new Error(
+      `Erro ao deletar perÃ­odo ${mes}/${ano} da tabela '${tabela_destino}': ${e.message}`
     );
-
-    const datasCsv = new Set(
-      metadados.data_json
-        .map((linha, i) => {
-          const raw = linha[metadados.coluna_data];
-          const date = new Date(raw);
-          if (isNaN(date)) {
-            console.warn(`Valor invÃ¡lido no CSV na linha ${i}:`, raw);
-            return null;
-          }
-          return date.toISOString().split("T")[0];
-        })
-        .filter(Boolean)
-    );
-
-    const conflito = [...datasCsv].some((data) => datasBanco.has(data));
-
-    if (conflito) {
-      console.log(
-        "Conflito de datas detectado. Dados do mÃªs jÃ¡ existem no banco."
-      );
-      return "substituir";
-    } else {
-      return "inserir";
-    }
-  } catch (error) {
-    console.error("Erro ao validar datas para inserÃ§Ã£o:", error);
-    throw error;
   }
 }
 
 export async function getTiposFromTable(tabela) {
+  let results;
   try {
-    const [results] = await db.query(
+    [results] = await db.query(
       `
       SELECT COLUMN_NAME, DATA_TYPE
       FROM INFORMATION_SCHEMA.COLUMNS
@@ -2134,25 +2256,167 @@ export async function getTiposFromTable(tabela) {
     `,
       [tabela, schema]
     );
+  } catch (e) {
+    throw new Error(`Erro ao consultar os tipos da tabela, erro: ${e.message}`);
+  }
 
-    const tipos = {};
-    results.forEach(({ COLUMN_NAME, DATA_TYPE }) => {
-      tipos[normalizar(COLUMN_NAME)] = mapearTipo(DATA_TYPE);
-    });
+  if (!results || results.length === 0) {
+    throw new Error(`Nenhuma coluna encontrada para a tabela '${tabela}'`);
+  }
 
-    return tipos;
-  } catch (error) {
-    console.error("Erro ao consultar tipos da tabela:", error);
-    throw error;
+  const tipos = {};
+  results.forEach(({ COLUMN_NAME, DATA_TYPE }) => {
+    tipos[normalizar(COLUMN_NAME)] = mapearTipo(DATA_TYPE);
+  });
+
+  return tipos;
+}
+
+
+
+----------------------------
+colunsValidator.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\colunsValidator.js
+export default function colunsValidator(json_coluns, table_coluns) {
+  let isEqual = true;
+
+  const maxLen = Math.max(json_coluns.length, table_coluns.length);
+  for (let i = 0; i < maxLen; i++) {
+    const jsonCol = json_coluns[i];
+    const tableCol = table_coluns[i];
+
+    if (jsonCol !== tableCol) {
+      isEqual = false;
+      console.warn(`âŒ DiferenÃ§a na posiÃ§Ã£o ${i}:
+  â†’ JSON:   '${jsonCol}'
+  â†’ TABELA: '${tableCol}'`);
+    }
+  }
+
+  console.log("Colunas iguais? âž", isEqual);
+  return isEqual;
+}
+
+----------------------------
+createHashByData.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\createHashByData.js
+export default function createHashByData(dataJson) {
+  try {
+    const hash = crypto
+      .createHash("sha256")
+      .update(JSON.stringify(dataJson))
+      .digest("hex");
+    return hash;
+  } catch (e) {
+    addErro(`Houve um erro ao gerar o hash do arquivo, erro: ${e.message}`);
   }
 }
 
-function mapearTipo(tipoSql) {
+----------------------------
+isCsvFile.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\isCsvFile.js
+export default function isCsvFile(filePath) {
+  const fileName = path.basename(filePath).toLowerCase();
+
+  const isValidExtension =
+    fileName.endsWith(".csv") || fileName.endsWith(".csv.inf");
+  const isExcluded = fileName.startsWith("~$") || fileName.endsWith(".tmp");
+
+  return isValidExtension && !isExcluded;
+}
+
+----------------------------
+mapearTipos.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\mapearTipos.js
+export default function mapearTipo(tipoSql) {
   if (["int", "bigint", "smallint", "mediumint"].includes(tipoSql))
     return "int";
   if (["decimal", "float", "double"].includes(tipoSql)) return "decimal";
   if (["date"].includes(tipoSql)) return "date";
   if (["time"].includes(tipoSql)) return "time";
   return "string";
+}
+
+----------------------------
+normalizar.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\normalizar.js
+export default function normalizar(nome) {
+  return nome
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // remove acentos
+    .replace(/%/g, "perc")           // % â†’ perc
+    .replace(/\s*\.\s*/g, "_")       // ponto entre palavras â†’ _
+    .replace(/\./g, "")              // outros pontos â†’ remove
+    .replace(/[-\\/]/g, "_")   
+    .replace(/\s+/g, "_")            // espaÃ§o â†’ _
+    .replace(/[^a-zA-Z0-9_]/g, "")   // remove outros sÃ­mbolos
+    .replace(/_+/g, "_")             // evita mÃºltiplos __
+    .replace(/^_+|_+$/g, "")         // remove _ inÃ­cio/fim
+    .toLowerCase();
+}
+
+----------------------------
+sanitizeValue.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\sanitizeValue.js
+export function sanitizeValue(value, tipoEsperado) {
+  if (value === "") return null;
+
+  switch (tipoEsperado) {
+    case "int":
+      return parseInt(value.replace(/\./g, ""), 10);
+
+    case "decimal":
+      return parseFloat(value.replace(/\./g, "").replace(",", "."));
+
+    case "date":
+
+      const [d, m, y] = value.split("/");
+      return y && m && d
+        ? `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`
+        : null;
+
+    case "time":
+      return value.length >= 5 ? value.slice(-5) : null;
+
+    case "string":
+    default:
+      return value;
+  }
+}
+
+export default function sanitizeRow(row, tipos) {
+  const novaLinha = {};
+  for (const campo in row) {
+    const tipo = tipos[campo] || "string";
+    novaLinha[campo] = sanitizeValue(row[campo], tipo);
+  }
+  return novaLinha;
+}
+
+----------------------------
+tiparLinha.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\tiparLinha.js
+import normalizar from "./normalizar.js";
+
+export default function tiparLinha(linha, schema) {
+  const novaLinha = {};
+  for (const col in schema) {
+    const valor = linha[col] ?? linha[normalizar(col)] ?? null;
+    const tipo = schema[col];
+
+    switch (tipo) {
+      case "int":
+        novaLinha[col] = parseInt(valor) || null;
+        break;
+      case "float":
+      case "decimal":
+        novaLinha[col] =
+          parseFloat(valor?.toString().replace(",", ".")) || null;
+        break;
+      case "date":
+        const data = new Date(valor);
+        novaLinha[col] = isNaN(data) ? null : data.toISOString().split("T")[0];
+        break;
+      case "time":
+        novaLinha[col] = valor?.match(/^\d{2}:\d{2}(:\d{2})?$/) ? valor : null;
+        break;
+      default:
+        novaLinha[col] = valor || null;
+    }
+  }
+  return novaLinha;
 }
 

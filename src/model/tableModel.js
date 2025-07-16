@@ -1,6 +1,6 @@
 import db, { schema } from "../../config/db.js";
-import { normalizar } from "../controller/dataFromBasesValidatorController.js";
-import { addErro } from "../middleware/errorHandler.js";
+import normalizar from "../utils/normalizar.js";
+import mapearTipo from "../utils/mapearTipos.js";
 
 const meses = {
   janeiro: 1,
@@ -24,7 +24,7 @@ export async function getAllRegistersFromTable(tabela) {
     `);
     return result;
   } catch (e) {
-    addErro(
+    throw new Error(
       `Erro ao consultar os registros da tabela destino, erro: ${e.message} `
     );
   }
@@ -43,13 +43,9 @@ export async function getDateColumnsFromTable(tabela) {
       [tabela, schema]
     );
 
-    if (results.length === 0) {
-      return null; // Retorna null se não houver colunas de data
-    } else {
-      return results[0].COLUMN_NAME; // Retorna o nome da primeira coluna
-    }
+    return results.length > 0 ? results[0].COLUMN_NAME : null;
   } catch (e) {
-    addErro(`Erro ao consultar colunas de data: ${e.message}`);
+    throw new Error(`Erro ao consultar colunas de data: ${e.message}`);
   }
 }
 
@@ -67,7 +63,7 @@ export async function getColunsFromTable(tabela) {
 
     return results.map((col) => col.COLUMN_NAME);
   } catch (e) {
-    addErro(`Erro ao consultar colunas da tabela: ${e.message}`);
+    throw new Error(`Erro ao consultar colunas da tabela: ${e.message}`);
   }
 }
 
@@ -89,17 +85,15 @@ export async function insertRegisterinTable(tabela, linhaTipada) {
   try {
     colunas = await getColunsFromTable(tabela);
   } catch (e) {
-    addErro(`erro ao coletar as colunas da tabela, erro: ${e.message}`);
-    return;
+    throw new Error(`erro ao coletar as colunas da tabela, erro: ${e.message}`);
   }
   if (!colunas || colunas.length === 0) {
-    addErro(`Tabela '${tabela}' não possui colunas válidas.`);
-    return;
+    throw new Error(`Tabela '${tabela}' não possui colunas válidas.`);
   }
 
   const valores = colunas.map((col) => {
-    const chaveNormalizada = normalizar(col);
-    return linhaTipada[chaveNormalizada] ?? null;
+    const chave = normalizar(col);
+    return linhaTipada[chave] ?? null;
   });
   const colunasSql = colunas.map((col) => `\`${col}\``).join(", ");
   const placeholders = colunas.map(() => "?").join(", ");
@@ -109,10 +103,9 @@ export async function insertRegisterinTable(tabela, linhaTipada) {
     const [result] = await db.query(sql, valores);
     return result;
   } catch (e) {
-    addErro(
+    throw new Error(
       `erro ao realizar a query de insersão do registro, erro: ${e.message}`
     );
-    return;
   }
 }
 
@@ -133,7 +126,9 @@ export async function listPeriodInTable(metadados) {
   const { coluna_data, tabela } = metadados;
 
   if (!coluna_data) {
-    throw new Error("Coluna de data não especificada");
+    throw new Error(
+      "Logica para inserção de tabelas sem colunas data ainda não desenvolvida"
+    );
   }
 
   const query = `SELECT \`${coluna_data}\` FROM \`${schema}\`.\`${tabela}\``;
@@ -142,10 +137,7 @@ export async function listPeriodInTable(metadados) {
     const [result] = await db.query(query);
     return result || [];
   } catch (error) {
-    // Aqui você apenas relança — quem chama decide o que fazer
-    throw new Error(
-      `Erro ao buscar período da tabela '${tabela}': ${error.message}`
-    );
+    throw new Error(`Erro ao buscar período da tabela, erro: ${error.message}`);
   }
 }
 
@@ -167,7 +159,7 @@ export async function deletePeriodInTable(metadados) {
 
   const numeroMes = meses[mes.toLowerCase()];
   if (!numeroMes) {
-    throw new Error(`Mês inválido: ${mes}`);
+    throw new Error(`Mês inválido: '${mes}' não está mapeado`);
   }
 
   const sql = `
@@ -179,9 +171,9 @@ export async function deletePeriodInTable(metadados) {
   try {
     const [result] = await db.query(sql, [numeroMes, ano]);
     return result;
-  } catch (error) {
+  } catch (e) {
     throw new Error(
-      `Erro ao deletar período de ${mes}/${ano} na tabela '${tabela}': ${error.message}`
+      `Erro ao deletar período de ${mes}/${ano} na tabela, erro: ${e.message}`
     );
   }
 }
@@ -191,7 +183,9 @@ export async function deletePeriodInTableByMonth(logData) {
 
   const numeroMes = meses[mes.toLowerCase()];
   if (!numeroMes) {
-    throw new Error(`Mês inválido: ${mes}`);
+    throw new Error(
+      `Mês inválido: '${mes}' não está mapeado, validar se dados não foram alterados no cache`
+    );
   }
 
   const sql = `
@@ -203,75 +197,17 @@ export async function deletePeriodInTableByMonth(logData) {
   try {
     const [result] = await db.query(sql, [numeroMes, ano]);
     return result;
-  } catch (error) {
+  } catch (e) {
     throw new Error(
-      `Erro ao deletar período ${mes}/${ano} da tabela '${tabela_destino}': ${error.message}`
+      `Erro ao deletar período ${mes}/${ano} da tabela '${tabela_destino}': ${e.message}`
     );
-  }
-}
-
-/**
- * @param {{
- *    nome_arquivo: string,
- *    ano: number,
- *    mes: string,
- *    tabela: string,
- *    data_json: object
- *    coluna_data: string,
- *    acao: string,
- *    colunas_tabela: object
- *    colunas_json: object
- * }} metadados
- */
-export function insertValidator(list, metadados) {
-  try {
-    const datasBanco = new Set(
-      list
-        .map((d, i) => {
-          const raw = d[metadados.coluna_data];
-          const date = new Date(raw);
-          if (isNaN(date)) {
-            console.warn(`Valor inválido no banco na linha ${i}:`, raw);
-            return null;
-          }
-          return date.toISOString().split("T")[0];
-        })
-        .filter(Boolean)
-    );
-
-    const datasCsv = new Set(
-      metadados.data_json
-        .map((linha, i) => {
-          const raw = linha[metadados.coluna_data];
-          const date = new Date(raw);
-          if (isNaN(date)) {
-            console.warn(`Valor inválido no CSV na linha ${i}:`, raw);
-            return null;
-          }
-          return date.toISOString().split("T")[0];
-        })
-        .filter(Boolean)
-    );
-
-    const conflito = [...datasCsv].some((data) => datasBanco.has(data));
-
-    if (conflito) {
-      console.log(
-        "Conflito de datas detectado. Dados do mês já existem no banco."
-      );
-      return "substituir";
-    } else {
-      return "inserir";
-    }
-  } catch (error) {
-    console.error("Erro ao validar datas para inserção:", error);
-    throw error;
   }
 }
 
 export async function getTiposFromTable(tabela) {
+  let results;
   try {
-    const [results] = await db.query(
+    [results] = await db.query(
       `
       SELECT COLUMN_NAME, DATA_TYPE
       FROM INFORMATION_SCHEMA.COLUMNS
@@ -280,24 +216,20 @@ export async function getTiposFromTable(tabela) {
     `,
       [tabela, schema]
     );
-
-    const tipos = {};
-    results.forEach(({ COLUMN_NAME, DATA_TYPE }) => {
-      tipos[normalizar(COLUMN_NAME)] = mapearTipo(DATA_TYPE);
-    });
-
-    return tipos;
-  } catch (error) {
-    console.error("Erro ao consultar tipos da tabela:", error);
-    throw error;
+  } catch (e) {
+    throw new Error(`Erro ao consultar os tipos da tabela, erro: ${e.message}`);
   }
+
+  if (!results || results.length === 0) {
+    throw new Error(`Nenhuma coluna encontrada para a tabela '${tabela}'`);
+  }
+
+  const tipos = {};
+  results.forEach(({ COLUMN_NAME, DATA_TYPE }) => {
+    tipos[normalizar(COLUMN_NAME)] = mapearTipo(DATA_TYPE);
+  });
+
+  return tipos;
 }
 
-function mapearTipo(tipoSql) {
-  if (["int", "bigint", "smallint", "mediumint"].includes(tipoSql))
-    return "int";
-  if (["decimal", "float", "double"].includes(tipoSql)) return "decimal";
-  if (["date"].includes(tipoSql)) return "date";
-  if (["time"].includes(tipoSql)) return "time";
-  return "string";
-}
+
