@@ -52,10 +52,17 @@ export function createLogger(dadosLogger) {
 
   if (acao !== "deleted" && dadosLogger.colunas_json && dadosLogger.colunas_tabela) {
     corpoBase.push(
-      `${colunsValidator(dadosLogger.colunas_json, dadosLogger.colunas_tabela)}`
+      `Colunas JSON: ${Object.keys(dadosLogger.colunas_json).join(", ")}`,
+      `Colunas Tabela: ${Object.keys(dadosLogger.colunas_tabela).join(", ")}`
     );
-  }
 
+    const colunasValidas = colunsValidator(
+      dadosLogger.colunas_json, dataLogger.colunas_tabela
+    );
+    corpoBase.push(
+      `${colunasValidas}`
+    );
+  } 
   corpoBase.push(`==============================================================`);
 
   return corpoBase.join("\n\n");

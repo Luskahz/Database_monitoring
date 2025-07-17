@@ -8,12 +8,11 @@ export default function colunsValidator(json_coluns, table_coluns) {
 
     if (jsonCol !== tableCol) {
       isEqual = false;
-      console.warn(`❌ Diferença na posição ${i}:
+      return `❌ Diferença na posição ${i}:
   → JSON:   '${jsonCol}'
-  → TABELA: '${tableCol}'`);
+  → TABELA: '${tableCol}'`;
     }
   }
 
-  console.log("Colunas iguais? ➝", isEqual);
-  return isEqual;
+  return ("Colunas iguais? ➝", isEqual);
 }

@@ -217,7 +217,7 @@ export async function getTiposFromTable(tabela) {
       [tabela, schema]
     );
   } catch (e) {
-    throw new Error(`Erro ao consultar os tipos da tabela, erro: ${e.message}`);
+    throw new Error(`Erro ao consultar tipos de colunas da tabela '${tabela}', erro: ${e.message}`);
   }
 
   if (!results || results.length === 0) {

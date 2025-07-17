@@ -62,7 +62,7 @@ export async function fileHandlerController(filePath, action) {
 
             await insertLog(logData);
             await insertHashInCache(logData);
-            await loggerMaster(metadados, action)
+            await loggerMaster(metadados, action);
           } catch (e) {
             logData.sucesso = false;
             logData.mensagem_erro = `Erro durante execução do managerDataController: ${e.message}`;
@@ -72,8 +72,7 @@ export async function fileHandlerController(filePath, action) {
             );
             await insertLog(logData);
             await insertHashInCache(logData);
-            await loggerMaster(metadados, action)
-            
+            await loggerMaster(metadados, action);
           }
         } else {
           addInfo(
@@ -98,7 +97,7 @@ export async function fileHandlerController(filePath, action) {
         if (!resultado.erro) {
           await deleteLogByHash(logData);
           await deleteRegisterFromCache(destino);
-          await loggerMaster(logData)
+          await loggerMaster(logData);
         }
       } catch (e) {
         addErro(`problema ao apagar o hash do banco, erro: ${e.message}`);
