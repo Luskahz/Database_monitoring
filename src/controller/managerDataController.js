@@ -5,7 +5,7 @@ import {
   deletePeriodInTableByMonth,
 } from "../model/tableModel.js";
 
-import { insertValidator } from "./dataFromBasesValidatorController.js";
+import { insertValidator } from "./insertValidator.js";
 import tiparLinha from "../utils/tiparLinha.js";
 import { addAviso, addErro } from "../middleware/errorHandler.js";
 
@@ -26,7 +26,10 @@ import { addAviso, addErro } from "../middleware/errorHandler.js";
 export async function managerDataController(objDinamico, action) {
   const isInsertAction = ["created", "modified"].includes(action);
   if (isInsertAction) {
-    if (!Array.isArray(objDinamico.data_json) || objDinamico.data_json.length === 0) {
+    if (
+      !Array.isArray(objDinamico.data_json) ||
+      objDinamico.data_json.length === 0
+    ) {
       addAviso("Nenhuma linha disponível para inserção.");
       return {
         erro: true,

@@ -1,8 +1,7 @@
 import { addAviso, addErro } from "../middleware/errorHandler.js";
 import { getDateColumnsFromTable } from "../model/tableModel.js";
-import normalizar from "../utils/normalizar.js";
 
-export async function dataFromBasesValidatorController(tabela, data_json) {
+export async function doesCsvHaveDataController(tabela, data_json) {
   try {
     const dataCol = await getDateColumnsFromTable(tabela);
     if (!dataCol) return null;
@@ -11,11 +10,11 @@ export async function dataFromBasesValidatorController(tabela, data_json) {
     const chavesJson = Object.keys(primeiraLinha);
 
     const index = chavesJson.findIndex(
-      (key) => normalizar(key) === normalizar(dataCol)
+      (key) => key === dataCol
     );
 
     if (index === -1) {
-      addAviso(`Coluna de data '${dataCol}' não encontrada no CSV.`);
+      addAviso(`Coluna de data '${dataCol}' não encontrada no CSV. Provavel base de dados cadastrais, dados serão substituidos`);
       return null;
     }
 
