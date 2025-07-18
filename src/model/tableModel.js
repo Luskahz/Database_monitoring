@@ -92,8 +92,7 @@ export async function insertRegisterinTable(tabela, linhaTipada) {
   }
 
   const valores = colunas.map((col) => {
-    const chave = normalizar(col);
-    return linhaTipada[chave] ?? null;
+    return linhaTipada[col] ?? null;
   });
   const colunasSql = colunas.map((col) => `\`${col}\``).join(", ");
   const placeholders = colunas.map(() => "?").join(", ");
@@ -101,6 +100,9 @@ export async function insertRegisterinTable(tabela, linhaTipada) {
 
   try {
     const [result] = await db.query(sql, valores);
+    colunas.forEach((col, i) => {
+      console.log(`→ ${col}: ${valores[i]}`);
+    });
     return result;
   } catch (e) {
     throw new Error(
@@ -217,7 +219,9 @@ export async function getTiposFromTable(tabela) {
       [tabela, schema]
     );
   } catch (e) {
-    throw new Error(`Erro ao consultar tipos de colunas da tabela '${tabela}', erro: ${e.message}`);
+    throw new Error(
+      `Erro ao consultar tipos de colunas da tabela '${tabela}', erro: ${e.message}`
+    );
   }
 
   if (!results || results.length === 0) {
@@ -226,10 +230,8 @@ export async function getTiposFromTable(tabela) {
 
   const tipos = {};
   results.forEach(({ COLUMN_NAME, DATA_TYPE }) => {
-    tipos[normalizar(COLUMN_NAME)] = mapearTipo(DATA_TYPE);
+    tipos[COLUMN_NAME] = mapearTipo(DATA_TYPE);
   });
 
   return tipos;
 }
-
-

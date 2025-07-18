@@ -5,7 +5,7 @@ import createHashByData from "../utils/createHashByData.js";
 import createJsonController from "../utils/createJsonController.js";
 import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
 
-async function extractInfosByData(tabelaName, dataJson) {
+async function  extractInfosByData(tabelaName, dataJson) {
   try {
     const dataColun = await doesCsvHaveDataController(tabelaName, dataJson);
     const tiposEsperados = await getTiposFromTable(tabelaName);

@@ -4,7 +4,7 @@ import { insertHashInCache } from "../../model/cacheModel";
 import { insertLog } from "../../model/logModel";
 import createDataController from "../createDataController";
 import fluxoValidatorController from "../fluxoValidatorController";
-import { managerDataController } from "../managerDataController";
+import { manageInsertController, managerDataController } from "../managerDataController";
 
 export default async function createdHandler(filePath, action) {
 //---------- criando os docs, e validando o fluxo de insersão -----------
@@ -38,7 +38,7 @@ export default async function createdHandler(filePath, action) {
   if (fluxo === "inserir" || fluxo === "reprocessar") {
     let resultado;
     try {
-      resultado = await managerDataController(metadados, action);
+      resultado = await manageInsertController(metadados)
       logData.sucesso = !resultado?.erro;
       logData.mensagem_erro = resultado?.mensagem || null;
       if (resultado?.erro) {

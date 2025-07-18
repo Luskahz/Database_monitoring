@@ -1,9 +1,15 @@
 import { addAviso, addErro } from "../../middleware/errorHandler";
 import loggerMaster from "../../middleware/logger";
-import { deleteRegisterFromCache, getRegisterFromCache } from "../../model/cacheModel";
+import {
+  deleteRegisterFromCache,
+  getRegisterFromCache,
+} from "../../model/cacheModel";
 import { deleteLogByHash } from "../../model/logModel";
 import { destinoByFilePath } from "../createDataController";
-import { managerDataController } from "../managerDataController";
+import {
+  managerDataController,
+  managerDeleterController,
+} from "../managerDataController";
 
 export default async function deletedHandler(filePath, action) {
   const destino = destinoByFilePath(filePath);
@@ -19,7 +25,7 @@ export default async function deletedHandler(filePath, action) {
   }
   let resultado;
   try {
-    resultado = await managerDataController(logData, action);
+    resultado = await managerDeleterController(logData);
     if (!resultado.erro) {
       await deleteLogByHash(logData);
       await deleteRegisterFromCache(destino);
