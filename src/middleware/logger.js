@@ -14,28 +14,28 @@ export function createLogger(dadosLogger) {
   const now = new Date();
   const dataHora = now.toLocaleString("pt-BR");
   const blocos = [];
+  if (Array.isArray(all.infos) && all.infos.length > 0) {
+    blocos.push(
+      "🟩 Informações:\n" + all.infos.map((i) => `ℹ️ ${i}`).join("\n")
+    );
+  }
+  if (Array.isArray(all.avisos) && all.avisos.length > 0) {
+    blocos.push("🟨 Avisos:\n" + all.avisos.map((a) => `⚠️ ${a}`).join("\n"));
+  }
 
   if (Array.isArray(all.erros) && all.erros.length > 0) {
     blocos.push("🟥 Erros:\n" + all.erros.map((e) => `❌ ${e}`).join("\n"));
   }
 
-  if (Array.isArray(all.avisos) && all.avisos.length > 0) {
-    blocos.push("🟨 Avisos:\n" + all.avisos.map((a) => `⚠️ ${a}`).join("\n"));
-  }
-
-  if (Array.isArray(all.infos) && all.infos.length > 0) {
-    blocos.push("🟩 Informações:\n" + all.infos.map((i) => `ℹ️ ${i}`).join("\n"));
-  }
-
-  const blocoMensagens = blocos.length > 0
-    ? blocos.join("\n\n")
-    : "✅ Nenhuma mensagem registrada.";
+  const blocoMensagens =
+    blocos.length > 0 ? blocos.join("\n\n") : "✅ Nenhuma mensagem registrada.";
 
   const acao = dadosLogger.acao?.toLowerCase?.() ?? "deleted"; // fallback para 'deleted' se não vier
 
-  const titulo = acao === "deleted"
-    ? `==== LOG EXCLUSÃO ${dadosLogger.nome_arquivo} - ${dataHora} ====`
-    : `==== LOG ${dadosLogger.nome_arquivo} - ${dataHora} ====`;
+  const titulo =
+    acao === "deleted"
+      ? `==== LOG EXCLUSÃO ${dadosLogger.nome_arquivo} - ${dataHora} ====`
+      : `==== LOG ${dadosLogger.nome_arquivo} - ${dataHora} ====`;
 
   const corpoBase = [
     `==============================================================`,
@@ -50,20 +50,25 @@ export function createLogger(dadosLogger) {
     blocoMensagens,
   ];
 
-  if (acao !== "deleted" && dadosLogger.colunas_json && dadosLogger.colunas_tabela) {
+  if (
+    acao !== "deleted" &&
+    dadosLogger.colunas_json &&
+    dadosLogger.colunas_tabela
+  ) {
     corpoBase.push(
       `Colunas JSON: ${Object.keys(dadosLogger.colunas_json).join(", ")}`,
       `Colunas Tabela: ${Object.keys(dadosLogger.colunas_tabela).join(", ")}`
     );
 
     const colunasValidas = colunsValidator(
-      dadosLogger.colunas_json, dataLogger.colunas_tabela
+      dadosLogger.colunas_json,
+      dataLogger.colunas_tabela
     );
-    corpoBase.push(
-      `${colunasValidas}`
-    );
-  } 
-  corpoBase.push(`==============================================================`);
+    corpoBase.push(`${colunasValidas}`);
+  }
+  corpoBase.push(
+    `==============================================================`
+  );
 
   return corpoBase.join("\n\n");
 }
@@ -77,10 +82,15 @@ export default async function loggerMaster(dadosLogger) {
 
   let logPath;
   if (!dadosLogger?.caminho_original) {
-    console.warn("⚠️ caminho_original indefinido! Salvando em fallback_logger.txt");
+    console.warn(
+      "⚠️ caminho_original indefinido! Salvando em fallback_logger.txt"
+    );
     logPath = path.resolve(__dirname, "../cache/fallback_logger.txt");
   } else {
-    logPath = path.join(path.dirname(dadosLogger.caminho_original), "logger.txt");
+    logPath = path.join(
+      path.dirname(dadosLogger.caminho_original),
+      "logger.txt"
+    );
   }
 
   try {

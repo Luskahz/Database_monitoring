@@ -66,10 +66,7 @@ export async function managerDataController(objDinamico, action) {
 
     for (let i = 0; i < objDinamico.data_json.length; i++) {
       try {
-        const linhaTipada = tiparLinha(
-          objDinamico.data_json[i],
-          objDinamico.tipos_esperados
-        );
+        const linhaTipada = tiparLinha( objDinamico.data_json[i], objDinamico.tipos_esperados );
         await insertRegisterinTable(objDinamico.tabela, linhaTipada);
         sucesso++;
       } catch (e) {
@@ -93,19 +90,10 @@ export async function managerDataController(objDinamico, action) {
   } else {
     try {
       await deletePeriodInTableByMonth(objDinamico); //logData extraido do cache
-      return {
-        erro: false,
-        mensagem: "periodo excluido com sucesso",
-      };
     } catch (e) {
       addErro(
         `Erro ao deletar período no banco pós exclusão do arquivo, erro: ${e.message}`
       );
-      return {
-        erro: true,
-        mensagem: "Erro ao deletar período no banco pós exclusão do arquivo",
-        detalhes_erro: e.message,
-      };
     }
   }
 }

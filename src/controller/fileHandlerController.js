@@ -33,8 +33,18 @@ export async function fileHandlerController(filePath, action) {
       fluxo = await fluxoValidatorController(metadados, logData);
     } catch (e) {
       addErro(`Erro ao validar fluxo de ingestão: ${e.message}`);
-      throw e;
+      return
     }
+
+
+
+
+//-----------------------------------------------------------------------------
+
+// preciso quebrar esse fluxo, pois está mt grande
+
+
+
     if (fluxo === "inserir" || fluxo === "reprocessar") {
       let resultado;
       try {
@@ -62,6 +72,16 @@ export async function fileHandlerController(filePath, action) {
       );
       return;
     }
+
+
+
+
+
+//-----------------------------------------------------------------------------
+
+
+
+
   } else {
     const destino = destinoByFilePath(filePath);
     let logData;

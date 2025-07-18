@@ -3,7 +3,7 @@ import normalizar from "./normalizar.js";
 export default function tiparLinha(linha, schema) {
   const novaLinha = {};
   for (const col in schema) {
-    const valor = linha[col] ?? linha[normalizar(col)] ?? null;
+    const valor = linha[col] ?? linha[normalizar(col)] ?? null; // só tenta normalizar se o valor não der certo
     const tipo = schema[col];
 
     switch (tipo) {
@@ -27,4 +27,4 @@ export default function tiparLinha(linha, schema) {
     }
   }
   return novaLinha;
-}
+} 
