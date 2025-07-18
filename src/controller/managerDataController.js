@@ -25,6 +25,9 @@ import { addAviso, addErro } from "../middleware/errorHandler.js";
  */
 export async function managerDataController(objDinamico, action) {
   const isInsertAction = ["created", "modified"].includes(action);
+
+
+  
   if (isInsertAction) {
     if (
       !Array.isArray(objDinamico.data_json) ||

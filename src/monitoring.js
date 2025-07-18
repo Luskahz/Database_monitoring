@@ -5,6 +5,8 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 import { fileHandlerController } from "./controller/fileHandlerController.js";
 import isCsvFile from "./utils/isCsvFile.js";
+import createdHandler from "./controller/Handlers/createdHandler.js";
+import deletedHandler from "./controller/Handlers/deletedHandler.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export function startMonitoring() {
@@ -31,20 +33,20 @@ export function startMonitoring() {
     .on("add", (filePath) => {
       if (isCsvFile(filePath)) {
         console.log(`🟢 Arquivo adicionado: ${filePath}`);
-        fileHandlerController(filePath, "created");
+        createdHandler(filePath, "created");
         
       }
     })
     .on("change", (filePath) => {
       if (isCsvFile(filePath)) {
         console.log(`🟡 Arquivo modificado: ${filePath}`);
-        fileHandlerController(filePath, "modified");
+        createdHandler(filePath, "modified");
       }
     })
     .on("unlink", (filePath) => {
       if (isCsvFile(filePath)) {
         console.log(`🔴 Arquivo removido: ${filePath}`);
-        fileHandlerController(filePath, "deleted");
+        deletedHandler(filePath, "deleted");
       }
     })
     .on("error", (error) => {
