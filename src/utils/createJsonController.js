@@ -1,8 +1,8 @@
-import { destinoByFilePath } from "../controller/createDataController";
-import { addAviso, addErro, addInfo } from "../middleware/errorHandler";
-import { getTiposFromTable } from "../model/tableModel";
-import normalizar from "./normalizar";
-import sanitizeRow from "./sanitizeValue";
+import { destinoByFilePath } from "../controller/createDataController.js";
+import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
+import { getTiposFromTable } from "../model/tableModel.js";
+import normalizar from "./normalizar.js";
+import sanitizeRow from "./sanitizeValue.js";
 import fs from "fs/promises";
 import iconv from "iconv-lite";
 import Papa from "papaparse";

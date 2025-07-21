@@ -3,7 +3,6 @@ import chokidar from "chokidar";
 import path from "path";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
-import { fileHandlerController } from "./controller/fileHandlerController.js";
 import isCsvFile from "./utils/isCsvFile.js";
 import createdHandler from "./controller/Handlers/createdHandler.js";
 import deletedHandler from "./controller/Handlers/deletedHandler.js";

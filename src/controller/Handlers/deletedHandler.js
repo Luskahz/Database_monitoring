@@ -1,15 +1,14 @@
-import { addAviso, addErro } from "../../middleware/errorHandler";
-import loggerMaster from "../../middleware/logger";
+import { addAviso, addErro } from "../../middleware/errorHandler.js"
+import loggerMaster from "../../middleware/logger.js";
 import {
   deleteRegisterFromCache,
   getRegisterFromCache,
-} from "../../model/cacheModel";
-import { deleteLogByHash } from "../../model/logModel";
-import { destinoByFilePath } from "../createDataController";
+} from "../../model/cacheModel.js";
+import { deleteLogByHash } from "../../model/logModel.js";
+import { destinoByFilePath } from "../createDataController.js";
 import {
-  managerDataController,
   managerDeleterController,
-} from "../managerDataController";
+} from "../managerDataController.js";
 
 export default async function deletedHandler(filePath, action) {
   const destino = destinoByFilePath(filePath);

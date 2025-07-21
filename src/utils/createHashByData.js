@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { addErro } from "../middleware/errorHandler";
+import { addErro } from "../middleware/errorHandler.js";
 
 export default function createHashByData(dataJson) {
   try {
