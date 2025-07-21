@@ -1,5 +1,5 @@
 import { addErro, addInfo } from "../../middleware/errorHandler.js";
-import loggerMaster, { createLoggerController, loggerFileInit } from "../../middleware/logger.js";
+import loggerMaster, { createLoggerController, finalLoggerController, loggerFileInit } from "../../middleware/logger.js";
 import { insertHashInCache } from "../../model/cacheModel.js";
 import { insertLog } from "../../model/logModel.js";
 import createDataController from "../createDataController.js";
@@ -7,18 +7,21 @@ import fluxoValidatorController from "../fluxoValidatorController.js";
 import { manageInsertController } from "../managerDataController.js";
 
 export default async function createdHandler(filePath, action) {
-//---------- criando os docs, e validando o fluxo de insersão -----------
+//--------- iniciando logger ----------------//
 let logger
 try{
   logger = await loggerFileInit(filePath)
 } catch(e){
   console.warn(e.message)
 }
+
+//---------- criando os docs, e validando o fluxo de insersão -----------
   let resultado;
   try {
     resultado = await createDataController(filePath);
   } catch (e) {
     addErro(`erro ao gerar os dados fundamentais, erro:${e.message}`);
+    finalLoggerController(filePath)
     return;
   }
   const { metadados, logData } = resultado;
