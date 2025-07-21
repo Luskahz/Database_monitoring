@@ -1,5 +1,5 @@
 import db, { schema } from "../../config/db.js";
-import normalizar from "../utils/normalizar.js";
+
 import mapearTipo from "../utils/mapearTipos.js";
 
 const meses = {

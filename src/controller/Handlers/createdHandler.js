@@ -1,5 +1,5 @@
 import { addErro, addInfo } from "../../middleware/errorHandler.js";
-import loggerMaster from "../../middleware/logger.js";
+import loggerMaster, { createLoggerController, loggerFileInit } from "../../middleware/logger.js";
 import { insertHashInCache } from "../../model/cacheModel.js";
 import { insertLog } from "../../model/logModel.js";
 import createDataController from "../createDataController.js";
@@ -8,7 +8,12 @@ import { manageInsertController } from "../managerDataController.js";
 
 export default async function createdHandler(filePath, action) {
 //---------- criando os docs, e validando o fluxo de insersão -----------
-
+let logger
+try{
+  logger = await loggerFileInit(filePath)
+} catch(e){
+  console.warn(e.message)
+}
   let resultado;
   try {
     resultado = await createDataController(filePath);

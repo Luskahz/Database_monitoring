@@ -1,18 +1,44 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { getAllErrors, clearAllErrors, addErro } from "./errorHandler.js";
+import { getAllErrors, clearAllErrors} from "./errorHandler.js";
 import colunsValidator from "../utils/colunsValidator.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/**
- * Gera o texto do logger a partir de um objeto genérico de dados (metadados ou logData)
- * @param {Object} dadosLogger - Pode ser metadados completo ou logData
- */
-export function createLogger(dadosLogger) {
+
+export function sendLoggerToConsole(dadosLogger) {
+  const texto = createLogger(dadosLogger);
+  console.log(texto);
+}
+
+export async function loggerFileInit(filePath) {
+  //cria o logger sem nada, porem com o nome caracteristico
+  let logPath;
+  if (!filePath) {
+    console.warn(
+      "⚠️ caminho_original indefinido nos dados passados para o logger! Salvando na rota fallback, em ../cache/fallback_logger.txt "
+    );
+    logPath = path.resolve(__dirname, "../cache/fallback_logger.txt");
+  } else {
+    logPath = path.join(
+      path.dirname(filePath),
+      "iniciando Insersão... .txt"
+    );
+  }
+  try {
+    await fs.writeFile(logPath, "Sistema operando...", "utf8");
+
+    return logPath;
+  } catch (e) {
+    throw new Error("Erro na criação do logger antes de rodar o handler...");
+  }
+}
+
+export function TextoLogger(dadosLogger) {
   const all = getAllErrors();
   const now = new Date();
   const dataHora = now.toLocaleString("pt-BR");
+
   const blocos = [];
   if (Array.isArray(all.infos) && all.infos.length > 0) {
     blocos.push(
@@ -28,14 +54,14 @@ export function createLogger(dadosLogger) {
   }
 
   const blocoMensagens =
-    blocos.length > 0 ? blocos.join("\n\n") : "✅ Nenhuma mensagem registrada.";
+    blocos.length > 0 ? blocos.join("\n\n") : "✅ Sem mensagens loggadas...";
 
   const acao = dadosLogger.acao?.toLowerCase?.() ?? "deleted"; // fallback para 'deleted' se não vier
 
   const titulo =
     acao === "deleted"
-      ? `==== LOG EXCLUSÃO ${dadosLogger.nome_arquivo} - ${dataHora} ====`
-      : `==== LOG ${dadosLogger.nome_arquivo} - ${dataHora} ====`;
+      ? `==== LOG DELETED ${dadosLogger.nome_arquivo} - ${dataHora} ====`
+      : `==== LOG CREATED ${dadosLogger.nome_arquivo} - ${dataHora} ====`;
 
   const corpoBase = [
     `==============================================================`,
@@ -62,7 +88,7 @@ export function createLogger(dadosLogger) {
 
     const colunasValidas = colunsValidator(
       dadosLogger.colunas_json,
-      dataLogger.colunas_tabela
+      dadosLogger.colunas_tabela
     );
     corpoBase.push(`${colunasValidas}`);
   }
@@ -73,39 +99,90 @@ export function createLogger(dadosLogger) {
   return corpoBase.join("\n\n");
 }
 
-/**
- * Escreve o logger dinamicamente baseado no tipo de ação
- * @param {Object} dadosLogger - Objeto genérico com informações mínimas
- */
-export default async function loggerMaster(dadosLogger) {
-  const texto = createLogger(dadosLogger);
-
-  let logPath;
-  if (!dadosLogger?.caminho_original) {
-    console.warn(
-      "⚠️ caminho_original indefinido! Salvando em fallback_logger.txt"
-    );
-    logPath = path.resolve(__dirname, "../cache/fallback_logger.txt");
-  } else {
-    logPath = path.join(
-      path.dirname(dadosLogger.caminho_original),
-      "logger.txt"
-    );
-  }
-
+export async function createLoggerController(dadosLogger) {
+  const texto = TextoLogger(dadosLogger);
+  let file;
   try {
-    await fs.appendFile(logPath, texto + "\n", "utf8");
-    console.log(`📝 Logger salvo com sucesso em: ${logPath}`);
+    file = await loggerFileInit(dadosLogger);
   } catch (e) {
-    addErro(`Erro ao escrever o log em: ${logPath}, erro: ${e.message}`);
-    throw e;
+    console.warn(e.message);
   }
 
-  sendLoggerToConsole(dadosLogger);
-  clearAllErrors();
+  if (file) {
+    try {
+      await fs.writeFile(file, texto, "utf8");
+    } catch (e) {
+      console.warn(e.message);
+    }
+  }
 }
 
-export function sendLoggerToConsole(dadosLogger) {
-  const texto = createLogger(dadosLogger);
-  console.log(texto);
+export async function updateLoggerController(dadosLogger) {
+  const texto = TextoLogger(dadosLogger);
+  let file;
+  try {
+    file = await loggerFileInit(dadosLogger);
+  } catch (e) {
+    console.warn(e.message);
+  }
+
+  const newfile = path.join(path.dirname(file), "finalizando... .txt");
+  try {
+    if (file) {
+      await fs.writeFile(file, texto, "utf8");
+      await fs.rename(file, newfile);
+    }
+  } catch (e) {
+    throw new Error(
+      "Erro ao atualizar o logger, arquivo criado, porem erro na insersão das atualizações do processo"
+    );
+  }
+}
+
+export async function finalLoggerController(dadosLogger) {
+  const texto = TextoLogger(dadosLogger);
+  let file;
+  try {
+    file = await loggerFileInit(dadosLogger);
+  } catch (e) {
+    console.warn(e.message);
+  }
+
+  const newfile = path.join(path.dirname(file), "Logger_finalizado.txt");
+  try {
+    if (file) {
+      await fs.writeFile(file, texto, "utf8");
+      await fs.rename(file, newfile);
+    }
+  } catch (e) {
+    throw new Error(
+      "Erro ao atualizar o logger, arquivo criado, porem erro na finalização, validar chamada no handler"
+    );
+  }
+}
+
+export async function errorLoggerController(dadosLogger) {
+  const texto = TextoLogger(dadosLogger);
+  let file;
+  try {
+    file = await loggerFileInit(dadosLogger);
+  } catch (e) {
+    console.warn(e.message);
+  }
+
+  const newfile = path.join(path.dirname(file), "Logger_Error.txt");
+  try {
+    if (file) {
+      await fs.writeFile(file, texto,"utf8");
+      await fs.rename(file, newfile);
+    }
+  } catch (e) {
+    throw new Error(
+      "Erro ao atualizar o logger, arquivo criado, porem erro na finalização, validar chamada no handler"
+    );
+  }
+  clearAllErrors()
+  sendLoggerToConsole(dadosLogger)
+
+
 }

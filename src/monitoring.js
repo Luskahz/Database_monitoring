@@ -6,9 +6,10 @@ import { fileURLToPath } from "url";
 import isCsvFile from "./utils/isCsvFile.js";
 import createdHandler from "./controller/Handlers/createdHandler.js";
 import deletedHandler from "./controller/Handlers/deletedHandler.js";
+import { loggerFileInit } from "./middleware/logger.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-export function startMonitoring() {
+export async function startMonitoring() {
   const monitorPath = path.resolve(__dirname, "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL");
 
   const watcher = chokidar.watch(monitorPath, {
@@ -36,7 +37,7 @@ export function startMonitoring() {
         
       }
     })
-    .on("change", (filePath) => {
+    .on("change", (filePath) =>{
       if (isCsvFile(filePath)) {
         console.log(`🟡 Arquivo modificado: ${filePath}`);
         createdHandler(filePath, "modified");
