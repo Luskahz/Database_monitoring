@@ -131,22 +131,20 @@ export async function insertRegisterinTable(tabela, linhaTipada) {
  */
 export async function listPeriodInTable(metadados) {
   const { coluna_data, tabela } = metadados;
+  let query;
 
   if (!coluna_data) {
-    throw new Error(
-      "[requer alteração] Logica para inserção de tabelas sem colunas data ainda não desenvolvida"
-    );
-  }
-
-  const query = `SELECT \`${coluna_data}\` FROM \`${schema}\`.\`${tabela}\``;
-
-  try {
-    const [result] = await db.query(query);
-    return result || [];
-  } catch (error) {
-    throw new Error(
-      `[model periodo] Erro ao buscar período da tabela, erro: ${error.message}`
-    );
+    return null;
+  } else {
+    query = `SELECT \`${coluna_data}\` FROM \`${schema}\`.\`${tabela}\``;
+    try {
+      const [result] = await db.query(query);
+      return result || [];
+    } catch (error) {
+      throw new Error(
+        `[model periodo] Erro ao buscar período da tabela, erro: ${error.message}`
+      );
+    }
   }
 }
 
@@ -186,6 +184,27 @@ export async function deletePeriodInTable(metadados) {
     );
   }
 }
+
+export async function deleteDatasInTableCadastros(metadados) {
+  const { tabela } = metadados;
+
+  const sql = `
+    DELETE FROM \`${schema}\`.\`${tabela}\`
+  `;
+
+  try {
+    const [result] = await db.query(sql);
+    return result;
+  } catch (e) {
+    throw new Error(
+      `[model delete] Erro ao deletar dados cadastrais para reinserção, erro: ${e.message}`
+    );
+  }
+}
+
+
+
+
 
 export async function deletePeriodInTableByMonth(logData) {
   const { mes, ano, tabela_destino, coluna_data } = logData;

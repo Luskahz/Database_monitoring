@@ -9,7 +9,7 @@ import createDataController from "../createDataController.js";
 import fluxoValidatorController from "../fluxoValidatorController.js";
 import { manageInsertController } from "../managerDataController.js";
 
-export default async function createdHandler(filePath, action) {
+export default async function createdHandler(filePath) {
   try {
     // ------------criando logger -----------------
     await createLoggerController(filePath); //feedback "iniciando..."

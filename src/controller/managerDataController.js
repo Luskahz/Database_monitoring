@@ -3,6 +3,7 @@ import {
   deletePeriodInTable,
   listPeriodInTable,
   deletePeriodInTableByMonth,
+  deleteDatasInTableCadastros,
 } from "../model/tableModel.js";
 
 import { insertValidator } from "./insertValidator.js";
@@ -18,7 +19,7 @@ export async function manageInsertController(metadados) {
 
   let listFromTable;
   try {
-    listFromTable = await listPeriodInTable(metadados);
+    listFromTable = await listPeriodInTable(metadados); //caso a base seja cadastral, vai retornar null aqui
   } catch (e) {
     addErro(`Erro ao consultar o período no banco: ${e.message}`);
     throw e;
@@ -27,8 +28,20 @@ export async function manageInsertController(metadados) {
   const validator = insertValidator(listFromTable, metadados);
   const erros = [];
   let sucesso = 0;
+  if( validator === "cadastro"){
+    try{
+      await deleteDatasInTableCadastros(metadados)
+      addInfo(`[Delete dados] - dados excluidos, tabela do banco pronta pra reincersão dos novos dados cadastrais`)
+    } catch(e){
+      addErro(
+        `[delete tabela cadastro] - Erro ao deletar os dados do cadastro antes da reinserção, erro: ${e.message}`
+      );
+      await updateLoggerController(metadados);
+      return;
 
-  if (validator === "substituir") {
+    }
+    
+  } else if (validator === "substituir") {
     try {
       await deletePeriodInTable(metadados);
     } catch (e) {
@@ -38,7 +51,7 @@ export async function manageInsertController(metadados) {
       await updateLoggerController(metadados);
       return;
     }
-  }
+  } 
 
   for (let i = 0; i < metadados.data_json.length; i++) {
     try {
@@ -86,7 +99,7 @@ export async function managerDeleterController(logData) {
     addErro(
       `Erro ao deletar período no banco pós exclusão do arquivo, erro: ${e.message}`
     );
-    await updateLoggerController(metadados);
+    await updateLoggerController(logData.caminho_original);
     return { erro: true, mensagem: e.message };
   }
 }

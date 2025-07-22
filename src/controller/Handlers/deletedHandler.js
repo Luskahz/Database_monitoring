@@ -11,13 +11,17 @@ import { deleteLogByHash } from "../../model/logModel.js";
 import { destinoByFilePath } from "../createDataController.js";
 import { managerDeleterController } from "../managerDataController.js";
 
-export default async function deletedHandler(filePath, action) {
+export default async function deletedHandler(filePath) {
   try {
     const destino = destinoByFilePath(filePath);
+
+
     let logData;
     try {
       logData = await getRegisterFromCache(destino);
+      console.log(JSON.stringify(logData, null, 2))
       if (!logData) {
+        console.log("nem um registro encontrado no cache")
         addAviso(`Nenhum registro de cache encontrado para ${filePath}`);
         await finalLoggerController(filePath)
         return;
