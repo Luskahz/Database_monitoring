@@ -8,6 +8,7 @@ import {
 import { insertValidator } from "./insertValidator.js";
 import tiparLinha from "../utils/tiparLinha.js";
 import { addAviso, addErro } from "../middleware/errorHandler.js";
+import { updateLoggerController } from "../middleware/logger.js";
 
 
 
@@ -16,7 +17,7 @@ import { addAviso, addErro } from "../middleware/errorHandler.js";
 export async function manageInsertController(metadados) {
   if (!Array.isArray(metadados.data_json) || metadados.data_json.length === 0) {
     addAviso("Nenhuma linha disponível para inserção.");
-    return;
+    return
   }
 
   let listFromTable;
@@ -38,6 +39,7 @@ export async function manageInsertController(metadados) {
       addErro(
         `Erro ao deletar período antes da reinserção, erro: ${e.message}`
       );
+      await updateLoggerController(metadados)
       return;
     }
   }
@@ -57,6 +59,7 @@ export async function manageInsertController(metadados) {
         erro: e.message,
         dados: metadados.data_json[i],
       });
+      await updateLoggerController(metadados)
     }
   }
 
@@ -77,6 +80,7 @@ export async function managerDeleterController(logData) {
     addErro(
       `Erro ao deletar período no banco pós exclusão do arquivo, erro: ${e.message}`
     );
+    await updateLoggerController(metadados)
   }
 }
 

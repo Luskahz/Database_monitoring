@@ -9,7 +9,6 @@ export default function createHashByData(dataJson) {
       .digest("hex");
     return hash;
   } catch (e) {
-    addErro(`Houve um erro ao gerar o hash do arquivo, erro: ${e.message}`);
-    return null;
+   throw new Error(`Houve um erro ao gerar o hash do arquivo, erro: ${e.message}`);
   }
 }

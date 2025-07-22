@@ -25,7 +25,7 @@ export async function getAllRegistersFromTable(tabela) {
     return result;
   } catch (e) {
     throw new Error(
-      `Erro ao consultar os registros da tabela destino, erro: ${e.message} `
+      `[Model registers] Erro ao consultar os registros da tabela destino, erro: ${e.message} `
     );
   }
 }
@@ -45,7 +45,7 @@ export async function getDateColumnsFromTable(tabela) {
 
     return results.length > 0 ? results[0].COLUMN_NAME : null;
   } catch (e) {
-    throw new Error(`Erro ao consultar colunas de data: ${e.message}`);
+    throw new Error(`[Model dataColun] Erro ao consultar colunas de data: ${e.message}`);
   }
 }
 
@@ -63,7 +63,7 @@ export async function getColunsFromTable(tabela) {
 
     return results.map((col) => col.COLUMN_NAME);
   } catch (e) {
-    throw new Error(`Erro ao consultar colunas da tabela: ${e.message}`);
+    throw new Error(`[model consultar colunas] Erro ao consultar colunas da tabela: ${e.message}`);
   }
 }
 
@@ -85,10 +85,10 @@ export async function insertRegisterinTable(tabela, linhaTipada) {
   try {
     colunas = await getColunsFromTable(tabela);
   } catch (e) {
-    throw new Error(`erro ao coletar as colunas da tabela, erro: ${e.message}`);
+    throw new Error(`[model coleta de tipagem para insert] erro ao coletar as colunas da tabela, erro: ${e.message}`);
   }
   if (!colunas || colunas.length === 0) {
-    throw new Error(`Tabela '${tabela}' não possui colunas válidas.`);
+    throw new Error(`[model coleta de tipagem para insert] Tabela '${tabela}' não possui colunas válidas.`);
   }
 
   const valores = colunas.map((col) => {
@@ -106,7 +106,7 @@ export async function insertRegisterinTable(tabela, linhaTipada) {
     return result;
   } catch (e) {
     throw new Error(
-      `erro ao realizar a query de insersão do registro, erro: ${e.message}`
+      `[model insert ] erro ao realizar a query de insersão do registro, erro: ${e.message}`
     );
   }
 }
@@ -129,7 +129,7 @@ export async function listPeriodInTable(metadados) {
 
   if (!coluna_data) {
     throw new Error(
-      "Logica para inserção de tabelas sem colunas data ainda não desenvolvida"
+      "[requer alteração] Logica para inserção de tabelas sem colunas data ainda não desenvolvida"
     );
   }
 
@@ -139,7 +139,7 @@ export async function listPeriodInTable(metadados) {
     const [result] = await db.query(query);
     return result || [];
   } catch (error) {
-    throw new Error(`Erro ao buscar período da tabela, erro: ${error.message}`);
+    throw new Error(`[model periodo] Erro ao buscar período da tabela, erro: ${error.message}`);
   }
 }
 
@@ -161,7 +161,7 @@ export async function deletePeriodInTable(metadados) {
 
   const numeroMes = meses[mes.toLowerCase()];
   if (!numeroMes) {
-    throw new Error(`Mês inválido: '${mes}' não está mapeado`);
+    throw new Error(`[model delete] Mês inválido: '${mes}' não está mapeado`);
   }
 
   const sql = `
@@ -175,7 +175,7 @@ export async function deletePeriodInTable(metadados) {
     return result;
   } catch (e) {
     throw new Error(
-      `Erro ao deletar período de ${mes}/${ano} na tabela, erro: ${e.message}`
+      `[model delete] Erro ao deletar período de ${mes}/${ano} na tabela, erro: ${e.message}`
     );
   }
 }
@@ -186,7 +186,7 @@ export async function deletePeriodInTableByMonth(logData) {
   const numeroMes = meses[mes.toLowerCase()];
   if (!numeroMes) {
     throw new Error(
-      `Mês inválido: '${mes}' não está mapeado, validar se dados não foram alterados no cache`
+      `[model deleter] Mês inválido: '${mes}' não está mapeado, validar se dados não foram alterados no cache`
     );
   }
 
@@ -201,7 +201,7 @@ export async function deletePeriodInTableByMonth(logData) {
     return result;
   } catch (e) {
     throw new Error(
-      `Erro ao deletar período ${mes}/${ano} da tabela '${tabela_destino}': ${e.message}`
+      `[model deleter] Erro ao deletar período ${mes}/${ano} da tabela '${tabela_destino}': ${e.message}`
     );
   }
 }
@@ -220,12 +220,12 @@ export async function getTiposFromTable(tabela) {
     );
   } catch (e) {
     throw new Error(
-      `Erro ao consultar tipos de colunas da tabela '${tabela}', erro: ${e.message}`
+      `[model tipagem] Erro ao consultar tipos de colunas da tabela '${tabela}', erro: ${e.message}`
     );
   }
 
   if (!results || results.length === 0) {
-    throw new Error(`Nenhuma coluna encontrada para a tabela '${tabela}'`);
+    throw new Error(`[model tipagem] Nenhuma coluna encontrada para a tabela '${tabela}'`);
   }
 
   const tipos = {};

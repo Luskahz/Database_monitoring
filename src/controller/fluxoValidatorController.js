@@ -1,4 +1,5 @@
 import { addErro, addInfo } from "../middleware/errorHandler.js";
+import { updateLoggerController } from "../middleware/logger.js";
 import { getLogByData, getAllHashesFromTable } from "../model/logModel.js";
 
 /**
@@ -31,12 +32,14 @@ export default async function fluxoValidatorController(metadados, logData) {
     logs = await getLogByData(metadados);
   } catch (e) {
     addErro(`erro ao extrair os logs referentes a data, erro: ${e.message}`);
+    await updateLoggerController(metadados)
   }
 
   try {
     allHashes = await getAllHashesFromTable(metadados);
   } catch (e) {
     addErro(`Erro ao extrair os hashs dos logs referentes a essa data`);
+    await updateLoggerController(metadados)
   }
 
   const hashJaExiste = allHashes.some(
@@ -44,20 +47,24 @@ export default async function fluxoValidatorController(metadados, logData) {
   );
   if (!logData.hash_arquivo) {
     addErro("Hash do arquivo não foi definido.");
+    await updateLoggerController(metadados)
   }
 
   if (hashJaExiste) {
     addInfo(
       `[ARQUIVO DUPLICADO] O conteúdo de ${metadados.nome_arquivo} já está presente na base.`
     );
+    await updateLoggerController(metadados)
     return "ignorar";
   } else if (!logs || logs.length === 0) {
     addInfo(`[NOVO ARQUIVO] ${metadados.nome_arquivo} será processado.`);
+    await updateLoggerController(metadados)
     return "inserir";
   } else {
     addInfo(
       `[ARQUIVO MODIFICADO] ${metadados.nome_arquivo} já existia, mas foi alterado. Reprocessando.`
     );
+    await updateLoggerController(metadados)
     return "reprocessar";
   }
 }

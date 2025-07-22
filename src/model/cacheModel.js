@@ -28,7 +28,7 @@ export async function insertHashInCache(logData) {
   try {
     cachePath = await initCacheFile();
   } catch (e) {
-    throw new Error(`erro ao criar o arquivo do cache: ${e.message}`);
+    throw new Error(`[model cache] erro ao criar o arquivo do cache: ${e.message}`);
   }
 
   logData.identificador = `${tabela_destino}_${ano}_${mes}_${nome_arquivo}`;
@@ -36,7 +36,7 @@ export async function insertHashInCache(logData) {
 
   try {
     await fs.appendFile(cachePath, jsonString + "\n\n", "utf8");
-    addInfo("Objeto salvo no cache com sucesso!");
+    addInfo("[model cache] Objeto salvo no cache com sucesso!");
   } catch (e) {
     throw new Error(`erro ao inserir o logData no cache, erro: ${e.message}`);
   }
@@ -51,7 +51,7 @@ export async function getRegisterFromCache(destino) {
     conteudo = await fs.readFile(cachePath, "utf8");
   } catch (e) {
     throw new Error(
-      `Erro ao ler o arquivo no cache, caminho do cache: '${cachePath}' erro: ${e.message}`
+      `[model cache] Erro ao ler o arquivo no cache, caminho do cache: '${cachePath}' erro: ${e.message}`
     );
   }
   const blocos = conteudo
@@ -64,10 +64,9 @@ export async function getRegisterFromCache(destino) {
       try {
         return JSON.parse(json);
       } catch (e) {
-        addAviso(
-          `⚠️ Erro ao fazer parse de um bloco do cache, erro: ${e.message}`
+        throw new Error(
+          `[model cache] Erro ao fazer parse de um bloco do cache, erro: ${e.message}`
         );
-        return null;
       }
     })
     .filter(Boolean);
@@ -76,8 +75,8 @@ export async function getRegisterFromCache(destino) {
     (reg) => reg.identificador === identificador
   );
   if (!encontrado) {
-    addAviso(
-      `⚠️ Nenhum registro encontrado no cache com identificador '${identificador}'`
+    throw new Error(
+      `[model cache] Nenhum registro encontrado no cache com identificador '${identificador}'`
     );
   }
   return encontrado || null;
@@ -88,18 +87,21 @@ export async function deleteRegisterFromCache(destino) {
   try {
     registroAlvo = await getRegisterFromCache(destino);
   } catch (e) {
-    throw new Error(`Erro ao coletar os registros do cache, erro: ${e.message}`);
+    throw new Error(
+      `[model cache] Erro ao coletar os registros do cache, erro: ${e.message}`
+    );
   }
 
   if (!registroAlvo) {
-    addAviso("Registro não encontrado no cache. Nada foi removido.");
-    return false;
+    throw new Error(
+      " [model cache] Registro não encontrado no cache. Nada foi removido."
+    );
   }
   let conteudo;
   try {
     conteudo = await fs.readFile(cachePath, "utf8");
   } catch (e) {
-    throw new Error(`Erro ao ler o cache ${e.message}`);
+    throw new Error(`[model cache] Erro ao ler o cache ${e.message}`);
   }
 
   const blocos = conteudo
@@ -120,10 +122,12 @@ export async function deleteRegisterFromCache(destino) {
   try {
     await fs.writeFile(cachePath, novoConteudo, "utf8");
     addInfo(
-      `Registro '${registroAlvo.identificador}' removido com sucesso do cache!`
+      `[model cache] Registro '${registroAlvo.identificador}' removido com sucesso do cache!`
     );
   } catch (e) {
-    throw new Error(`Erro ao reescrever os dados sem o registro removido no cache!, erro: ${e.message}`);
+    throw new Error(
+      `[model cache] Erro ao reescrever os dados sem o registro removido no cache!, erro: ${e.message}`
+    );
   }
   return true;
 }

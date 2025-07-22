@@ -30,7 +30,7 @@ export async function getLogByData(metadados) {
     return result;
   } catch (e) {
     throw new Error(
-      `Erro ao puxar os logs referente ao mes requerido, erro: ${e.message}`
+      `[model puxar log banco] Erro ao puxar os logs referente ao mes requerido, erro: ${e.message}`
     );
   }
 }
@@ -60,7 +60,7 @@ export async function getAllHashesFromTable(metadados) {
     );
     return result;
   } catch (e) {
-    throw new Error(`Erro ao puxar os hashs da tabela no log_ingestao`);
+    throw new Error(`[model puxar hashs banco] Erro ao puxar os hashs da tabela no log_ingestao`);
   }
 }
 
@@ -73,7 +73,6 @@ export async function insertLog(logData) {
     coluna_data,
     data_upload,
     hash_arquivo,
-    caminho_original,
     sucesso,
     mensagem_erro,
   } = logData;
@@ -99,7 +98,7 @@ export async function insertLog(logData) {
     );
   } catch (e) {
     throw new Error(
-      `Erro ao inserir log na tabela de ingestaõ, erro: ${e.message}`
+      `[model inserir log banco] Erro ao inserir log na tabela de ingestão, erro: ${e.message}`
     );
   }
 }
@@ -127,7 +126,7 @@ export async function deleteLogByHash(logData) {
     );
   } catch (e) {
     throw new Error(
-      `Erro ao deletar o log com base no hash, erro: ${e.message}`
+      `[model delete log do banco] Erro ao deletar o log com base no hash, erro: ${e.message}`
     );
   }
 }

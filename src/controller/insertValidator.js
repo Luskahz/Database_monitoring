@@ -15,13 +15,13 @@ export async function doesCsvHaveDataController(tabela, data_json) {
 
     if (index === -1) {
       addAviso(`Coluna de data '${dataCol}' não encontrada no CSV. Provavel base de dados cadastrais, dados serão substituidos`);
+      await updateLoggerController(metadados)
       return null;
     }
 
     return dataCol;
   } catch (e) {
-    addErro(`Erro ao extrair coluna data, erro: ${e.message}`);
-    throw e;
+    throw new Error(`[Controller insersão] Erro ao extrair coluna data, erro: ${e.message}`);
   }
 }
 
@@ -38,12 +38,13 @@ export async function doesCsvHaveDataController(tabela, data_json) {
  *    colunas_json: object
  * }} metadados
  */
-export function insertValidator(list, metadados) {
+export async function insertValidator(list, metadados) {
   const { coluna_data, data_json } = metadados;
   if (!Array.isArray(data_json) || data_json.length === 0) {
     addAviso(
-      "JSON de dados está vazio. Nenhuma validação de coluna de data será feita."
+      "[Controller insersão] JSON de dados está vazio. Nenhuma validação de coluna de data será feita."
     );
+    await updateLoggerController(metadados)
     return null;
   }
   try {
@@ -61,13 +62,13 @@ export function insertValidator(list, metadados) {
 
     return conflito
       ? (addAviso(
-          "Conflito detectado: datas do CSV já existem na base. Os dados serão reprocessados."
+          "[Controller insersão] Conflito detectado: datas do CSV já existem na base. Os dados serão reprocessados."
         ),
-        "substituir")
+        "substituir", await updateLoggerController(metadados))
       : "inserir";
+      
   } catch (e) {
-    addErro(`Erro ao validar datas para inserção, Erro: ${e.message}`);
-    throw e;
+    throw new Error(`[Controller insersão] Erro ao validar datas para inserção, Erro: ${e.message}`);
   }
 }
 
@@ -79,7 +80,7 @@ function extrairDatasValidas(array, coluna, contexto = "CSV") {
         const date = new Date(raw);
         if (isNaN(date)) {
           addAviso(
-            `Linha ${i}: valor inválido em '${coluna}' → '${raw}'. Registro ignorado [${contexto}].`
+            `[Controller insersão] Linha ${i}: valor inválido em '${coluna}' → '${raw}'. Registro ignorado [${contexto}].`
           );
           return null;
         }

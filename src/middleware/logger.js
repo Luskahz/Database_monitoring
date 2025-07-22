@@ -10,41 +10,6 @@ export function sendLoggerToConsole(dadosLogger) {
   console.log(texto);
 }
 
-export async function loggerFileInit(filePath) {
-  let logPath;
-  if (!filePath) {
-    console.warn(
-      "⚠️ caminho_original indefinido nos dados passados para o logger! Salvando na rota fallback, em ../cache/fallback_logger.txt "
-    );
-    logPath = path.resolve(__dirname, "../cache/fallback_logger.txt");
-  } else {
-    logPath = path.join(path.dirname(filePath), "iniciando Insersão... .txt");
-  }
-  try {
-    await fs.writeFile(logPath, "Sistema operando...", "utf8");
-
-    return logPath;
-  } catch (e) {
-    throw new Error("Erro na criação do logger antes de rodar o handler...");
-  }
-}
-
-async function getLoggerPath(filePath) {
-  const caminho = path.dirname(filePath);
-  let arquivos;
-  try {
-    arquivos = await fs.readdir(caminho);
-  } catch (e) {
-    throw new Error("Erro ao consultar a pasta do arquivo");
-  }
-
-  const txts = arquivos.filter((nome) => nome.endsWith(".txt"));
-
-  if (txts.length === 0) return null;
-
-  return path.join(caminho, txts[0]);
-}
-
 function TextoLogger(dadosLogger) {
   const all = getAllErrors();
   const now = new Date();
@@ -110,29 +75,76 @@ function TextoLogger(dadosLogger) {
   return corpoBase.join("\n\n");
 }
 
-export async function createLoggerController(dadosLogger) {
-  const texto = TextoLogger(dadosLogger);
+import fs from "fs/promises";
+import path from "path";
+
+export async function loggerFileInit(filePath) {
+  const logPath = path.join(
+    path.dirname(filePath),
+    "iniciando Insersão... .txt"
+  );
+
+  try {
+    await fs.access(logPath);
+    return logPath;
+  } catch (e) {
+    try {
+      await fs.writeFile(logPath, "logger criado...", "utf8");
+      return logPath;
+    } catch (erro) {
+      console.log(
+        "[Logger] Erro na criação do logger antes de rodar o handler: " +
+          erro.message
+      );
+    }
+  }
+}
+
+export async function createLoggerController(filePath) {
   let file;
   try {
-    file = await loggerFileInit(dadosLogger.caminho_original);
+    file = await loggerFileInit(filePath);
   } catch (e) {
     console.warn(e.message);
   }
-
+  const newfile = path.join(path.dirname(file), "iniciando... .txt");
   if (file) {
     try {
-      await fs.writeFile(file, texto, "utf8");
+      await fs.writeFile(file, "Processo iniciado....", "utf8");
+      await fs.rename(file, newfile);
     } catch (e) {
-      console.warn(e.message);
+      console.log(
+        "[Logger] erro ao iniciar o processo de log, arquivo criado porem erro na interação inicial"
+      );
     }
   }
 }
 
 export async function updateLoggerController(dadosLogger) {
-  const texto = TextoLogger(dadosLogger);
+  let filePath, dadosParaLog;
+
+  if (typeof dadosLogger === "string") {
+    filePath = dadosLogger;
+    dadosParaLog = {
+      nome_arquivo: path.basename(filePath),
+      acao: "erro",
+      tabela: "—",
+      tabela_destino: "—",
+      ano: "—",
+      mes: "—",
+      hash: "—",
+      coluna_data: "—",
+      caminho_original: filePath,
+    };
+  } else {
+    filePath = dadosLogger?.caminho_original || dadosLogger?.filePath;
+    dadosParaLog = dadosLogger;
+  }
+
+  const texto = TextoLogger(dadosParaLog);
   let file;
   try {
-    file = await loggerFileInit(dadosLogger.caminho_original);
+    file = await loggerFileInit(filePath);
   } catch (e) {
     console.warn(e.message);
   }
@@ -144,33 +156,55 @@ export async function updateLoggerController(dadosLogger) {
       await fs.rename(file, newfile);
     }
   } catch (e) {
-    throw new Error(
-      "Erro ao atualizar o logger, arquivo criado, porem erro na insersão das atualizações do processo"
+    console.log(
+      "[Logger] Erro ao atualizar o logger, arquivo criado, porem erro na insersão das atualizações do processo"
     );
   }
 }
 
-
 export async function finalLoggerController(dadosLogger) {
-  const texto = TextoLogger(dadosLogger);
+  let filePath, dadosParaLog;
+
+  if (typeof dadosLogger === "string") {
+    filePath = dadosLogger;
+    dadosParaLog = {
+      nome_arquivo: path.basename(filePath),
+      acao: "erro",
+      tabela: "—",
+      tabela_destino: "—",
+      ano: "—",
+      mes: "—",
+      hash: "—",
+      coluna_data: "—",
+      caminho_original: filePath,
+    };
+  } else {
+    filePath = dadosLogger?.caminho_original || dadosLogger?.filePath;
+    dadosParaLog = dadosLogger;
+  }
+
+  const texto = TextoLogger(dadosParaLog);
   let file;
   try {
-    file = await loggerFileInit(dadosLogger?.caminho_original ? dadosLogger : null);
+    file = await loggerFileInit(filePath);
   } catch (e) {
     console.warn(e.message);
   }
 
-  const newfile = path.join(path.dirname(file), "Logger_finalizado.txt");
+  const newfile = path.join(path.dirname(file), "Logger.txt");
   try {
     if (file) {
       await fs.writeFile(file, texto, "utf8");
       await fs.rename(file, newfile);
     }
   } catch (e) {
-    throw new Error(
-      "Erro ao atualizar o logger, arquivo criado, porem erro na finalização, validar chamada no handler"
+    console.log(
+      "[Logger] Erro ao atualizar o logger, arquivo criado, porem erro na finalização, validar chamada no handler"
     );
   }
+
+  clearAllErrors();
+  sendLoggerToConsole(dadosLogger);
 }
 
 export async function errorLoggerController(dadosLogger) {
@@ -189,8 +223,8 @@ export async function errorLoggerController(dadosLogger) {
       await fs.rename(file, newfile);
     }
   } catch (e) {
-    throw new Error(
-      "Erro ao atualizar o logger, arquivo criado, porem erro na finalização, validar chamada no handler"
+    console.log(
+      "[Logger] Erro ao atualizar o logger, arquivo criado, porem erro na finalização, validar chamada no handler"
     );
   }
   clearAllErrors();

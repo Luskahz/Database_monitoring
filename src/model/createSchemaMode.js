@@ -52,7 +52,7 @@ export async function createSchemaFromTable(metadados) {
     }
     return tipagem;
   } catch (e) {
-    throw new Error(`Erro ao criar tipagem da tabela: ${e.message}`);
+    throw new Error(`[model schema] Erro ao criar tipagem da tabela: ${e.message}`);
   }
 }
 

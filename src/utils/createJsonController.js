@@ -13,7 +13,7 @@ export default async function createJsonController(filePath) {
   try {
     buffer = await fs.readFile(filePath);
   } catch (e) {
-    throw new Error(`erro ao ler o arquivo, erro: ${e.message}`);
+    throw new Error(`[Json] - erro ao ler o arquivo, erro: ${e.message}`);
   }
 
   const data = iconv.decode(buffer, "latin1");
@@ -32,16 +32,16 @@ export default async function createJsonController(filePath) {
     });
     if (parsed.errors.length) {
       const resumo = [
-        `${parsed.errors.length} erros detectados durante o parsing do CSV:`,
+        `${parsed.errors.length} [Json] erros detectados durante o parsing do CSV:`,
       ];
 
       parsed.errors.slice(0, 5).forEach((err, i) => {
-        resumo.push(`→ Linha ${err.row ?? "?"}: ${err.message}`);
+        resumo.push(`[Json] → Linha ${err.row ?? "?"}: ${err.message}`);
       });
 
       if (parsed.errors.length > 5) {
         resumo.push(
-          `→ ...e mais ${parsed.errors.length - 5} erro(s) não exibido(s).`
+          `[Json] → ...e mais ${parsed.errors.length - 5} erro(s) não exibido(s).`
         );
       }
 
@@ -53,14 +53,13 @@ export default async function createJsonController(filePath) {
       return preenchidos >= 3;
     });
     if (linhasValidas.length === 0) {
-      addAviso(`Nenhuma linha válida encontrada no arquivo ${filePath}.`);
+      addAviso(`[Json] - Nenhuma linha válida encontrada no arquivo ${filePath}.`);
     }
     let tiposEsperados;
     try {
       tiposEsperados = await getTiposFromTable(tabelaName);
     } catch (e) {
-      addErro(`Erro ao gerar os tipos esperados erro: ${e.message}`);
-      throw e;
+      throw new Error(`[Json] - erro ao gerar os tipos esperados, [erro: ${e.message}]`);
     }
 
     const dataJsonNormalized = linhasValidas.map((linha) => {
@@ -85,9 +84,9 @@ export default async function createJsonController(filePath) {
     const dataSanitized = dataJsonNormalized.map((linha) =>
       sanitizeRow(linha, tiposEsperados)
     );
-    addInfo(`${linhasValidas.length} linhas válidas extraídas de ${filePath}`);
+    addInfo(`[Json] - ${linhasValidas.length} linhas válidas extraídas de ${filePath}`);
     return dataSanitized;
   } else {
-    addErro(`Arquivo ignorado: ${filePath} - Não é um CSV válido`);
+    throw new Error(`[Json]  Arquivo ignorado: ${filePath} - Não é um CSV válido`);
   }
 }

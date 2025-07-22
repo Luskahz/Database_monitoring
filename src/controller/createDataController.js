@@ -95,6 +95,7 @@ export default async function createDataController(filePath, action) {
     dataJson = await createJsonController(filePath);
   } catch (e) {
     addErro(`Erro ao converter CSV para JSON: ${e.message}`);
+    await updateLoggerController(filePath)
     throw e;
   }
   if (dataJson && dataJson.length > 0) {
@@ -111,6 +112,7 @@ export default async function createDataController(filePath, action) {
     return { metadados, logData };
   } catch (e) {
     addErro(`Erro ao gerar metadados e logData: ${e.message}`);
+    await updateLoggerController(filePath)
     throw e;
   }
 }
