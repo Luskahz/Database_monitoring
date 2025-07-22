@@ -1,42 +1,16 @@
+
+
 {
-  "tabela_destino": "base_bees_deliver_dia",
-  "nome_arquivo": "março.csv",
+  "tabela_destino": "03_11_40",
+  "nome_arquivo": "junho.csv",
   "ano": 2025,
-  "mes": "março",
-  "coluna_data": "tour_date",
-  "data_upload": "2025-07-17T14:08:39.154Z",
-  "hash_arquivo": "163814ec23a2347bdc80545f843f984667b28be6d49b293996396597d8e86bb2",
-  "caminho_original": "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\bees_deliver\\base_bees_deliver_dia\\2025\\março.csv",
+  "mes": "junho",
+  "coluna_data": "dt_entrega",
+  "data_upload": "2025-07-22T15:51:06.959Z",
+  "hash_arquivo": "c0297cdc9e1534fa862f0e31f7360ca471253a14cb3354828b989d78ac7c82a4",
+  "caminho_original": "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\junho.csv",
   "sucesso": false,
-  "mensagem_erro": "Erro ao deletar período antes da reinserção",
-  "identificador": "base_bees_deliver_dia_2025_março_março.csv"
-}
-
-{
-  "tabela_destino": "base_bees_deliver_dia",
-  "nome_arquivo": "março.csv",
-  "ano": 2024,
-  "mes": "março",
-  "coluna_data": "tour_date",
-  "data_upload": "2025-07-17T14:08:38.851Z",
-  "hash_arquivo": "225890d6ccb2b4c136fabb8ea05449f3ce18a7a4b2909a7498dc914f1a7a7607",
-  "caminho_original": "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\bees_deliver\\base_bees_deliver_dia\\2024\\março.csv",
-  "sucesso": false,
-  "mensagem_erro": "Erro ao deletar período antes da reinserção",
-  "identificador": "base_bees_deliver_dia_2024_março_março.csv"
-}
-
-{
-  "tabela_destino": "base_bees_deliver_dia",
-  "nome_arquivo": "março.csv",
-  "ano": 2024,
-  "mes": "março",
-  "coluna_data": "tour_date",
-  "data_upload": "2025-07-17T14:08:38.851Z",
-  "hash_arquivo": "225890d6ccb2b4c136fabb8ea05449f3ce18a7a4b2909a7498dc914f1a7a7607",
-  "caminho_original": "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\bees_deliver\\base_bees_deliver_dia\\2024\\março.csv",
-  "sucesso": false,
-  "mensagem_erro": "Erro durante execução do managerDataController: dataLogger is not defined",
-  "identificador": "base_bees_deliver_dia_2024_março_março.csv"
+  "mensagem_erro": "Algumas linhas falharam",
+  "identificador": "03_11_40_2025_junho_junho.csv"
 }
 

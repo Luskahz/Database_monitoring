@@ -45,7 +45,9 @@ export async function getDateColumnsFromTable(tabela) {
 
     return results.length > 0 ? results[0].COLUMN_NAME : null;
   } catch (e) {
-    throw new Error(`[Model dataColun] Erro ao consultar colunas de data: ${e.message}`);
+    throw new Error(
+      `[Model dataColun] Erro ao consultar colunas de data: ${e.message}`
+    );
   }
 }
 
@@ -63,7 +65,9 @@ export async function getColunsFromTable(tabela) {
 
     return results.map((col) => col.COLUMN_NAME);
   } catch (e) {
-    throw new Error(`[model consultar colunas] Erro ao consultar colunas da tabela: ${e.message}`);
+    throw new Error(
+      `[model consultar colunas] Erro ao consultar colunas da tabela: ${e.message}`
+    );
   }
 }
 
@@ -85,10 +89,14 @@ export async function insertRegisterinTable(tabela, linhaTipada) {
   try {
     colunas = await getColunsFromTable(tabela);
   } catch (e) {
-    throw new Error(`[model coleta de tipagem para insert] erro ao coletar as colunas da tabela, erro: ${e.message}`);
+    throw new Error(
+      `[model coleta de tipagem para insert] erro ao coletar as colunas da tabela, erro: ${e.message}`
+    );
   }
   if (!colunas || colunas.length === 0) {
-    throw new Error(`[model coleta de tipagem para insert] Tabela '${tabela}' não possui colunas válidas.`);
+    throw new Error(
+      `[model coleta de tipagem para insert] Tabela '${tabela}' não possui colunas válidas.`
+    );
   }
 
   const valores = colunas.map((col) => {
@@ -100,10 +108,7 @@ export async function insertRegisterinTable(tabela, linhaTipada) {
 
   try {
     const [result] = await db.query(sql, valores);
-    colunas.forEach((col, i) => {
-      console.log(`→ ${col}: ${valores[i]}`);
-    });
-    return result;
+    return { result, linhaTipada };
   } catch (e) {
     throw new Error(
       `[model insert ] erro ao realizar a query de insersão do registro, erro: ${e.message}`
@@ -139,7 +144,9 @@ export async function listPeriodInTable(metadados) {
     const [result] = await db.query(query);
     return result || [];
   } catch (error) {
-    throw new Error(`[model periodo] Erro ao buscar período da tabela, erro: ${error.message}`);
+    throw new Error(
+      `[model periodo] Erro ao buscar período da tabela, erro: ${error.message}`
+    );
   }
 }
 
@@ -225,7 +232,9 @@ export async function getTiposFromTable(tabela) {
   }
 
   if (!results || results.length === 0) {
-    throw new Error(`[model tipagem] Nenhuma coluna encontrada para a tabela '${tabela}'`);
+    throw new Error(
+      `[model tipagem] Nenhuma coluna encontrada para a tabela '${tabela}'`
+    );
   }
 
   const tipos = {};

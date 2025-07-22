@@ -3,7 +3,8 @@ import { doesCsvHaveDataController } from "./insertValidator.js";
 import { getColunsFromTable, getTiposFromTable } from "../model/tableModel.js";
 import createHashByData from "../utils/createHashByData.js";
 import createJsonController from "../utils/createJsonController.js";
-import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
+import { addAviso, addErro} from "../middleware/errorHandler.js";
+import { updateLoggerController } from "../middleware/logger.js";
 
 async function  extractInfosByData(tabelaName, dataJson) {
   try {
@@ -59,7 +60,7 @@ export function createLogDataController(metadados) {
     mes: metadados.mes,
     coluna_data: metadados.coluna_data,
     data_upload: new Date(),
-    hash_arquivo: hash,
+    hash_arquivo: metadados.hash,
     caminho_original: metadados.caminho_original, //trocar
     sucesso: true,
     mensagem_erro: null,
@@ -98,7 +99,7 @@ export default async function createDataController(filePath, action) {
     await updateLoggerController(filePath)
     throw e;
   }
-  if (dataJson && dataJson.length > 0) {
+  if (!dataJson || dataJson.length === 0) {
     addAviso(`Csv está vazio, validar se está valido`);
   }
 

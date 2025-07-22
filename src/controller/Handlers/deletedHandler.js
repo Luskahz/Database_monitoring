@@ -40,7 +40,7 @@ export default async function deletedHandler(filePath, action) {
       throw e;
     }
   } catch (e) {
-    addErro(`Erro no deletedHandler, erro: ${e.message}`);
+    addErro(`Erro no deletedHandler, erro: ${e.message}, ${e.stack}`);
     await finalLoggerController(filePath);
     return;
   }

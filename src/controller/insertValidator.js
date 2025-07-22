@@ -1,5 +1,6 @@
-import { addAviso, addErro } from "../middleware/errorHandler.js";
+import { addAviso } from "../middleware/errorHandler.js";
 import { getDateColumnsFromTable } from "../model/tableModel.js";
+import { updateLoggerController } from "../middleware/logger.js"
 
 export async function doesCsvHaveDataController(tabela, data_json) {
   try {
