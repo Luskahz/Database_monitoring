@@ -3,8 +3,9 @@ import { doesCsvHaveDataController } from "./insertValidator.js";
 import { getColunsFromTable, getTiposFromTable } from "../model/tableModel.js";
 import createHashByData from "../utils/createHashByData.js";
 import createJsonController from "../utils/createJsonController.js";
-import { addAviso, addErro} from "../middleware/errorHandler.js";
+import { addAviso, addErro } from "../middleware/errorHandler.js";
 import { updateLoggerController } from "../middleware/logger.js";
+import { isInt16Array, isNumberObject } from "util/types";
 
 export default async function createDataController(filePath, action) {
   let dataJson;
@@ -12,7 +13,7 @@ export default async function createDataController(filePath, action) {
     dataJson = await createJsonController(filePath);
   } catch (e) {
     addErro(`Erro ao converter CSV para JSON: ${e.message}`);
-    await updateLoggerController(filePath)
+    await updateLoggerController(filePath);
     throw e;
   }
   if (!dataJson || dataJson.length === 0) {
@@ -29,7 +30,7 @@ export default async function createDataController(filePath, action) {
     return { metadados, logData };
   } catch (e) {
     addErro(`Erro ao gerar metadados e logData: ${e.message}`);
-    await updateLoggerController(filePath)
+    await updateLoggerController(filePath);
     throw e;
   }
 }
@@ -47,6 +48,7 @@ export async function createMetadadosController(
     nome_arquivo: destino.nome_arquivo,
     ano: destino.ano,
     mes: destino.mes,
+    dia: destino.dia,
     tabela: destino.tabela_destino,
     data_json: dataJson,
     hash: hash,
@@ -65,6 +67,7 @@ export function createLogDataController(metadados) {
     nome_arquivo: metadados.nome_arquivo,
     ano: parseInt(metadados.ano),
     mes: metadados.mes,
+    dia: metadados.dia,
     coluna_data: metadados.coluna_data,
     data_upload: new Date(),
     hash_arquivo: metadados.hash,
@@ -98,8 +101,7 @@ export async function createFundamentalDocsController(
   }
 }
 
-
-async function  extractInfosByData(tabelaName, dataJson) {
+async function extractInfosByData(tabelaName, dataJson) {
   try {
     const dataColun = await doesCsvHaveDataController(tabelaName, dataJson);
     const tiposEsperados = await getTiposFromTable(tabelaName);
@@ -120,17 +122,31 @@ async function  extractInfosByData(tabelaName, dataJson) {
   }
 }
 
-
 export function destinoByFilePath(filePath) {
   const fileName = path.basename(filePath);
-  const baseAno = path.basename(path.dirname(filePath));
-  const baseMes = path.basename(filePath, path.extname(filePath));
-  const tabelaName = path.basename(path.dirname(path.dirname(filePath)));
+  const parent = path.dirname(filePath);
+  const grandParent = path.dirname(parent);
+  const greatGrandParent = path.dirname(grandParent);
 
-  return {
-    nome_arquivo: fileName,
-    ano: baseAno,
-    mes: baseMes,
-    tabela_destino: tabelaName,
-  };
+ 
+  const baseNameNoExt = path.basename(fileName, path.extname(fileName));
+  if (/^\d+$/.test(baseNameNoExt)) {
+    // Exemplo: .../2025/julho/1.csv
+    return {
+      nome_arquivo: fileName, //1.csv
+      ano: path.basename(grandParent), // "2025"
+      mes: path.basename(parent), // "julho"
+      dia: path.basename(fileName, path.extname(fileName)), //1
+      tabela_destino: path.basename(greatGrandParent), // "base_bees_deliver_dia"
+    };
+  } else {
+    // Exemplo: .../2025/julho.csv
+    return {
+      nome_arquivo: fileName, //julho.csv
+      ano: path.basename(parent), // "2025"
+      mes: path.basename(fileName, path.extname(fileName)), // "julho"
+      dia: null,
+      tabela_destino: path.basename(grandParent), // "base_bees_deliver_dia"
+    };
+  }
 }

@@ -32,6 +32,7 @@ export default async function fluxoValidatorController(metadados, logData) {
     logs = await getLogByData(metadados);
   } catch (e) {
     addErro(`erro ao extrair os logs referentes a data, erro: ${e.message}`);
+  } finally{
     await updateLoggerController(metadados)
   }
 
@@ -39,6 +40,7 @@ export default async function fluxoValidatorController(metadados, logData) {
     allHashes = await getAllHashesFromTable(metadados);
   } catch (e) {
     addErro(`Erro ao extrair os hashs dos logs referentes a essa data`);
+   } finally{
     await updateLoggerController(metadados)
   }
 
@@ -46,7 +48,7 @@ export default async function fluxoValidatorController(metadados, logData) {
     (entry) => entry.hash_arquivo === logData.hash_arquivo
   );
   if (!logData.hash_arquivo) {
-    addErro("Hash do arquivo não foi definido.");
+    addErro("Hash do arquivo não foi passado ao validador do fluxo.");
     await updateLoggerController(metadados)
   }
 

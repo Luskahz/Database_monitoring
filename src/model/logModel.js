@@ -15,6 +15,7 @@ import db, { schema } from "../../config/db.js";
  * }} metadados
  */
 export async function getLogByData(metadados) {
+  
   const { tabela, nome_arquivo, ano } = metadados;
   try {
     const [result] = await db.query(
@@ -70,6 +71,7 @@ export async function insertLog(logData) {
     nome_arquivo,
     ano,
     mes,
+    dia,
     coluna_data,
     data_upload,
     hash_arquivo,
@@ -81,14 +83,15 @@ export async function insertLog(logData) {
     await db.query(
       `
     INSERT INTO \`${schema}\`.log_ingestao
-      (tabela_destino, nome_arquivo, ano, mes, coluna_data, data_upload, hash_arquivo, sucesso, mensagem_erro)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (tabela_destino, nome_arquivo, ano, mes, dia, coluna_data, data_upload, hash_arquivo, sucesso, mensagem_erro)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
       [
         tabela_destino,
         nome_arquivo,
         ano,
         mes,
+        dia,
         coluna_data,
         data_upload,
         hash_arquivo,

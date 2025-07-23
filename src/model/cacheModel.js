@@ -23,7 +23,7 @@ async function initCacheFile() {
 }
 
 export async function insertHashInCache(logData) {
-  const { tabela_destino, ano, mes, nome_arquivo } = logData;
+  const { tabela_destino, ano, mes, dia, nome_arquivo } = logData;
   let cachePath;
   try {
     cachePath = await initCacheFile();
@@ -31,7 +31,16 @@ export async function insertHashInCache(logData) {
     throw new Error(`[model cache] erro ao criar o arquivo do cache: ${e.message}`);
   }
 
-  logData.identificador = `${tabela_destino}_${ano}_${mes}_${nome_arquivo}`;
+  // Array com todos os componentes do identificador
+  const parts = [tabela_destino, ano, mes];
+  // Só adiciona dia se ele existir e for diferente de null/undefined/""
+  if (dia !== undefined && dia !== null && dia !== "") {
+    parts.push(dia);
+  }
+  parts.push(nome_arquivo);
+
+  logData.identificador = parts.join("_");
+
   const jsonString = JSON.stringify(logData, null, 2);
 
   try {
@@ -43,8 +52,15 @@ export async function insertHashInCache(logData) {
 }
 
 export async function getRegisterFromCache(destino) {
-  const { tabela_destino, ano, mes, nome_arquivo } = destino;
-  const identificador = `${tabela_destino}_${ano}_${mes}_${nome_arquivo}`;
+  const { tabela_destino, ano, mes, dia, nome_arquivo } = destino;
+
+  // Monta o identificador igual ao insertHashInCache:
+  const parts = [tabela_destino, ano, mes];
+  if (dia !== undefined && dia !== null && dia !== "") {
+    parts.push(dia);
+  }
+  parts.push(nome_arquivo);
+  const identificador = parts.join("_");
 
   let conteudo;
   try {

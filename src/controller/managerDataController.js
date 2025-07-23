@@ -42,6 +42,8 @@ export async function manageInsertController(metadados) {
   } else if (validator === "substituir") {
     try {
       await deleteFromTable(metadados);
+      addAviso(`[gerenciamento de inserções] operação de substituição, dados referente a data inserida foram excluidos`)
+
     } catch (e) {
       addErro(
         `Erro ao deletar período antes da reinserção, erro: ${e.message}`
@@ -91,7 +93,7 @@ export async function manageInsertController(metadados) {
 
 export async function managerDeleterController(logData) {
   try {
-    await deleteFromTable(logData); //logData extraido do cache
+    await deleteFromTable(logData);
     return { erro: false };
   } catch (e) {
     addErro(

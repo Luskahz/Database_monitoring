@@ -1,2 +1,57 @@
+{
+  "tabela_destino": "01_11",
+  "nome_arquivo": "julho.CSV",
+  "ano": 2025,
+  "mes": "julho",
+  "coluna_data": null,
+  "data_upload": "2025-07-23T18:48:35.609Z",
+  "hash_arquivo": "50bb4f5908d811fc0ec6e7f258e0390c61b3f94f343f7182bd9b3ca4dbdf9574",
+  "caminho_original": "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\cadastros\\01_11\\2025\\julho.CSV",
+  "sucesso": true,
+  "mensagem_erro": null,
+  "identificador": "01_11_2025_julho_julho.CSV"
+}
 
+{
+  "tabela_destino": "01_20_11",
+  "nome_arquivo": "junho.csv",
+  "ano": 2025,
+  "mes": "junho",
+  "coluna_data": null,
+  "data_upload": "2025-07-23T18:56:53.478Z",
+  "hash_arquivo": "5326053ca602f16fb2ead117e6aa4488adec39d5c942390539a9b4cc6c4db24b",
+  "caminho_original": "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\cadastros\\01_20_11\\2025\\junho.csv",
+  "sucesso": true,
+  "mensagem_erro": null,
+  "identificador": "01_20_11_2025_junho_junho.csv"
+}
+
+{
+  "tabela_destino": "01_20_11",
+  "nome_arquivo": "junho.csv",
+  "ano": 2025,
+  "mes": "junho",
+  "coluna_data": null,
+  "data_upload": "2025-07-23T19:29:42.129Z",
+  "hash_arquivo": "5326053ca602f16fb2ead117e6aa4488adec39d5c942390539a9b4cc6c4db24b",
+  "caminho_original": "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\cadastros\\01_20_11\\2025\\junho.csv",
+  "sucesso": true,
+  "mensagem_erro": null,
+  "identificador": "01_20_11_2025_junho_junho.csv"
+}
+
+{
+  "tabela_destino": "01_11",
+  "nome_arquivo": "julho.CSV",
+  "ano": 2025,
+  "mes": "julho",
+  "dia": null,
+  "coluna_data": null,
+  "data_upload": "2025-07-23T19:38:41.122Z",
+  "hash_arquivo": "50bb4f5908d811fc0ec6e7f258e0390c61b3f94f343f7182bd9b3ca4dbdf9574",
+  "caminho_original": "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\cadastros\\01_11\\2025\\julho.CSV",
+  "sucesso": true,
+  "mensagem_erro": null,
+  "identificador": "01_11_2025_julho_julho.CSV"
+}
 
