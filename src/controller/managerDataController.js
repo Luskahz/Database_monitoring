@@ -1,9 +1,7 @@
 import {
   insertRegisterinTable,
-  deletePeriodInTable,
   listPeriodInTable,
-  deletePeriodInTableByMonth,
-  deleteDatasInTableCadastros,
+  deleteFromTable,
 } from "../model/tableModel.js";
 
 import { insertValidator } from "./insertValidator.js";
@@ -19,7 +17,7 @@ export async function manageInsertController(metadados) {
 
   let listFromTable;
   try {
-    listFromTable = await listPeriodInTable(metadados); //caso a base seja cadastral, vai retornar null aqui
+    listFromTable = await listPeriodInTable(metadados); //caso a base seja cadastral, vai retornar null aqui se não, vai retornar um objeto com {dataCol: 'data da linha'}
   } catch (e) {
     addErro(`Erro ao consultar o período no banco: ${e.message}`);
     throw e;
@@ -30,7 +28,7 @@ export async function manageInsertController(metadados) {
   let sucesso = 0;
   if( validator === "cadastro"){
     try{
-      await deleteDatasInTableCadastros(metadados)
+      await deleteFromTable(metadados)
       addInfo(`[Delete dados] - dados excluidos, tabela do banco pronta pra reincersão dos novos dados cadastrais`)
     } catch(e){
       addErro(
@@ -43,7 +41,7 @@ export async function manageInsertController(metadados) {
     
   } else if (validator === "substituir") {
     try {
-      await deletePeriodInTable(metadados);
+      await deleteFromTable(metadados);
     } catch (e) {
       addErro(
         `Erro ao deletar período antes da reinserção, erro: ${e.message}`
@@ -93,7 +91,7 @@ export async function manageInsertController(metadados) {
 
 export async function managerDeleterController(logData) {
   try {
-    await deletePeriodInTableByMonth(logData); //logData extraido do cache
+    await deleteFromTable(logData); //logData extraido do cache
     return { erro: false };
   } catch (e) {
     addErro(

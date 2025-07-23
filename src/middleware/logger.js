@@ -174,7 +174,8 @@ export async function finalLoggerController(dadosLogger) {
   }
 
   clearAllErrors();
-  console.log(texto);
+  //console.log(texto);
+  console.log("os dados estão bloqueados a serem eviados no console, consulte o logger")
 }
 
 export async function errorLoggerController(dadosLogger) {

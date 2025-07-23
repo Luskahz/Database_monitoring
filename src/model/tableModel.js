@@ -129,7 +129,7 @@ export async function insertRegisterinTable(tabela, linhaTipada) {
  *    colunas_json: object
  * }} metadados
  */
-export async function listPeriodInTable(metadados) {
+export async function listPeriodInTable(metadados) { //retorna um objeto com todas as datas formato: {dataCol: 'data da linha'} 
   const { coluna_data, tabela } = metadados;
   let query;
 
@@ -202,10 +202,6 @@ export async function deleteDatasInTableCadastros(metadados) {
   }
 }
 
-
-
-
-
 export async function deletePeriodInTableByMonth(logData) {
   const { mes, ano, tabela_destino, coluna_data } = logData;
 
@@ -231,6 +227,59 @@ export async function deletePeriodInTableByMonth(logData) {
     );
   }
 }
+
+
+export async function deleteFromTable(opcoes) {
+  const {
+    tabela,
+    tabela_destino,
+    mes,
+    ano,
+    coluna_data
+  } = opcoes;
+
+  const nomeTabela = tabela || tabela_destino;
+
+  if (!nomeTabela) {
+    throw new Error("[model delete] Nome da tabela não foi informado.");
+  }
+
+  let sql, params = [];
+
+  if (coluna_data && mes && ano) {
+    const numeroMes = meses[mes.toLowerCase()];
+    if (!numeroMes) {
+      throw new Error(`[model delete] Mês inválido: '${mes}' não está mapeado.`);
+    }
+
+    sql = `
+      DELETE FROM \`${schema}\`.\`${nomeTabela}\`
+      WHERE MONTH(\`${coluna_data}\`) = ? AND YEAR(\`${coluna_data}\`) = ?
+    `;
+    params = [numeroMes, ano];
+  } else {
+    // Modo deletar tudo (cadastros ou tabelas sem data)
+    sql = `DELETE FROM \`${schema}\`.\`${nomeTabela}\``;
+  }
+
+  try {
+    const [result] = await db.query(sql, params);
+    return result;
+  } catch (e) {
+    throw new Error(`[model delete] Erro ao deletar dados da tabela '${nomeTabela}': ${e.message}`);
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
 
 export async function getTiposFromTable(tabela) {
   let results;

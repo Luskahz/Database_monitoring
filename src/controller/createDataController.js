@@ -6,23 +6,30 @@ import createJsonController from "../utils/createJsonController.js";
 import { addAviso, addErro} from "../middleware/errorHandler.js";
 import { updateLoggerController } from "../middleware/logger.js";
 
-async function  extractInfosByData(tabelaName, dataJson) {
+export default async function createDataController(filePath, action) {
+  let dataJson;
   try {
-    const dataColun = await doesCsvHaveDataController(tabelaName, dataJson);
-    const tiposEsperados = await getTiposFromTable(tabelaName);
-    const colunsTable = await getColunsFromTable(tabelaName);
-    const colunsJson = Object.keys(dataJson[0] || {});
-
-    return {
-      coluna_data: dataColun,
-      tipagem: tiposEsperados,
-      colunas_tabela: colunsTable,
-      colunas_json: colunsJson,
-    };
+    dataJson = await createJsonController(filePath);
   } catch (e) {
-    addErro(
-      `[FATAL] Erro ao extrair informações da tabela destino ou colunas do Json csv, erro: ${e.message}`
-    );
+    addErro(`Erro ao converter CSV para JSON: ${e.message}`);
+    await updateLoggerController(filePath)
+    throw e;
+  }
+  if (!dataJson || dataJson.length === 0) {
+    addAviso(`Csv está vazio, validar se está valido`);
+  }
+
+  let metadados, logData;
+  try {
+    ({ metadados, logData } = await createFundamentalDocsController(
+      filePath,
+      dataJson,
+      action
+    ));
+    return { metadados, logData };
+  } catch (e) {
+    addErro(`Erro ao gerar metadados e logData: ${e.message}`);
+    await updateLoggerController(filePath)
     throw e;
   }
 }
@@ -66,6 +73,7 @@ export function createLogDataController(metadados) {
     mensagem_erro: null,
   };
 }
+
 export async function createFundamentalDocsController(
   filePath,
   dataJson,
@@ -90,33 +98,28 @@ export async function createFundamentalDocsController(
   }
 }
 
-export default async function createDataController(filePath, action) {
-  let dataJson;
-  try {
-    dataJson = await createJsonController(filePath);
-  } catch (e) {
-    addErro(`Erro ao converter CSV para JSON: ${e.message}`);
-    await updateLoggerController(filePath)
-    throw e;
-  }
-  if (!dataJson || dataJson.length === 0) {
-    addAviso(`Csv está vazio, validar se está valido`);
-  }
 
-  let metadados, logData;
+async function  extractInfosByData(tabelaName, dataJson) {
   try {
-    ({ metadados, logData } = await createFundamentalDocsController(
-      filePath,
-      dataJson,
-      action
-    ));
-    return { metadados, logData };
+    const dataColun = await doesCsvHaveDataController(tabelaName, dataJson);
+    const tiposEsperados = await getTiposFromTable(tabelaName);
+    const colunsTable = await getColunsFromTable(tabelaName);
+    const colunsJson = Object.keys(dataJson[0] || {});
+
+    return {
+      coluna_data: dataColun,
+      tipagem: tiposEsperados,
+      colunas_tabela: colunsTable,
+      colunas_json: colunsJson,
+    };
   } catch (e) {
-    addErro(`Erro ao gerar metadados e logData: ${e.message}`);
-    await updateLoggerController(filePath)
+    addErro(
+      `[FATAL] Erro ao extrair informações da tabela destino ou colunas do Json csv, erro: ${e.message}`
+    );
     throw e;
   }
 }
+
 
 export function destinoByFilePath(filePath) {
   const fileName = path.basename(filePath);

@@ -12,7 +12,7 @@ import { destinoByFilePath } from "../createDataController.js";
 import { managerDeleterController } from "../managerDataController.js";
 
 export default async function deletedHandler(filePath) {
-  try {
+  //try {
     const destino = destinoByFilePath(filePath);
 
 
@@ -43,9 +43,9 @@ export default async function deletedHandler(filePath) {
       await finalLoggerController(filePath)
       throw e;
     }
-  } catch (e) {
-    addErro(`Erro no deletedHandler, erro: ${e.message}, ${e.stack}`);
-    await finalLoggerController(filePath);
-    return;
-  }
+ // } catch (e) {
+   // addErro(`Erro no deletedHandler, erro: ${e.message}, ${e.stack}`);
+    //await finalLoggerController(filePath);
+    //return;
+  //}
 }
