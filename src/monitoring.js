@@ -6,7 +6,6 @@ import { fileURLToPath } from "url";
 import isCsvFile from "./utils/isCsvFile.js";
 import createdHandler from "./controller/Handlers/createdHandler.js";
 import deletedHandler from "./controller/Handlers/deletedHandler.js";
-import { loggerFileInit } from "./middleware/logger.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export async function startMonitoring() {

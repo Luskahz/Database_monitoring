@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import { addErro } from "../middleware/errorHandler.js";
 
 export default function createHashByData(dataJson) {
   try {
@@ -10,5 +9,5 @@ export default function createHashByData(dataJson) {
     return hash;
   } catch (e) {
    throw new Error(`Houve um erro ao gerar o hash do arquivo, erro: ${e.message}`);
-  }
+  } 
 }

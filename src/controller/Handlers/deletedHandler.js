@@ -1,6 +1,7 @@
 import { addAviso, addErro } from "../../middleware/errorHandler.js";
 import {
   finalLoggerController,
+  getLoggerContext,
   updateLoggerController,
 } from "../../middleware/logger.js";
 import {
@@ -12,40 +13,52 @@ import { destinoByFilePath } from "../createDataController.js";
 import { managerDeleterController } from "../managerDataController.js";
 
 export default async function deletedHandler(filePath) {
-  //try {
+  let logData;
+  try {
     const destino = destinoByFilePath(filePath);
-
-
-    let logData;
     try {
       logData = await getRegisterFromCache(destino);
-      console.log(JSON.stringify(logData, null, 2))
+      addAviso("tentativa de extração do cache finalizada.");
       if (!logData) {
-        console.log("nem um registro encontrado no cache")
-        addAviso(`Nenhum registro de cache encontrado para ${filePath}`);
-        await finalLoggerController(filePath)
+        addErro(
+          `Nenhum registro de cache encontrado para ${filePath} logica de exclusão travada`
+        );
         return;
       }
     } catch (e) {
       addErro(`Erro ao extrair o logdata do cache, verifique o cache`);
-      await updateLoggerController(filePath)
+    } finally {
+      await updateLoggerController(getLoggerContext({}, logData, filePath));
     }
     let resultado;
     try {
+      addAviso("logica de exclusão dos dados iniciada...");
       resultado = await managerDeleterController(logData);
-      if (!resultado.erro) {
-        await deleteLogByHash(logData);
-        await deleteRegisterFromCache(destino);
-        await updateLoggerController(filePath)
+      addAviso("logica de exclusão dos dados finalizada...");
+      if (resultado?.erro) {
+        addErro(
+          `Erro durante managerDeleterController: ${
+            resultado.mensagem || "Erro desconhecido"
+          }`
+        );
+        return; // ou `throw new Error(...)` dependendo da criticidade
       }
+      await deleteLogByHash(logData);
+      await deleteRegisterFromCache(destino);
+      addAviso("exclusão do log no cache e no banco finalizadas");
     } catch (e) {
-      addErro(`problema ao apagar o hash do banco, erro: ${e.message}`);
-      await finalLoggerController(filePath)
-      throw e;
+      addErro(
+        `problema ao apagar o hash do banco ou do cache, erro: ${e.message}`
+      );
+      return;
+    } finally {
+      await updateLoggerController(getLoggerContext({}, logData, filePath));
     }
- // } catch (e) {
-   // addErro(`Erro no deletedHandler, erro: ${e.message}, ${e.stack}`);
-    //await finalLoggerController(filePath);
-    //return;
-  //}
+  } catch (e) {
+    addErro(`Erro no deletedHandler, erro: ${e.message}, ${e.stack}`);
+    return;
+  } finally {
+    
+    await finalLoggerController(getLoggerContext({}, logData, filePath));
+  }
 }

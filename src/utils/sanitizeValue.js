@@ -1,10 +1,3 @@
-function timeToMinutes(str) {
-  // Aceita HHH:MM ou HHH:MM:SS
-  const match = str.match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/);
-  if (!match) return null;
-  const [, h, m, s] = match;
-  return parseInt(h, 10) * 60 + parseInt(m, 10) + (s ? parseInt(s, 10) / 60 : 0);
-}
 
 export function sanitizeValue(value, tipoEsperado) {
   if (value === "" || value === null || value === undefined) return null;

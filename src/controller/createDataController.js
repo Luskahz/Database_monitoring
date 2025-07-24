@@ -4,33 +4,33 @@ import { getColunsFromTable, getTiposFromTable } from "../model/tableModel.js";
 import createHashByData from "../utils/createHashByData.js";
 import createJsonController from "../utils/createJsonController.js";
 import { addAviso, addErro } from "../middleware/errorHandler.js";
-import { updateLoggerController } from "../middleware/logger.js";
-import { isInt16Array, isNumberObject } from "util/types";
 
 export default async function createDataController(filePath, action) {
   let dataJson;
   try {
     dataJson = await createJsonController(filePath);
+    if (!dataJson || dataJson.length === 0) {
+      addAviso("CSV vazio, validar se está válido");
+      return null 
+    } else if (Object.keys(dataJson[0]).length === 0) {
+      addAviso("CSV possui registros, mas sem colunas detectadas.");
+      return null
+    }
   } catch (e) {
     addErro(`Erro ao converter CSV para JSON: ${e.message}`);
-    await updateLoggerController(filePath);
     throw e;
   }
-  if (!dataJson || dataJson.length === 0) {
-    addAviso(`Csv está vazio, validar se está valido`);
-  }
 
-  let metadados, logData;
+
   try {
-    ({ metadados, logData } = await createFundamentalDocsController(
+    const { metadados, logData } = await createFundamentalDocsController(
       filePath,
       dataJson,
       action
-    ));
+    );
     return { metadados, logData };
   } catch (e) {
     addErro(`Erro ao gerar metadados e logData: ${e.message}`);
-    await updateLoggerController(filePath);
     throw e;
   }
 }
@@ -128,7 +128,6 @@ export function destinoByFilePath(filePath) {
   const grandParent = path.dirname(parent);
   const greatGrandParent = path.dirname(grandParent);
 
- 
   const baseNameNoExt = path.basename(fileName, path.extname(fileName));
   if (/^\d+$/.test(baseNameNoExt)) {
     // Exemplo: .../2025/julho/1.csv

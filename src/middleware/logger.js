@@ -43,7 +43,7 @@ function TextoLogger(dadosLogger) {
     `Ano: ${dadosLogger.ano} | Mês: ${dadosLogger.mes} | Dia: ${dadosLogger.dia}`,
     `hash: ${dadosLogger.hash ?? dadosLogger.hash_arquivo ?? "—"}`,
     `Coluna de referencia: ${dadosLogger.coluna_data ?? "—"}`,
-    `=============== Resultados da operação ===============`,
+    `=================== Resultados da operação ===================`,
     blocoMensagens,
   ];
 
@@ -70,33 +70,14 @@ function TextoLogger(dadosLogger) {
   return corpoBase.join("\n\n");
 }
 
-function getLoggerFileName(dir) {
-  return path.join(dir, `Logger.txt`);
-}
-
-export async function loggerFileInit(filePath) {
-  const dir = path.dirname(filePath);
-  const logPath = getLoggerFileName(dir);
-
-  try {
-    await fs.access(logPath);
-    return logPath;
-  } catch (e) {
-    try {
-      await fs.writeFile(logPath, "logger criado...", "utf8");
-      return logPath;
-    } catch (erro) {
-      console.log(
-        "[Logger] Erro na criação do logger antes de rodar o handler: " +
-          erro.message
-      );
-    }
-  }
+function getLoggerFileName(dir, name) {
+  return path.join(dir, `Logger_${name}.txt`);
 }
 
 export async function createLoggerController(filePath) {
   const dir = path.dirname(filePath);
-  const logPath = getLoggerFileName(dir);
+  const { name } = path.parse(filePath);
+  const logPath = getLoggerFileName(dir, name);
   try {
     await fs.writeFile(logPath, "Processo iniciado....", "utf8");
   } catch (e) {
@@ -127,9 +108,9 @@ export async function updateLoggerController(dadosLogger) {
     filePath = dadosLogger?.caminho_original || dadosLogger?.filePath;
     dadosParaLog = dadosLogger;
   }
-
+  const { name } = path.parse(filePath);
   const dir = path.dirname(filePath);
-  const logPath = getLoggerFileName(dir);
+  const logPath = getLoggerFileName(dir, name);
 
   const texto = TextoLogger(dadosParaLog);
   try {
@@ -148,7 +129,7 @@ export async function finalLoggerController(dadosLogger) {
     filePath = dadosLogger;
     dadosParaLog = {
       nome_arquivo: path.basename(filePath),
-      acao: "erro",
+      acao: "_",
       tabela: "—",
       tabela_destino: "—",
       ano: "—",
@@ -162,22 +143,26 @@ export async function finalLoggerController(dadosLogger) {
     filePath = dadosLogger?.caminho_original || dadosLogger?.filePath;
     dadosParaLog = dadosLogger;
   }
-
+  const { name } = path.parse(filePath);
   const dir = path.dirname(filePath);
-  const logPath = getLoggerFileName(dir);
-
-  const texto = TextoLogger(dadosParaLog);
+  const logPath = getLoggerFileName(dir, name);
+  let texto;
   try {
+    texto = TextoLogger(dadosParaLog);
     await fs.writeFile(logPath, texto, "utf8");
+    if (texto) console.log(texto);
   } catch (e) {
-    console.log(
-      "[Logger] Erro ao atualizar o logger, erro na finalização, validar chamada no handler"
-    );
+    try {
+      addErro(
+        `[logger] Erro ao montar ou salvar log: ${e.message}\n${e.stack}`
+      );
+    } catch {
+      // Fallback simples: imprimir direto no console, sem usar addErro
+      console.error(
+        `[logger] FALHA CRÍTICA no logger: ${e.message}\n${e.stack}`
+      );
+    }
   }
-
-  clearAllErrors();
-  //console.log(texto);
-  console.log("os dados estão bloqueados a serem eviados no console, consulte o logger")
 }
 
 export async function errorLoggerController(dadosLogger) {
@@ -200,4 +185,12 @@ export async function errorLoggerController(dadosLogger) {
   }
   clearAllErrors();
   console.log(texto);
+}
+
+export function getLoggerContext(metadados = {}, logData = {}, filePath) {
+  return {
+    ...metadados,
+    ...logData,
+    caminho_original: filePath ?? "—",
+  };
 }
