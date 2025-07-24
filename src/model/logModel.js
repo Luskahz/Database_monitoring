@@ -1,6 +1,5 @@
 import db, { schema } from "../../config/db.js";
 
-
 /**
  * @param {{
  *    nome_arquivo: string,
@@ -15,7 +14,6 @@ import db, { schema } from "../../config/db.js";
  * }} metadados
  */
 export async function getLogByData(metadados) {
-  
   const { tabela, nome_arquivo, ano } = metadados;
   try {
     const [result] = await db.query(
@@ -61,7 +59,9 @@ export async function getAllHashesFromTable(metadados) {
     );
     return result;
   } catch (e) {
-    throw new Error(`[model puxar hashs banco] Erro ao puxar os hashs da tabela no log_ingestao`);
+    throw new Error(
+      `[model puxar hashs banco] Erro ao puxar os hashs da tabela no log_ingestao`
+    );
   }
 }
 
@@ -133,5 +133,3 @@ export async function deleteLogByHash(logData) {
     );
   }
 }
-
-

@@ -4,5 +4,6 @@ export default function mapearTipo(tipoSql) {
   if (["decimal", "float", "double"].includes(tipoSql)) return "decimal";
   if (["date"].includes(tipoSql)) return "date";
   if (["time"].includes(tipoSql)) return "time";
+  if (["datetime"].includes(tipoSql)) return "datetime";
   return "string";
 }

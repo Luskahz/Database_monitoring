@@ -8,6 +8,10 @@ import db, { schema } from "../../config/db.js";
  */
 export async function createSchemaFromTable(metadados) {
   const { tabela } = metadados;
+
+  if (!tabela || typeof tabela !== "string") {
+    throw new Error(`[model schema] Nome da tabela inválido`);
+  }
   try {
     let results;
     [results] = await db.query(
@@ -19,6 +23,12 @@ export async function createSchemaFromTable(metadados) {
     `,
       [tabela, schema]
     );
+
+    if (!results || results.length === 0) {
+      throw new Error(
+        `[model schema] Tabela '${tabela}' não encontrada no banco de dados`
+      );
+    }
     const tipagem = {};
     for (const col of results) {
       const coluna = col.COLUMN_NAME;
@@ -52,12 +62,8 @@ export async function createSchemaFromTable(metadados) {
     }
     return tipagem;
   } catch (e) {
-    throw new Error(`[model schema] Erro ao criar tipagem da tabela: ${e.message}`);
+    throw new Error(
+      `[model schema] Erro ao criar tipagem da tabela: ${e.message}`
+    );
   }
 }
-
-
-
-
-
-

@@ -1,4 +1,4 @@
-import { addAviso, addErro } from "../../middleware/errorHandler.js";
+import { addAviso, addErro, clearAllErrors } from "../../middleware/errorHandler.js";
 import {
   finalLoggerController,
   getLoggerContext,
@@ -13,6 +13,7 @@ import { destinoByFilePath } from "../createDataController.js";
 import { managerDeleterController } from "../managerDataController.js";
 
 export default async function deletedHandler(filePath) {
+  clearAllErrors()
   let logData;
   try {
     const destino = destinoByFilePath(filePath);

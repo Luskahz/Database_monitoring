@@ -30,6 +30,13 @@ export default async function createJsonController(filePath) {
       transformHeader: (h) => normalizar(h.trim()),
       transform: (value) => value.trim(),
     });
+    const linhasCorrigidas = parsed.data.map((linha) => {
+      if ("__parsed_extra" in linha) {
+        delete linha.__parsed_extra;
+      }
+      return linha;
+    });
+
     if (parsed.errors.length) {
       const resumo = [
         `${parsed.errors.length} [Json] erros detectados durante o parsing do CSV:`,
@@ -50,9 +57,13 @@ export default async function createJsonController(filePath) {
       addAviso(resumo.join("\n"));
     }
     const linhasValidas = parsed.data.filter((linha) => {
+      const possuiCamposExtras =
+        Array.isArray(linha.__parsed_extra) && linha.__parsed_extra.length > 0;
       const valores = Object.values(linha);
-      const preenchidos = valores.filter((v) => v?.trim() !== "").length;
-      return preenchidos >= 3;
+      const preenchidos = valores.filter(
+        (v) => typeof v === "string" && v.trim() !== ""
+      ).length;
+      return preenchidos >= 3 && !possuiCamposExtras;
     });
     if (linhasValidas.length === 0) {
       addAviso(
@@ -61,13 +72,12 @@ export default async function createJsonController(filePath) {
     }
     let tiposEsperados;
     try {
-      tiposEsperados = await getTiposFromTable(tabelaName);
+      tiposEsperados = await getTiposFromTable(tabelaName)
     } catch (e) {
       throw new Error(
         `[Json] - erro ao gerar os tipos esperados, [erro: ${e.message}]`
       );
     }
-
     const dataJsonNormalized = linhasValidas.map((linha) => {
       const novaLinha = {};
       const nomesUsados = {}; // vai registrar quantas vezes um nome foi usado
@@ -88,9 +98,9 @@ export default async function createJsonController(filePath) {
       return novaLinha;
     });
     const dataSanitized = dataJsonNormalized.map((linha) => {
-      //console.log("Antes do sanitize:", JSON.stringify(linha));
+      console.log("Antes do sanitize:", JSON.stringify(linha));
       const sanitized = sanitizeRow(linha, tiposEsperados);
-      //console.log("Depois do sanitize:", JSON.stringify(sanitized));
+      console.log("Depois do sanitize:", JSON.stringify(sanitized));
       return sanitized;
     });
     addInfo(

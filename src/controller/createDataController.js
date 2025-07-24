@@ -1,6 +1,6 @@
 import path from "path";
 import { doesCsvHaveDataController } from "./insertValidator.js";
-import { getColunsFromTable, getTiposFromTable } from "../model/tableModel.js";
+import { getColumnsFromTable, getTiposFromTable } from "../model/tableModel.js";
 import createHashByData from "../utils/createHashByData.js";
 import createJsonController from "../utils/createJsonController.js";
 import { addAviso, addErro } from "../middleware/errorHandler.js";
@@ -105,7 +105,7 @@ async function extractInfosByData(tabelaName, dataJson) {
   try {
     const dataColun = await doesCsvHaveDataController(tabelaName, dataJson);
     const tiposEsperados = await getTiposFromTable(tabelaName);
-    const colunsTable = await getColunsFromTable(tabelaName);
+    const colunsTable = await getColumnsFromTable(tabelaName);
     const colunsJson = Object.keys(dataJson[0] || {});
 
     return {
@@ -132,20 +132,20 @@ export function destinoByFilePath(filePath) {
   if (/^\d+$/.test(baseNameNoExt)) {
     // Exemplo: .../2025/julho/1.csv
     return {
-      nome_arquivo: fileName, //1.csv
-      ano: path.basename(grandParent), // "2025"
-      mes: path.basename(parent), // "julho"
-      dia: path.basename(fileName, path.extname(fileName)), //1
-      tabela_destino: path.basename(greatGrandParent), // "base_bees_deliver_dia"
+      nome_arquivo: fileName.toLocaleLowerCase(), //1.csv
+      ano: path.basename(grandParent).toLocaleLowerCase(), // "2025"
+      mes: path.basename(parent).toLocaleLowerCase(), // "julho"
+      dia: path.basename(fileName, path.extname(fileName)).toLocaleLowerCase(), //1
+      tabela_destino: path.basename(greatGrandParent).toLocaleLowerCase(), // "base_bees_deliver_dia"
     };
   } else {
     // Exemplo: .../2025/julho.csv
     return {
-      nome_arquivo: fileName, //julho.csv
-      ano: path.basename(parent), // "2025"
-      mes: path.basename(fileName, path.extname(fileName)), // "julho"
+      nome_arquivo: fileName.toLocaleLowerCase(), //julho.csv
+      ano: path.basename(parent).toLocaleLowerCase(), // "2025"
+      mes: path.basename(fileName, path.extname(fileName)).toLocaleLowerCase(), // "julho"
       dia: null,
-      tabela_destino: path.basename(grandParent), // "base_bees_deliver_dia"
+      tabela_destino: path.basename(grandParent).toLocaleLowerCase(), // "base_bees_deliver_dia"
     };
   }
 }
