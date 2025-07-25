@@ -3,22 +3,57 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { addInfo } from "../middleware/errorHandler.js";
+import readline from "readline";
+import { createReadStream, createWriteStream } from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-
-
-async function acquireLock(lockFilePath, retries = 10, delay = 100) {
+async function acquireLock(
+  lockFilePath,
+  retries = 10,
+  delay = 100,
+  timeout = 30000
+) {
   for (let i = 0; i < retries; i++) {
     try {
-      await fs.open(lockFilePath, "wx"); // tenta criar lock - 'wx' falha se já existe
-      return; // lock obtido com sucesso
+      const now = Date.now();
+      const data = now.toString();
+
+      // Tenta criar e escrever o timestamp no lock
+      await fs.writeFile(lockFilePath, data, { flag: "wx" });
+      return; // Lock criado com sucesso
     } catch (e) {
-      if (e.code !== "EEXIST") {
+      if (e.code === "EEXIST") {
+        try {
+          const conteudo = await fs.readFile(lockFilePath, "utf8");
+          const lockTime = parseInt(conteudo.trim(), 10);
+          const diff = Date.now() - lockTime;
+
+          if (isNaN(lockTime)) {
+            console.warn(
+              `[lock] Conteúdo inválido em ${lockFilePath}, forçando remoção`
+            );
+            await fs.unlink(lockFilePath);
+            continue;
+          }
+
+          if (diff > timeout) {
+            console.warn(
+              `[lock] Lock expirado (${diff}ms), removendo ${lockFilePath}`
+            );
+            await fs.unlink(lockFilePath);
+            continue;
+          }
+        } catch (readErr) {
+          console.warn(`[lock] Erro ao ler lock existente: ${readErr.message}`);
+        }
+
+        // Espera antes de tentar novamente
+        await new Promise((r) => setTimeout(r, delay));
+      } else {
         throw new Error(`Erro inesperado ao tentar criar lock: ${e.message}`);
       }
-      await new Promise((r) => setTimeout(r, delay));
     }
   }
   throw new Error("Não foi possível obter lock após várias tentativas");
@@ -37,14 +72,18 @@ async function releaseLock(lockFilePath) {
   // Verifica se o arquivo lock existe antes de tentar apagar
   const exists = await fileExists(lockFilePath);
   if (!exists) {
-    console.info(`[lock] Lock '${lockFilePath}' não existe mais, nada a remover.`);
+    console.info(
+      `[lock] Lock '${lockFilePath}' não existe mais, nada a remover.`
+    );
     return;
   }
 
   try {
     await fs.unlink(lockFilePath);
   } catch (err) {
-    console.warn(`[lock] Falha ao remover lock, tentando novamente: ${err.message}`);
+    console.warn(
+      `[lock] Falha ao remover lock, tentando novamente: ${err.message}`
+    );
 
     // Tenta remover novamente com um pequeno delay
     try {
@@ -55,7 +94,9 @@ async function releaseLock(lockFilePath) {
         await fs.unlink(lockFilePath);
         console.info("[lock] Lock removido com sucesso na segunda tentativa.");
       } else {
-        console.info(`[lock] Lock '${lockFilePath}' foi removido por outro processo antes da segunda tentativa.`);
+        console.info(
+          `[lock] Lock '${lockFilePath}' foi removido por outro processo antes da segunda tentativa.`
+        );
       }
     } catch (err2) {
       console.error(`[lock] Falha crítica ao remover lock: ${err2.message}`);
@@ -77,7 +118,10 @@ async function initCacheFile(tabela) {
       return cacheFilePath;
     } catch (err) {
       await fs.writeFile(cacheFilePath, "", "utf8");
-      console.log(`Arquivo de cache criado para a tabela ${tabela} em:`, cacheFilePath);
+      console.log(
+        `Arquivo de cache criado para a tabela ${tabela} em:`,
+        cacheFilePath
+      );
       return cacheFilePath;
     }
   } catch (e) {
@@ -87,6 +131,7 @@ async function initCacheFile(tabela) {
 
 export async function insertHashInCache(logData) {
   const { tabela_destino, ano, mes, dia, nome_arquivo } = logData;
+
   let cachePath;
   try {
     cachePath = await initCacheFile(tabela_destino);
@@ -107,10 +152,14 @@ export async function insertHashInCache(logData) {
     }
     parts.push(nome_arquivo);
 
-    logData.identificador = parts.join("_");
+    const enrichedLogData = {
+      ...logData,
+      identificador: parts.join("_"),
+    };
+    const jsonString = JSON.stringify(enrichedLogData);
+    if (!jsonString) throw new Error("Erro ao serializar logData");
 
-    const jsonString = JSON.stringify(logData, null, 2);
-    await fs.appendFile(cachePath, jsonString + "\n\n", "utf8");
+    await fs.appendFile(cachePath, jsonString + "\n", "utf8");
     addInfo("[model cache] Objeto salvo no cache com sucesso!");
   } catch (e) {
     throw new Error(
@@ -126,52 +175,38 @@ export async function getRegisterFromCache(destino, skipLock = false) {
   const lockFilePath = cachePath + ".lock";
   if (!skipLock) await acquireLock(lockFilePath, 10, 200);
 
+  // monta o identificador
+  const { tabela_destino, ano, mes, dia, nome_arquivo } = destino;
+  const parts = [tabela_destino, ano, mes];
+  if (dia !== undefined && dia !== null && dia !== "") {
+    parts.push(dia);
+  }
+  parts.push(nome_arquivo);
+  const identificador = parts.join("_");
+  let rl, input;
+
   try {
-    const { tabela_destino, ano, mes, dia, nome_arquivo } = destino;
-    try {
-      // Monta o identificador igual ao insertHashInCache:
-      const parts = [tabela_destino, ano, mes];
-      if (dia !== undefined && dia !== null && dia !== "") {
-        parts.push(dia);
-      }
-      parts.push(nome_arquivo);
-      const identificador = parts.join("_");
+    input = createReadStream(cachePath);
+    rl = readline.createInterface({ input, crlfDelay: Infinity });
 
-      let conteudo;
+    for await (const line of rl) {
       try {
-        conteudo = await fs.readFile(cachePath, "utf8");
+        const obj = JSON.parse(line);
+        if (obj.identificador === identificador) {
+          return obj;
+        }
       } catch (e) {
-        throw new Error(
-          `[model cache] Erro ao ler o arquivo no cache, caminho do cache: '${cachePath}' erro: ${e.message}`
-        );
+        console.warn(`[cache] Linha inválida ignorada: ${line}`);
       }
-      const blocos = conteudo
-        .split("\n\n")
-        .map((b) => b.trim())
-        .filter(Boolean);
-
-      const registros = blocos
-        .map((json) => {
-          try {
-            return JSON.parse(json);
-          } catch (e) {
-            throw new Error(
-              `[model cache] Erro ao fazer parse de um bloco do cache, erro: ${e.message}`
-            );
-          }
-        })
-        .filter(Boolean);
-
-      const encontrado = registros.find(
-        (reg) => reg.identificador === identificador
-      );
-      return encontrado
-    } catch (e) {
-      throw new Error(`erro ao puxar o registro do cache: ${e.message}`);
     }
+
+    // não encontrou
+    return null;
   } catch (e) {
-    throw new Error(`Erro ao puxar um um dado do cache, erro: ${e.message}`);
+    throw new Error(`[cache] Erro ao buscar no cache: ${e.message}`);
   } finally {
+    if (rl) rl.close();
+    if (input) input?.destroy();
     if (!skipLock) await releaseLock(lockFilePath);
   }
 }
@@ -179,59 +214,68 @@ export async function getRegisterFromCache(destino, skipLock = false) {
 export async function deleteRegisterFromCache(destino) {
   const cachePath = await initCacheFile(destino.tabela_destino);
   const lockFilePath = cachePath + ".lock";
+  const tempPath = cachePath + ".tmp";
+
   await acquireLock(lockFilePath, 10, 200);
 
+  // monta identificador
+  const { tabela_destino, ano, mes, dia, nome_arquivo } = destino;
+  const parts = [tabela_destino, ano, mes];
+  if (dia !== undefined && dia !== null && dia !== "") {
+    parts.push(dia);
+  }
+  parts.push(nome_arquivo);
+  const identificadorAlvo = parts.join("_");
+  let rl, output, input;
   try {
-    let registroAlvo;
-    try {
-      registroAlvo = await getRegisterFromCache(destino, true);
-    } catch (e) {
-      throw new Error(
-        `[model cache] Erro ao coletar os registros do cache, erro: ${e.message}`
-      );
-    }
+    input = createReadStream(cachePath);
+    rl = readline.createInterface({ input, crlfDelay: Infinity });
+    output = createWriteStream(tempPath, { flags: "w" });
+    let encontrado = false;
 
-    if (!registroAlvo) {
-      throw new Error(
-        " [model cache] Registro não encontrado no cache. Nada foi removido."
-      );
-    }
-    let conteudo;
-    try {
-      conteudo = await fs.readFile(cachePath, "utf8");
-    } catch (e) {
-      throw new Error(`[model cache] Erro ao ler o cache ${e.message}`);
-    }
-
-    const blocos = conteudo
-      .split("\n\n")
-      .map((b) => b.trim())
-      .filter(Boolean);
-
-    const blocosMantidos = blocos.filter((bloco) => {
+    for await (const line of rl) {
       try {
-        const obj = JSON.parse(bloco);
-        return obj.identificador !== registroAlvo.identificador;
+        const obj = JSON.parse(line);
+        if (obj.identificador === identificadorAlvo) {
+          encontrado = true;
+          continue; // não escreve essa linha (é o alvo)
+        }
+        output.write(line + "\n");
       } catch {
-        return true;
+        // se a linha for inválida, preserva por segurança
+        output.write(line + "\n");
       }
-    });
+    }
 
-    const novoConteudo = blocosMantidos.join("\n\n") + "\n\n";
     try {
-      await fs.writeFile(cachePath, novoConteudo, "utf8");
-      addInfo(
-        `[model cache] Registro '${registroAlvo.identificador}' removido com sucesso do cache!`
-      );
-    } catch (e) {
+      output.end();
+      await new Promise((res, rej) => {
+        output.on("finish", res);
+        output.on("error", rej);
+      });
+    } finally {
+      output?.close?.();
+    }
+
+    if (!encontrado) {
       throw new Error(
-        `[model cache] Erro ao reescrever os dados sem o registro removido no cache!, erro: ${e.message}`
+        `[cache] Registro '${identificadorAlvo}' não encontrado no cache.`
       );
     }
+
+    await fs.rename(tempPath, cachePath);
+    addInfo(
+      `[cache JSONL] Registro '${identificadorAlvo}' removido com sucesso.`
+    );
     return true;
   } catch (e) {
-    throw new Error(`erro ao deletar um registro do cache, erro: ${e.message}`);
+    throw new Error(`[cache JSONL] Erro ao excluir registro: ${e.message}`);
   } finally {
+    if (await fileExists(tempPath)) {
+      await fs.unlink(tempPath).catch(() => {});
+    }
     await releaseLock(lockFilePath);
+    if (rl) rl.close();
+    if (input) input.close?.();
   }
 }

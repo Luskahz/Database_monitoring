@@ -43,8 +43,17 @@ export function sanitizeValue(value, tipoEsperado) {
       return null;
     }
     case "datetime": {
-      const str = String(value).trim();
+      const str = String(value).replace(/\s+/g, " ").trim();
       let match;
+      if (
+        (match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})[ T](\d{1,2}):(\d{2})$/))
+      ) {
+        const [_, d, m, y, h, min] = match;
+        return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")} ${h.padStart(
+          2,
+          "0"
+        )}:${min}:00`;
+      }
 
       // 1. DD/MM/YYYY HH:mm:ss
       if (

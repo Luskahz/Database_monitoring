@@ -16,13 +16,45 @@ export default function tiparLinha(linha, schema) {
         const floatVal = parseFloat(valor?.toString().replace(",", "."));
         novaLinha[col] = isNaN(floatVal) ? null : floatVal;
         break;
-      case "date":
-        const data = new Date(valor);
-        novaLinha[col] = isNaN(data) ? null : data.toISOString().split("T")[0];
-        break;
-       case "time":
+      case "date": {
+        let parsed = null;
         if (typeof valor === "string") {
-          novaLinha[col] = valor.match(/^\d{1,3}:\d{2}(:\d{2})?$/) ? valor : null;
+          // Aceita YYYY-MM-DD ou DD/MM/YYYY
+          if (valor.includes("/")) {
+            const [dia, mes, ano] = valor.split("/");
+            parsed = `${ano}-${mes.padStart(2, "0")}-${dia.padStart(2, "0")}`;
+          } else {
+            parsed = valor;
+          }
+        }
+        novaLinha[col] = parsed || null;
+        break;
+      }
+      case "datetime": {
+        let parsed = null;
+        if (typeof valor === "string") {
+          const partes = valor.trim().replace(/\s+/, " ").split(" ");
+          if (partes.length === 2) {
+            const [data, hora] = partes;
+            if (data.includes("/")) {
+              const [dia, mes, ano] = data.split("/");
+              parsed = `${ano}-${mes.padStart(2, "0")}-${dia.padStart(
+                2,
+                "0"
+              )} ${hora}`;
+            } else if (data.includes("-")) {
+              parsed = `${data} ${hora}`;
+            }
+          }
+        }
+        novaLinha[col] = parsed || null;
+        break;
+      }
+      case "time":
+        if (typeof valor === "string") {
+          novaLinha[col] = valor.match(/^\d{1,3}:\d{2}(:\d{2})?$/)
+            ? valor
+            : null;
         } else if (typeof valor === "number") {
           novaLinha[col] = valor; // já está em minutos, mantem
         } else {

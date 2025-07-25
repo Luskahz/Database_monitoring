@@ -98,9 +98,9 @@ export default async function createJsonController(filePath) {
       return novaLinha;
     });
     const dataSanitized = dataJsonNormalized.map((linha) => {
-      console.log("Antes do sanitize:", JSON.stringify(linha));
+      //console.log("Antes do sanitize:", JSON.stringify(linha));
       const sanitized = sanitizeRow(linha, tiposEsperados);
-      console.log("Depois do sanitize:", JSON.stringify(sanitized));
+      //console.log("Depois do sanitize:", JSON.stringify(sanitized));
       return sanitized;
     });
     addInfo(

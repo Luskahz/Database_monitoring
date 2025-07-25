@@ -61,7 +61,7 @@ export async function manageInsertController(metadados) {
         await insertRegisterinTable(metadados.tabela, linhaTipada);
 
       // Log detalhado: original e tipada
-      addInfo(
+      console.log(
         `Linha ${i} inserida:\r\n`
           +`\r\n`+
           `Original: ${JSON.stringify(linhaOriginal)}\r\n`

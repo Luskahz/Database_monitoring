@@ -205,12 +205,12 @@ CREATE TABLE -- colunas data: 1
     etapa_pedido VARCHAR(25),
     sem_estoque VARCHAR(25),
     taxa_fora_rota int,
-    codigo_pedido_promax bigint,
+    codigo_pedido_promax varchar(25),
     data_geracao_arquivo_p DATETIME,
     status_critica VARCHAR(25),
     tipo_solicitacao VARCHAR(25),
-    codigo_critica int,
-    criticas_magento int,
+    codigo_critica varchar(25),
+    criticas_magento varchar(25),
     alcada_original VARCHAR(25),
     alcada_rejeicao VARCHAR(25),
     usuario_aprovador_1 VARCHAR(25),
@@ -221,11 +221,11 @@ CREATE TABLE -- colunas data: 1
     valor_total_pedido decimal(10, 2),
     valor_total_nota_fiscal decimal(10, 2),
     origem_pedido VARCHAR(25),
-    codigo_incremento_prazo int,
-    motivo_cancelamento VARCHAR(25),
+    codigo_incremento_prazo varchar(25),
+    motivo_cancelamento VARCHAR(100),
     taxa_adf_utilizada decimal(10, 2),
     taxa_adf_escalonada decimal(10, 2),
-    valor_pedido_minimo decimal(10, 2),
+    valor_pedido_minimo int,
     indicador_entrega_alternativa VARCHAR(25),
     importado_pelo_hercules VARCHAR(25)
     
@@ -405,8 +405,8 @@ CREATE TABLE -- colunas data: 1
 CREATE TABLE -- colunas data: 1
   IF NOT EXISTS `03_01_47_01` ( 
     cod_puxada int,
-    nome_filial VARCHAR(25),
-    geografia VARCHAR(25),
+    nome_filial VARCHAR(50),
+    geografia VARCHAR(50),
     canal_de_marcacao VARCHAR(20),
     origem VARCHAR(20),
     gerente_vendas int,
@@ -418,37 +418,37 @@ CREATE TABLE -- colunas data: 1
     vendedor int,
     nome_vendedor VARCHAR(25),
     cliente int,
-    nome_cliente VARCHAR(25),
+    nome_cliente VARCHAR(50),
     categoria_cliente int,
-    desc_categoria_cliente VARCHAR(25),
+    desc_categoria_cliente VARCHAR(50),
     tipo_movimento int,
-    desc_tipo_movimento VARCHAR(25),
+    desc_tipo_movimento VARCHAR(50),
     operacao int,
-    desc_operacao VARCHAR(25),
+    desc_operacao VARCHAR(50),
     transportadora int,
-    nome_transportadora VARCHAR(25),
+    nome_transportadora VARCHAR(50),
     nr_roadshow int,
     data DATE,
     pedido int,
     nota_fiscal bigint,
     serie int,
     tipo_marca int,
-    desc_tipo_marca VARCHAR(25),
+    desc_tipo_marca VARCHAR(50),
     embalagem int,
-    desc_embalagem VARCHAR(25),
+    desc_embalagem VARCHAR(50),
     cod_prod int,
-    nome_prod VARCHAR(25),
+    nome_prod VARCHAR(50),
     volume_marcacao DECIMAL(10, 3),
     volume_entrega DECIMAL(10, 3),
-    motivo VARCHAR(25),
-    submotivo_1 VARCHAR(25),
-    submotivo_2 VARCHAR(25),
+    motivo VARCHAR(50),
+    submotivo_1 VARCHAR(50),
+    submotivo_2 VARCHAR(50),
     codigo_marca int,
-    descricao_marca VARCHAR(25),
+    descricao_marca VARCHAR(50),
     cod_municipio VARCHAR(20),
-    nome_municipio VARCHAR(25),
+    nome_municipio VARCHAR(50),
     cod_rede VARCHAR(20),
-    nome_rede VARCHAR(25),
+    nome_rede VARCHAR(50),
     fora_de_rota VARCHAR(10),
     ajuste VARCHAR(10),
     idade_do_pedido INT,
@@ -457,12 +457,12 @@ CREATE TABLE -- colunas data: 1
     prioridade_venda VARCHAR(20),
     hora_envio_roadshow DATETIME,
     hora_retorno_roadshow DATETIME,
-    pedido_origem VARCHAR(25),
+    pedido_origem VARCHAR(50),
     cod_filial_origem VARCHAR(20),
-    nome_filial_origem VARCHAR(25),
+    nome_filial_origem VARCHAR(50),
     mapa int,
-    pedido_quebra_original VARCHAR(25),
-    pedido_cliente VARCHAR(25),
+    pedido_quebra_original VARCHAR(50),
+    pedido_cliente int,
     pedido_sistema_origem VARCHAR(25),
     data_entrega_nf varchar(25),
     entrega_real DATETIME,
@@ -1046,108 +1046,51 @@ app.listen(port, () => {
 });
 
 ----------------------------
-cacheHash.txt --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash.txt
-{
-  "tabela_destino": "01_11",
-  "nome_arquivo": "julho.CSV",
-  "ano": 2025,
-  "mes": "julho",
-  "coluna_data": null,
-  "data_upload": "2025-07-23T18:48:35.609Z",
-  "hash_arquivo": "50bb4f5908d811fc0ec6e7f258e0390c61b3f94f343f7182bd9b3ca4dbdf9574",
-  "caminho_original": "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\cadastros\\01_11\\2025\\julho.CSV",
-  "sucesso": true,
-  "mensagem_erro": null,
-  "identificador": "01_11_2025_julho_julho.CSV"
-}
+cacheHash_01_11.txt --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_01_11.txt
 
-{
-  "tabela_destino": "01_20_11",
-  "nome_arquivo": "junho.csv",
-  "ano": 2025,
-  "mes": "junho",
-  "coluna_data": null,
-  "data_upload": "2025-07-23T18:56:53.478Z",
-  "hash_arquivo": "5326053ca602f16fb2ead117e6aa4488adec39d5c942390539a9b4cc6c4db24b",
-  "caminho_original": "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\cadastros\\01_20_11\\2025\\junho.csv",
-  "sucesso": true,
-  "mensagem_erro": null,
-  "identificador": "01_20_11_2025_junho_junho.csv"
-}
-
-{
-  "tabela_destino": "01_20_11",
-  "nome_arquivo": "junho.csv",
-  "ano": 2025,
-  "mes": "junho",
-  "coluna_data": null,
-  "data_upload": "2025-07-23T19:29:42.129Z",
-  "hash_arquivo": "5326053ca602f16fb2ead117e6aa4488adec39d5c942390539a9b4cc6c4db24b",
-  "caminho_original": "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\cadastros\\01_20_11\\2025\\junho.csv",
-  "sucesso": true,
-  "mensagem_erro": null,
-  "identificador": "01_20_11_2025_junho_junho.csv"
-}
-
-{
-  "tabela_destino": "01_11",
-  "nome_arquivo": "julho.CSV",
-  "ano": 2025,
-  "mes": "julho",
-  "dia": null,
-  "coluna_data": null,
-  "data_upload": "2025-07-23T19:38:41.122Z",
-  "hash_arquivo": "50bb4f5908d811fc0ec6e7f258e0390c61b3f94f343f7182bd9b3ca4dbdf9574",
-  "caminho_original": "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\cadastros\\01_11\\2025\\julho.CSV",
-  "sucesso": true,
-  "mensagem_erro": null,
-  "identificador": "01_11_2025_julho_julho.CSV"
-}
 
 
 ----------------------------
-fallback_logger.txt --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\fallback_logger.txt
+cacheHash_03_01_46_06.txt --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_03_01_46_06.txt
+
+----------------------------
+cacheHash_03_01_47_01.txt --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_03_01_47_01.txt
 
 ----------------------------
 createDataController.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\controller\createDataController.js
 import path from "path";
 import { doesCsvHaveDataController } from "./insertValidator.js";
-import { getColunsFromTable, getTiposFromTable } from "../model/tableModel.js";
+import { getColumnsFromTable, getTiposFromTable } from "../model/tableModel.js";
 import createHashByData from "../utils/createHashByData.js";
 import createJsonController from "../utils/createJsonController.js";
 import { addAviso, addErro } from "../middleware/errorHandler.js";
-import { updateLoggerController } from "../middleware/logger.js";
 
 export default async function createDataController(filePath, action) {
   let dataJson;
   try {
     dataJson = await createJsonController(filePath);
     if (!dataJson || dataJson.length === 0) {
-      addAviso(`Csv estÃ¡ vazio, validar se estÃ¡ valido`);
-    }
-    if (dataJson.length && Object.keys(dataJson[0]).length === 0) {
+      addAviso("CSV vazio, validar se estÃ¡ vÃ¡lido");
+      return null 
+    } else if (Object.keys(dataJson[0]).length === 0) {
       addAviso("CSV possui registros, mas sem colunas detectadas.");
+      return null
     }
   } catch (e) {
     addErro(`Erro ao converter CSV para JSON: ${e.message}`);
-    await updateLoggerController(filePath);
     throw e;
   }
-  if (!dataJson || dataJson.length === 0) {
-    addAviso(`Csv estÃ¡ vazio, validar se estÃ¡ valido`);
-  }
 
-  let metadados, logData;
+
   try {
-    ({ metadados, logData } = await createFundamentalDocsController(
+    const { metadados, logData } = await createFundamentalDocsController(
       filePath,
       dataJson,
       action
-    ));
+    );
     return { metadados, logData };
   } catch (e) {
     addErro(`Erro ao gerar metadados e logData: ${e.message}`);
-    await updateLoggerController(filePath);
     throw e;
   }
 }
@@ -1222,7 +1165,7 @@ async function extractInfosByData(tabelaName, dataJson) {
   try {
     const dataColun = await doesCsvHaveDataController(tabelaName, dataJson);
     const tiposEsperados = await getTiposFromTable(tabelaName);
-    const colunsTable = await getColunsFromTable(tabelaName);
+    const colunsTable = await getColumnsFromTable(tabelaName);
     const colunsJson = Object.keys(dataJson[0] || {});
 
     return {
@@ -1249,20 +1192,20 @@ export function destinoByFilePath(filePath) {
   if (/^\d+$/.test(baseNameNoExt)) {
     // Exemplo: .../2025/julho/1.csv
     return {
-      nome_arquivo: fileName, //1.csv
-      ano: path.basename(grandParent), // "2025"
-      mes: path.basename(parent), // "julho"
-      dia: path.basename(fileName, path.extname(fileName)), //1
-      tabela_destino: path.basename(greatGrandParent), // "base_bees_deliver_dia"
+      nome_arquivo: fileName.toLocaleLowerCase(), //1.csv
+      ano: path.basename(grandParent).toLocaleLowerCase(), // "2025"
+      mes: path.basename(parent).toLocaleLowerCase(), // "julho"
+      dia: path.basename(fileName, path.extname(fileName)).toLocaleLowerCase(), //1
+      tabela_destino: path.basename(greatGrandParent).toLocaleLowerCase(), // "base_bees_deliver_dia"
     };
   } else {
     // Exemplo: .../2025/julho.csv
     return {
-      nome_arquivo: fileName, //julho.csv
-      ano: path.basename(parent), // "2025"
-      mes: path.basename(fileName, path.extname(fileName)), // "julho"
+      nome_arquivo: fileName.toLocaleLowerCase(), //julho.csv
+      ano: path.basename(parent).toLocaleLowerCase(), // "2025"
+      mes: path.basename(fileName, path.extname(fileName)).toLocaleLowerCase(), // "julho"
       dia: null,
-      tabela_destino: path.basename(grandParent), // "base_bees_deliver_dia"
+      tabela_destino: path.basename(grandParent).toLocaleLowerCase(), // "base_bees_deliver_dia"
     };
   }
 }
@@ -1500,7 +1443,7 @@ export async function manageInsertController(metadados) {
         await insertRegisterinTable(metadados.tabela, linhaTipada);
 
       // Log detalhado: original e tipada
-      addInfo(
+      console.log(
         `Linha ${i} inserida:\r\n`
           +`\r\n`+
           `Original: ${JSON.stringify(linhaOriginal)}\r\n`
@@ -1574,7 +1517,7 @@ export default async function createdHandler(filePath) {
       addErro(`erro ao gerar os dados fundamentais, erro:${e.message}`);
       return;
     } finally {
-      await updateLoggerController(getLoggerContext(metadados, logData, filePath));
+      await updateLoggerController(getLoggerContext(metadados ?? {}, logData ?? {}, filePath));
     }
      
 
@@ -1591,7 +1534,7 @@ export default async function createdHandler(filePath) {
       addErro(`Erro ao validar fluxo de ingestÃ£o: ${e.message}`);
       return;
     } finally{
-      await updateLoggerController(getLoggerContext(metadados, logData, filePath));
+      await updateLoggerController(getLoggerContext(metadados ?? {}, logData ?? {}, filePath));
     }
 
     //-------------- vai retorna o logdata o metadados e o fluxo -----------
@@ -1614,26 +1557,26 @@ export default async function createdHandler(filePath) {
       } finally {
         await insertHashInCache(logData);
         await insertLog(logData);
-        await updateLoggerController(getLoggerContext(metadados, logData, filePath));
+        await updateLoggerController(getLoggerContext(metadados ?? {}, logData ?? {}, filePath));
       }
     } else {
       addInfo(
         `[ARQUIVO IGNORADO] ${metadados.nome_arquivo} jÃ¡ existe e nÃ£o foi modificado.`
       );
-      await updateLoggerController(getLoggerContext(metadados, logData, filePath));
+      await updateLoggerController(getLoggerContext(metadados ?? {}, logData ?? {}, filePath));
       return;
     }
   } catch (e) {
     addErro(`erro no createdHandler, erro: ${e.message}, caminho do erro: ${e.stack}`);
     return;
   } finally {
-    await finalLoggerController(getLoggerContext(metadados, logData, filePath));
+    await finalLoggerController(getLoggerContext(metadados ?? {}, logData ?? {}, filePath));
   }
 }
 
 ----------------------------
 deletedHandler.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\controller\Handlers\deletedHandler.js
-import { addAviso, addErro } from "../../middleware/errorHandler.js";
+import { addAviso, addErro, clearAllErrors } from "../../middleware/errorHandler.js";
 import {
   finalLoggerController,
   getLoggerContext,
@@ -1648,6 +1591,7 @@ import { destinoByFilePath } from "../createDataController.js";
 import { managerDeleterController } from "../managerDataController.js";
 
 export default async function deletedHandler(filePath) {
+  clearAllErrors()
   let logData;
   try {
     const destino = destinoByFilePath(filePath);
@@ -1935,23 +1879,86 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import { addAviso, addInfo } from "../middleware/errorHandler.js";
+import { addInfo } from "../middleware/errorHandler.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const cachePath = path.resolve(__dirname, "../cache", "cacheHash.txt");
 
-async function initCacheFile() {
-  const dirPath = path.dirname(cachePath);
-  await fs.mkdir(dirPath, { recursive: true });
+
+async function acquireLock(lockFilePath, retries = 10, delay = 100) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await fs.open(lockFilePath, "wx"); // tenta criar lock - 'wx' falha se jÃ¡ existe
+      return; // lock obtido com sucesso
+    } catch (e) {
+      if (e.code !== "EEXIST") {
+        throw new Error(`Erro inesperado ao tentar criar lock: ${e.message}`);
+      }
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw new Error("NÃ£o foi possÃ­vel obter lock apÃ³s vÃ¡rias tentativas");
+}
+
+async function fileExists(filePath) {
   try {
-    await fs.access(cachePath);
-    return cachePath;
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function releaseLock(lockFilePath) {
+  // Verifica se o arquivo lock existe antes de tentar apagar
+  const exists = await fileExists(lockFilePath);
+  if (!exists) {
+    console.info(`[lock] Lock '${lockFilePath}' nÃ£o existe mais, nada a remover.`);
+    return;
+  }
+
+  try {
+    await fs.unlink(lockFilePath);
   } catch (err) {
-    await fs.writeFile(cachePath, "", "utf8");
-    console.log("Arquivo de cache criado em:", cachePath);
-    return cachePath;
+    console.warn(`[lock] Falha ao remover lock, tentando novamente: ${err.message}`);
+
+    // Tenta remover novamente com um pequeno delay
+    try {
+      await new Promise((r) => setTimeout(r, 100));
+
+      // Verifica novamente antes de tentar apagar
+      if (await fileExists(lockFilePath)) {
+        await fs.unlink(lockFilePath);
+        console.info("[lock] Lock removido com sucesso na segunda tentativa.");
+      } else {
+        console.info(`[lock] Lock '${lockFilePath}' foi removido por outro processo antes da segunda tentativa.`);
+      }
+    } catch (err2) {
+      console.error(`[lock] Falha crÃ­tica ao remover lock: ${err2.message}`);
+      // Aqui vocÃª pode incluir lÃ³gica para alertar o time ou monitorar esse problema
+    }
+  }
+}
+
+async function initCacheFile(tabela) {
+  try {
+    const dirPath = path.resolve(__dirname, "../cache");
+    await fs.mkdir(dirPath, { recursive: true });
+
+    // Aqui cria o caminho do arquivo cache especÃ­fico para a tabela
+    const cacheFilePath = path.resolve(dirPath, `cacheHash_${tabela}.txt`);
+
+    try {
+      await fs.access(cacheFilePath);
+      return cacheFilePath;
+    } catch (err) {
+      await fs.writeFile(cacheFilePath, "", "utf8");
+      console.log(`Arquivo de cache criado para a tabela ${tabela} em:`, cacheFilePath);
+      return cacheFilePath;
+    }
+  } catch (e) {
+    throw new Error(`erro ao iniciar o arquivo cache, erro: ${e.message}`);
   }
 }
 
@@ -1959,126 +1966,151 @@ export async function insertHashInCache(logData) {
   const { tabela_destino, ano, mes, dia, nome_arquivo } = logData;
   let cachePath;
   try {
-    cachePath = await initCacheFile();
+    cachePath = await initCacheFile(tabela_destino);
   } catch (e) {
-    throw new Error(`[model cache] erro ao criar o arquivo do cache: ${e.message}`);
+    throw new Error(
+      `[model cache] erro ao criar o arquivo do cache: ${e.message}`
+    );
   }
 
-  // Array com todos os componentes do identificador
-  const parts = [tabela_destino, ano, mes];
-  // SÃ³ adiciona dia se ele existir e for diferente de null/undefined/""
-  if (dia !== undefined && dia !== null && dia !== "") {
-    parts.push(dia);
-  }
-  parts.push(nome_arquivo);
-
-  logData.identificador = parts.join("_");
-
-  const jsonString = JSON.stringify(logData, null, 2);
+  // implementando logica de lock
+  const lockFilePath = cachePath + ".lock";
+  await acquireLock(lockFilePath, 10, 200);
 
   try {
+    const parts = [tabela_destino, ano, mes];
+    if (dia !== undefined && dia !== null && dia !== "") {
+      parts.push(dia);
+    }
+    parts.push(nome_arquivo);
+
+    logData.identificador = parts.join("_");
+
+    const jsonString = JSON.stringify(logData, null, 2);
     await fs.appendFile(cachePath, jsonString + "\n\n", "utf8");
     addInfo("[model cache] Objeto salvo no cache com sucesso!");
   } catch (e) {
-    throw new Error(`erro ao inserir o logData no cache, erro: ${e.message}`);
+    throw new Error(
+      `erro gerado ao inserir o hash no cache, erro: ${e.message}`
+    );
+  } finally {
+    await releaseLock(lockFilePath);
   }
 }
 
-export async function getRegisterFromCache(destino) {
-  const { tabela_destino, ano, mes, dia, nome_arquivo } = destino;
+export async function getRegisterFromCache(destino, skipLock = false) {
+  const cachePath = await initCacheFile(destino.tabela_destino);
+  const lockFilePath = cachePath + ".lock";
+  if (!skipLock) await acquireLock(lockFilePath, 10, 200);
 
-  // Monta o identificador igual ao insertHashInCache:
-  const parts = [tabela_destino, ano, mes];
-  if (dia !== undefined && dia !== null && dia !== "") {
-    parts.push(dia);
-  }
-  parts.push(nome_arquivo);
-  const identificador = parts.join("_");
-
-  let conteudo;
   try {
-    conteudo = await fs.readFile(cachePath, "utf8");
-  } catch (e) {
-    throw new Error(
-      `[model cache] Erro ao ler o arquivo no cache, caminho do cache: '${cachePath}' erro: ${e.message}`
-    );
-  }
-  const blocos = conteudo
-    .split("\n\n")
-    .map((b) => b.trim())
-    .filter(Boolean);
+    const { tabela_destino, ano, mes, dia, nome_arquivo } = destino;
+    try {
+      // Monta o identificador igual ao insertHashInCache:
+      const parts = [tabela_destino, ano, mes];
+      if (dia !== undefined && dia !== null && dia !== "") {
+        parts.push(dia);
+      }
+      parts.push(nome_arquivo);
+      const identificador = parts.join("_");
 
-  const registros = blocos
-    .map((json) => {
+      let conteudo;
       try {
-        return JSON.parse(json);
+        conteudo = await fs.readFile(cachePath, "utf8");
       } catch (e) {
         throw new Error(
-          `[model cache] Erro ao fazer parse de um bloco do cache, erro: ${e.message}`
+          `[model cache] Erro ao ler o arquivo no cache, caminho do cache: '${cachePath}' erro: ${e.message}`
         );
       }
-    })
-    .filter(Boolean);
+      const blocos = conteudo
+        .split("\n\n")
+        .map((b) => b.trim())
+        .filter(Boolean);
 
-  const encontrado = registros.find(
-    (reg) => reg.identificador === identificador
-  );
-  if (!encontrado) {
-    throw new Error(
-      `[model cache] Nenhum registro encontrado no cache com identificador '${identificador}'`
-    );
+      const registros = blocos
+        .map((json) => {
+          try {
+            return JSON.parse(json);
+          } catch (e) {
+            throw new Error(
+              `[model cache] Erro ao fazer parse de um bloco do cache, erro: ${e.message}`
+            );
+          }
+        })
+        .filter(Boolean);
+
+      const encontrado = registros.find(
+        (reg) => reg.identificador === identificador
+      );
+      return encontrado
+    } catch (e) {
+      throw new Error(`erro ao puxar o registro do cache: ${e.message}`);
+    }
+  } catch (e) {
+    throw new Error(`Erro ao puxar um um dado do cache, erro: ${e.message}`);
+  } finally {
+    if (!skipLock) await releaseLock(lockFilePath);
   }
-  return encontrado || null;
 }
 
 export async function deleteRegisterFromCache(destino) {
-  let registroAlvo;
+  const cachePath = await initCacheFile(destino.tabela_destino);
+  const lockFilePath = cachePath + ".lock";
+  await acquireLock(lockFilePath, 10, 200);
+
   try {
-    registroAlvo = await getRegisterFromCache(destino);
-  } catch (e) {
-    throw new Error(
-      `[model cache] Erro ao coletar os registros do cache, erro: ${e.message}`
-    );
-  }
-
-  if (!registroAlvo) {
-    throw new Error(
-      " [model cache] Registro nÃ£o encontrado no cache. Nada foi removido."
-    );
-  }
-  let conteudo;
-  try {
-    conteudo = await fs.readFile(cachePath, "utf8");
-  } catch (e) {
-    throw new Error(`[model cache] Erro ao ler o cache ${e.message}`);
-  }
-
-  const blocos = conteudo
-    .split("\n\n")
-    .map((b) => b.trim())
-    .filter(Boolean);
-
-  const blocosMantidos = blocos.filter((bloco) => {
+    let registroAlvo;
     try {
-      const obj = JSON.parse(bloco);
-      return obj.identificador !== registroAlvo.identificador;
-    } catch {
-      return true;
+      registroAlvo = await getRegisterFromCache(destino, true);
+    } catch (e) {
+      throw new Error(
+        `[model cache] Erro ao coletar os registros do cache, erro: ${e.message}`
+      );
     }
-  });
 
-  const novoConteudo = blocosMantidos.join("\n\n") + "\n\n";
-  try {
-    await fs.writeFile(cachePath, novoConteudo, "utf8");
-    addInfo(
-      `[model cache] Registro '${registroAlvo.identificador}' removido com sucesso do cache!`
-    );
+    if (!registroAlvo) {
+      throw new Error(
+        " [model cache] Registro nÃ£o encontrado no cache. Nada foi removido."
+      );
+    }
+    let conteudo;
+    try {
+      conteudo = await fs.readFile(cachePath, "utf8");
+    } catch (e) {
+      throw new Error(`[model cache] Erro ao ler o cache ${e.message}`);
+    }
+
+    const blocos = conteudo
+      .split("\n\n")
+      .map((b) => b.trim())
+      .filter(Boolean);
+
+    const blocosMantidos = blocos.filter((bloco) => {
+      try {
+        const obj = JSON.parse(bloco);
+        return obj.identificador !== registroAlvo.identificador;
+      } catch {
+        return true;
+      }
+    });
+
+    const novoConteudo = blocosMantidos.join("\n\n") + "\n\n";
+    try {
+      await fs.writeFile(cachePath, novoConteudo, "utf8");
+      addInfo(
+        `[model cache] Registro '${registroAlvo.identificador}' removido com sucesso do cache!`
+      );
+    } catch (e) {
+      throw new Error(
+        `[model cache] Erro ao reescrever os dados sem o registro removido no cache!, erro: ${e.message}`
+      );
+    }
+    return true;
   } catch (e) {
-    throw new Error(
-      `[model cache] Erro ao reescrever os dados sem o registro removido no cache!, erro: ${e.message}`
-    );
+    throw new Error(`erro ao deletar um registro do cache, erro: ${e.message}`);
+  } finally {
+    await releaseLock(lockFilePath);
   }
-  return true;
 }
 
 ----------------------------
@@ -2093,6 +2125,10 @@ import db, { schema } from "../../config/db.js";
  */
 export async function createSchemaFromTable(metadados) {
   const { tabela } = metadados;
+
+  if (!tabela || typeof tabela !== "string") {
+    throw new Error(`[model schema] Nome da tabela invÃ¡lido`);
+  }
   try {
     let results;
     [results] = await db.query(
@@ -2104,6 +2140,12 @@ export async function createSchemaFromTable(metadados) {
     `,
       [tabela, schema]
     );
+
+    if (!results || results.length === 0) {
+      throw new Error(
+        `[model schema] Tabela '${tabela}' nÃ£o encontrada no banco de dados`
+      );
+    }
     const tipagem = {};
     for (const col of results) {
       const coluna = col.COLUMN_NAME;
@@ -2137,20 +2179,15 @@ export async function createSchemaFromTable(metadados) {
     }
     return tipagem;
   } catch (e) {
-    throw new Error(`[model schema] Erro ao criar tipagem da tabela: ${e.message}`);
+    throw new Error(
+      `[model schema] Erro ao criar tipagem da tabela: ${e.message}`
+    );
   }
 }
-
-
-
-
-
-
 
 ----------------------------
 logModel.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\model\logModel.js
 import db, { schema } from "../../config/db.js";
-
 
 /**
  * @param {{
@@ -2166,7 +2203,6 @@ import db, { schema } from "../../config/db.js";
  * }} metadados
  */
 export async function getLogByData(metadados) {
-  
   const { tabela, nome_arquivo, ano } = metadados;
   try {
     const [result] = await db.query(
@@ -2212,7 +2248,9 @@ export async function getAllHashesFromTable(metadados) {
     );
     return result;
   } catch (e) {
-    throw new Error(`[model puxar hashs banco] Erro ao puxar os hashs da tabela no log_ingestao`);
+    throw new Error(
+      `[model puxar hashs banco] Erro ao puxar os hashs da tabela no log_ingestao`
+    );
   }
 }
 
@@ -2285,8 +2323,6 @@ export async function deleteLogByHash(logData) {
   }
 }
 
-
-
 ----------------------------
 tableModel.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\model\tableModel.js
 import db, { schema } from "../../config/db.js";
@@ -2295,17 +2331,53 @@ import mapearTipo from "../utils/mapearTipos.js";
 
 const meses = {
   janeiro: 1,
+  jan: 1,
+  "jan.": 1,
+
   fevereiro: 2,
+  fev: 2,
+  "fev.": 2,
+
   marco: 3,
+  marÃ§o: 3,
+  mar: 3,
+  "mar.": 3,
+
   abril: 4,
+  abr: 4,
+  "abr.": 4,
+
   maio: 5,
+  mai: 5,
+  "mai.": 5,
+
   junho: 6,
+  jun: 6,
+  "jun.": 6,
+
   julho: 7,
+  jul: 7,
+  "jul.": 7,
+
   agosto: 8,
+  ago: 8,
+  "ago.": 8,
+
   setembro: 9,
+  set: 9,
+  "set.": 9,
+
   outubro: 10,
+  out: 10,
+  "out.": 10,
+
   novembro: 11,
+  nov: 11,
+  "nov.": 11,
+
   dezembro: 12,
+  dez: 12,
+  "dez.": 12,
 };
 
 export async function getAllRegistersFromTable(tabela) {
@@ -2342,7 +2414,7 @@ export async function getDateColumnsFromTable(tabela) {
   }
 }
 
-export async function getColunsFromTable(tabela) {
+export async function getColumnsFromTable(tabela) {
   try {
     const [results] = await db.query(
       `
@@ -2378,7 +2450,7 @@ export async function getColunsFromTable(tabela) {
 export async function insertRegisterinTable(tabela, linhaTipada) {
   let colunas;
   try {
-    colunas = await getColunsFromTable(tabela);
+    colunas = await getColumnsFromTable(tabela)
   } catch (e) {
     throw new Error(
       `[model coleta de tipagem para insert] erro ao coletar as colunas da tabela, erro: ${e.message}`
@@ -2599,6 +2671,13 @@ export default async function createJsonController(filePath) {
       transformHeader: (h) => normalizar(h.trim()),
       transform: (value) => value.trim(),
     });
+    const linhasCorrigidas = parsed.data.map((linha) => {
+      if ("__parsed_extra" in linha) {
+        delete linha.__parsed_extra;
+      }
+      return linha;
+    });
+
     if (parsed.errors.length) {
       const resumo = [
         `${parsed.errors.length} [Json] erros detectados durante o parsing do CSV:`,
@@ -2619,9 +2698,13 @@ export default async function createJsonController(filePath) {
       addAviso(resumo.join("\n"));
     }
     const linhasValidas = parsed.data.filter((linha) => {
+      const possuiCamposExtras =
+        Array.isArray(linha.__parsed_extra) && linha.__parsed_extra.length > 0;
       const valores = Object.values(linha);
-      const preenchidos = valores.filter((v) => v?.trim() !== "").length;
-      return preenchidos >= 3;
+      const preenchidos = valores.filter(
+        (v) => typeof v === "string" && v.trim() !== ""
+      ).length;
+      return preenchidos >= 3 && !possuiCamposExtras;
     });
     if (linhasValidas.length === 0) {
       addAviso(
@@ -2630,13 +2713,12 @@ export default async function createJsonController(filePath) {
     }
     let tiposEsperados;
     try {
-      tiposEsperados = await getTiposFromTable(tabelaName);
+      tiposEsperados = await getTiposFromTable(tabelaName)
     } catch (e) {
       throw new Error(
         `[Json] - erro ao gerar os tipos esperados, [erro: ${e.message}]`
       );
     }
-
     const dataJsonNormalized = linhasValidas.map((linha) => {
       const novaLinha = {};
       const nomesUsados = {}; // vai registrar quantas vezes um nome foi usado
@@ -2695,6 +2777,7 @@ export default function mapearTipo(tipoSql) {
   if (["decimal", "float", "double"].includes(tipoSql)) return "decimal";
   if (["date"].includes(tipoSql)) return "date";
   if (["time"].includes(tipoSql)) return "time";
+  if (["datetime"].includes(tipoSql)) return "datetime";
   return "string";
 }
 
@@ -2715,9 +2798,23 @@ export default function normalizar(nome) {
     .toLowerCase();
 }
 
+
+export function normalizarValores(nome) {
+  return nome
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // remove acentos
+    .replace(/%/g, "perc")           // % â†’ perc
+    .replace(/\s*\.\s*/g, "_")       // ponto entre palavras â†’ _
+    .replace(/\./g, "")              // outros pontos â†’ remove
+    .replace(/\s+/g, "_")            // espaÃ§o â†’ _
+    .replace(/[^a-zA-Z0-9_]/g, "")   // remove outros sÃ­mbolos
+    .replace(/_+/g, "_")             // evita mÃºltiplos __
+    .replace(/^_+|_+$/g, "")         // remove _ inÃ­cio/fim
+    .toLowerCase();
+}
+
 ----------------------------
 sanitizeValue.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\sanitizeValue.js
-
 export function sanitizeValue(value, tipoEsperado) {
   if (value === "" || value === null || value === undefined) return null;
 
@@ -2762,16 +2859,83 @@ export function sanitizeValue(value, tipoEsperado) {
       }
       return null;
     }
+    case "datetime": {
+      const str = String(value).replace(/\s+/g, " ").trim();
+      let match;
+      if (
+        (match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})[ T](\d{1,2}):(\d{2})$/))
+      ) {
+        const [_, d, m, y, h, min] = match;
+        return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")} ${h.padStart(
+          2,
+          "0"
+        )}:${min}:00`;
+      }
 
-  case "time": {
-  const str = String(value).trim();
-  const match = str.match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/);
-  if (!match) return null;
+      // 1. DD/MM/YYYY HH:mm:ss
+      if (
+        (match = str.match(
+          /^(\d{2})\/(\d{2})\/(\d{4})[ T](\d{1,2}):(\d{2}):(\d{2})$/
+        ))
+      ) {
+        const [_, d, m, y, h, min, s] = match;
+        return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")} ${h.padStart(
+          2,
+          "0"
+        )}:${min}:${s}`;
+      }
 
-  // Padroniza sempre como string HHH:MM:SS (mesmo se vier HHH:MM)
-  const [_, h, m, s] = match.map((v) => (v !== undefined ? parseInt(v, 10) : 0));
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
+      // 2. YYYY-MM-DD HH:mm:ss
+      if (
+        (match = str.match(
+          /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/
+        ))
+      ) {
+        return str.replace("T", " ");
+      }
+
+      // 3. DD/MM/YYYY
+      if ((match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/))) {
+        const [_, d, m, y] = match;
+        return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")} 00:00:00`;
+      }
+
+      // 4. YYYY-MM-DD
+      if ((match = str.match(/^(\d{4})-(\d{2})-(\d{2})$/))) {
+        return `${match[1]}-${match[2]}-${match[3]} 00:00:00`;
+      }
+
+      // 5. YYYYMMDDHHmmss
+      if ((match = str.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/))) {
+        const [_, y, m, d, h, min, s] = match;
+        return `${y}-${m}-${d} ${h}:${min}:${s}`;
+      }
+
+      // 6. DDMMYYYY HHmmss
+      if (
+        (match = str.match(/^(\d{2})(\d{2})(\d{4}) (\d{2})(\d{2})(\d{2})$/))
+      ) {
+        const [_, d, m, y, h, min, s] = match;
+        return `${y}-${m}-${d} ${h}:${min}:${s}`;
+      }
+
+      return null;
+    }
+
+    case "time": {
+      const str = String(value).trim();
+      const match = str.match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/);
+      if (!match) return null;
+
+      // Padroniza sempre como string HHH:MM:SS (mesmo se vier HHH:MM)
+      const [_, h, m, s] = match.map((v) =>
+        v !== undefined ? parseInt(v, 10) : 0
+      );
+      return `${String(h).padStart(2, "0")}:${String(m).padStart(
+        2,
+        "0"
+      )}:${String(s).padStart(2, "0")}`;
+    }
 
     case "string":
     default:
@@ -2808,13 +2972,45 @@ export default function tiparLinha(linha, schema) {
         const floatVal = parseFloat(valor?.toString().replace(",", "."));
         novaLinha[col] = isNaN(floatVal) ? null : floatVal;
         break;
-      case "date":
-        const data = new Date(valor);
-        novaLinha[col] = isNaN(data) ? null : data.toISOString().split("T")[0];
-        break;
-       case "time":
+      case "date": {
+        let parsed = null;
         if (typeof valor === "string") {
-          novaLinha[col] = valor.match(/^\d{1,3}:\d{2}(:\d{2})?$/) ? valor : null;
+          // Aceita YYYY-MM-DD ou DD/MM/YYYY
+          if (valor.includes("/")) {
+            const [dia, mes, ano] = valor.split("/");
+            parsed = `${ano}-${mes.padStart(2, "0")}-${dia.padStart(2, "0")}`;
+          } else {
+            parsed = valor;
+          }
+        }
+        novaLinha[col] = parsed || null;
+        break;
+      }
+      case "datetime": {
+        let parsed = null;
+        if (typeof valor === "string") {
+          const partes = valor.trim().replace(/\s+/, " ").split(" ");
+          if (partes.length === 2) {
+            const [data, hora] = partes;
+            if (data.includes("/")) {
+              const [dia, mes, ano] = data.split("/");
+              parsed = `${ano}-${mes.padStart(2, "0")}-${dia.padStart(
+                2,
+                "0"
+              )} ${hora}`;
+            } else if (data.includes("-")) {
+              parsed = `${data} ${hora}`;
+            }
+          }
+        }
+        novaLinha[col] = parsed || null;
+        break;
+      }
+      case "time":
+        if (typeof valor === "string") {
+          novaLinha[col] = valor.match(/^\d{1,3}:\d{2}(:\d{2})?$/)
+            ? valor
+            : null;
         } else if (typeof valor === "number") {
           novaLinha[col] = valor; // jÃ¡ estÃ¡ em minutos, mantem
         } else {
