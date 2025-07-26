@@ -2,7 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import { addInfo } from "../middleware/errorHandler.js";
+import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
 import readline from "readline";
 import { createReadStream, createWriteStream } from "fs";
 
@@ -17,12 +17,8 @@ async function acquireLock(
 ) {
   for (let i = 0; i < retries; i++) {
     try {
-      const now = Date.now();
-      const data = now.toString();
-
-      // Tenta criar e escrever o timestamp no lock
-      await fs.writeFile(lockFilePath, data, { flag: "wx" });
-      return; // Lock criado com sucesso
+      await fs.writeFile(lockFilePath, Date.now().toString(), { flag: "wx" });
+      return;
     } catch (e) {
       if (e.code === "EEXIST") {
         try {
@@ -30,23 +26,33 @@ async function acquireLock(
           const lockTime = parseInt(conteudo.trim(), 10);
           const diff = Date.now() - lockTime;
 
-          if (isNaN(lockTime)) {
-            console.warn(
-              `[lock] Conteúdo inválido em ${lockFilePath}, forçando remoção`
+          if (isNaN(lockTime)) { //remove o locker se não for um numero, visando liberar a fila de espera
+            addInfo(
+              `[locker] Conteúdo inválido em ${lockFilePath}, script esperava a data, forçando remoção`
             );
-            await fs.unlink(lockFilePath);
+            try {
+              await fs.unlink(lockFilePath);
+            } catch (e) {
+              addErro("[locker] erro ao remover o locker");
+            }
             continue;
           }
 
-          if (diff > timeout) {
-            console.warn(
+          if (diff > timeout) {// se a diferença for maior que o time out, esse locker tá vencido, 
+            addInfo(
               `[lock] Lock expirado (${diff}ms), removendo ${lockFilePath}`
             );
-            await fs.unlink(lockFilePath);
+            try{
+              await fs.unlink(lockFilePath);
+
+            } catch(e){
+              addErro("erro ao excluir o locker, pós locker vencido")
+            }
             continue;
           }
+
         } catch (readErr) {
-          console.warn(`[lock] Erro ao ler lock existente: ${readErr.message}`);
+          addErro(`[lock] Erro ao ler lock existente: ${readErr.message}`);
         }
 
         // Espera antes de tentar novamente
@@ -72,35 +78,27 @@ async function releaseLock(lockFilePath) {
   // Verifica se o arquivo lock existe antes de tentar apagar
   const exists = await fileExists(lockFilePath);
   if (!exists) {
-    console.info(
-      `[lock] Lock '${lockFilePath}' não existe mais, nada a remover.`
-    );
+    addAviso(`[loc] Lock '${lockFilePath}' não existe mais, nada a remover.`);
     return;
   }
 
   try {
     await fs.unlink(lockFilePath);
   } catch (err) {
-    console.warn(
-      `[lock] Falha ao remover lock, tentando novamente: ${err.message}`
-    );
-
-    // Tenta remover novamente com um pequeno delay
+    addErro(`[lock] Falha ao remover lock, tentando novamente: ${err.message}`);
     try {
       await new Promise((r) => setTimeout(r, 100));
 
-      // Verifica novamente antes de tentar apagar
       if (await fileExists(lockFilePath)) {
         await fs.unlink(lockFilePath);
-        console.info("[lock] Lock removido com sucesso na segunda tentativa.");
+        addInfo("[lock] Lock removido com sucesso na segunda tentativa.");
       } else {
-        console.info(
+        addInfo(
           `[lock] Lock '${lockFilePath}' foi removido por outro processo antes da segunda tentativa.`
         );
       }
     } catch (err2) {
-      console.error(`[lock] Falha crítica ao remover lock: ${err2.message}`);
-      // Aqui você pode incluir lógica para alertar o time ou monitorar esse problema
+      addErro(`[lock] Falha crítica ao remover lock: ${err2.message} informar ao Lucas`); 
     }
   }
 }
