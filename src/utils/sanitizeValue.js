@@ -102,6 +102,15 @@ export function sanitizeValue(value, tipoEsperado) {
         return `${y}-${m}-${d} ${h}:${min}:${s}`;
       }
 
+      if (
+        (match = str.match(
+          /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})\.(\d{3})(Z)?$/
+        ))
+      ) {
+        const [_, y, m, d, h, min, s, ms] = match;
+        return `${y}-${m}-${d} ${h}:${min}:${s}.${ms}`;
+      }
+
       return null;
     }
 

@@ -801,13 +801,22 @@ CREATE TABLE -- colunas data: 1
     tour_date date,
     distribution_center_id int,
     driver_name VARCHAR(25),
+    truck_license_plate varchar(10),
     poc_external_id int,
+    poc_name varchar(25),
+    critical_poc varchar(10),
     status VARCHAR(25),
     trip_start_timestamp VARCHAR(25),
     trip_end_timestamp VARCHAR(25),
+    original_order int,
+    order_updated int,
     visit_order int,
+    delivery_window varchar(25),
     within_radius VARCHAR(25),
+    skipped_reason varchar(10),
+    within_radius varchar(100)
     actual_delivery_time int,
+    driver_notification_time datetime(3)
     arrived_at VARCHAR(25),
     finished_at VARCHAR(25),
     last_reason_waiting_modulation VARCHAR(25),
@@ -1879,23 +1888,64 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import { addInfo } from "../middleware/errorHandler.js";
+import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
+import readline from "readline";
+import { createReadStream, createWriteStream } from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-
-
-async function acquireLock(lockFilePath, retries = 10, delay = 100) {
+async function acquireLock(
+  lockFilePath,
+  retries = 10,
+  delay = 100,
+  timeout = 30000
+) {
   for (let i = 0; i < retries; i++) {
     try {
-      await fs.open(lockFilePath, "wx"); // tenta criar lock - 'wx' falha se jÃ¡ existe
-      return; // lock obtido com sucesso
+      await fs.writeFile(lockFilePath, Date.now().toString(), { flag: "wx" });
+      return;
     } catch (e) {
-      if (e.code !== "EEXIST") {
+      if (e.code === "EEXIST") {
+        try {
+          const conteudo = await fs.readFile(lockFilePath, "utf8");
+          const lockTime = parseInt(conteudo.trim(), 10);
+          const diff = Date.now() - lockTime;
+
+          if (isNaN(lockTime)) {
+            //remove o locker se nÃ£o for um numero, visando liberar a fila de espera
+            addInfo(
+              `[locker] ConteÃºdo invÃ¡lido em ${lockFilePath}, script esperava a data, forÃ§ando remoÃ§Ã£o`
+            );
+            try {
+              await fs.unlink(lockFilePath);
+            } catch (e) {
+              addErro("[locker] erro ao remover o locker");
+            }
+            continue;
+          }
+
+          if (diff > timeout) {
+            // se a diferenÃ§a for maior que o time out, esse locker tÃ¡ vencido,
+            addInfo(
+              `[lock] Lock expirado (${diff}ms), removendo ${lockFilePath}`
+            );
+            try {
+              await fs.unlink(lockFilePath);
+            } catch (e) {
+              addErro("erro ao excluir o locker, pÃ³s locker vencido");
+            }
+            continue;
+          }
+        } catch (readErr) {
+          addErro(`[lock] Erro ao ler lock existente: ${readErr.message}`);
+        }
+
+        // Espera antes de tentar novamente
+        await new Promise((r) => setTimeout(r, delay));
+      } else {
         throw new Error(`Erro inesperado ao tentar criar lock: ${e.message}`);
       }
-      await new Promise((r) => setTimeout(r, delay));
     }
   }
   throw new Error("NÃ£o foi possÃ­vel obter lock apÃ³s vÃ¡rias tentativas");
@@ -1914,29 +1964,29 @@ async function releaseLock(lockFilePath) {
   // Verifica se o arquivo lock existe antes de tentar apagar
   const exists = await fileExists(lockFilePath);
   if (!exists) {
-    console.info(`[lock] Lock '${lockFilePath}' nÃ£o existe mais, nada a remover.`);
+    addAviso(`[loc] Lock '${lockFilePath}' nÃ£o existe mais, nada a remover.`);
     return;
   }
 
   try {
     await fs.unlink(lockFilePath);
   } catch (err) {
-    console.warn(`[lock] Falha ao remover lock, tentando novamente: ${err.message}`);
-
-    // Tenta remover novamente com um pequeno delay
+    addErro(`[lock] Falha ao remover lock, tentando novamente: ${err.message}`);
     try {
       await new Promise((r) => setTimeout(r, 100));
 
-      // Verifica novamente antes de tentar apagar
       if (await fileExists(lockFilePath)) {
         await fs.unlink(lockFilePath);
-        console.info("[lock] Lock removido com sucesso na segunda tentativa.");
+        addInfo("[lock] Lock removido com sucesso na segunda tentativa.");
       } else {
-        console.info(`[lock] Lock '${lockFilePath}' foi removido por outro processo antes da segunda tentativa.`);
+        addInfo(
+          `[lock] Lock '${lockFilePath}' foi removido por outro processo antes da segunda tentativa.`
+        );
       }
     } catch (err2) {
-      console.error(`[lock] Falha crÃ­tica ao remover lock: ${err2.message}`);
-      // Aqui vocÃª pode incluir lÃ³gica para alertar o time ou monitorar esse problema
+      addErro(
+        `[lock] Falha crÃ­tica ao remover lock: ${err2.message} informar ao Lucas`
+      );
     }
   }
 }
@@ -1947,14 +1997,17 @@ async function initCacheFile(tabela) {
     await fs.mkdir(dirPath, { recursive: true });
 
     // Aqui cria o caminho do arquivo cache especÃ­fico para a tabela
-    const cacheFilePath = path.resolve(dirPath, `cacheHash_${tabela}.txt`);
+    const cacheFilePath = path.resolve(dirPath, `cacheHash_${tabela}.jsonl`);
 
     try {
       await fs.access(cacheFilePath);
       return cacheFilePath;
     } catch (err) {
       await fs.writeFile(cacheFilePath, "", "utf8");
-      console.log(`Arquivo de cache criado para a tabela ${tabela} em:`, cacheFilePath);
+      console.log(
+        `Arquivo de cache criado para a tabela ${tabela} em:`,
+        cacheFilePath
+      );
       return cacheFilePath;
     }
   } catch (e) {
@@ -1964,6 +2017,7 @@ async function initCacheFile(tabela) {
 
 export async function insertHashInCache(logData) {
   const { tabela_destino, ano, mes, dia, nome_arquivo } = logData;
+
   let cachePath;
   try {
     cachePath = await initCacheFile(tabela_destino);
@@ -1984,10 +2038,15 @@ export async function insertHashInCache(logData) {
     }
     parts.push(nome_arquivo);
 
-    logData.identificador = parts.join("_");
+    const enrichedLogData = {
+      ...logData,
+      identificador: parts.join("_"),
+    };
+    const jsonString = JSON.stringify(enrichedLogData);
+    if (!jsonString)
+      throw new Error("[hash in cache] Erro ao serializar logData");
 
-    const jsonString = JSON.stringify(logData, null, 2);
-    await fs.appendFile(cachePath, jsonString + "\n\n", "utf8");
+    await fs.appendFile(cachePath, jsonString + "\n", "utf8");
     addInfo("[model cache] Objeto salvo no cache com sucesso!");
   } catch (e) {
     throw new Error(
@@ -2003,52 +2062,38 @@ export async function getRegisterFromCache(destino, skipLock = false) {
   const lockFilePath = cachePath + ".lock";
   if (!skipLock) await acquireLock(lockFilePath, 10, 200);
 
+  // monta o identificador
+  const { tabela_destino, ano, mes, dia, nome_arquivo } = destino;
+  const parts = [tabela_destino, ano, mes];
+  if (dia !== undefined && dia !== null && dia !== "") {
+    parts.push(dia);
+  }
+  parts.push(nome_arquivo);
+  const identificador = parts.join("_");
+  let rl, input;
+
   try {
-    const { tabela_destino, ano, mes, dia, nome_arquivo } = destino;
-    try {
-      // Monta o identificador igual ao insertHashInCache:
-      const parts = [tabela_destino, ano, mes];
-      if (dia !== undefined && dia !== null && dia !== "") {
-        parts.push(dia);
-      }
-      parts.push(nome_arquivo);
-      const identificador = parts.join("_");
+    input = createReadStream(cachePath);
+    rl = readline.createInterface({ input, crlfDelay: Infinity });
 
-      let conteudo;
+    for await (const line of rl) {
       try {
-        conteudo = await fs.readFile(cachePath, "utf8");
+        const obj = JSON.parse(line);
+        if (obj.identificador === identificador) {
+          return obj;
+        }
       } catch (e) {
-        throw new Error(
-          `[model cache] Erro ao ler o arquivo no cache, caminho do cache: '${cachePath}' erro: ${e.message}`
-        );
+        console.warn(`[cache] Linha invÃ¡lida ignorada: ${line}`);
       }
-      const blocos = conteudo
-        .split("\n\n")
-        .map((b) => b.trim())
-        .filter(Boolean);
-
-      const registros = blocos
-        .map((json) => {
-          try {
-            return JSON.parse(json);
-          } catch (e) {
-            throw new Error(
-              `[model cache] Erro ao fazer parse de um bloco do cache, erro: ${e.message}`
-            );
-          }
-        })
-        .filter(Boolean);
-
-      const encontrado = registros.find(
-        (reg) => reg.identificador === identificador
-      );
-      return encontrado
-    } catch (e) {
-      throw new Error(`erro ao puxar o registro do cache: ${e.message}`);
     }
+
+    // nÃ£o encontrou
+    return null;
   } catch (e) {
-    throw new Error(`Erro ao puxar um um dado do cache, erro: ${e.message}`);
+    throw new Error(`[cache] Erro ao buscar no cache: ${e.message}`);
   } finally {
+    if (rl) rl.close();
+    if (input) input?.destroy();
     if (!skipLock) await releaseLock(lockFilePath);
   }
 }
@@ -2056,132 +2101,77 @@ export async function getRegisterFromCache(destino, skipLock = false) {
 export async function deleteRegisterFromCache(destino) {
   const cachePath = await initCacheFile(destino.tabela_destino);
   const lockFilePath = cachePath + ".lock";
+  const tempPath = cachePath + ".tmp";
+
   await acquireLock(lockFilePath, 10, 200);
 
+  // monta identificador
+  const { tabela_destino, ano, mes, dia, nome_arquivo } = destino;
+  const parts = [tabela_destino, ano, mes];
+  if (dia !== undefined && dia !== null && dia !== "") {
+    parts.push(dia);
+  }
+  parts.push(nome_arquivo);
+  const identificadorAlvo = parts.join("_");
+
+
+  // inicia logica do delete
+  let rl, output, input;
   try {
-    let registroAlvo;
-    try {
-      registroAlvo = await getRegisterFromCache(destino, true);
-    } catch (e) {
-      throw new Error(
-        `[model cache] Erro ao coletar os registros do cache, erro: ${e.message}`
-      );
-    }
+    input = createReadStream(cachePath);
+    rl = readline.createInterface({ input, crlfDelay: Infinity });
+    output = createWriteStream(tempPath, { flags: "w" });
+    let encontrado = false;
 
-    if (!registroAlvo) {
-      throw new Error(
-        " [model cache] Registro nÃ£o encontrado no cache. Nada foi removido."
-      );
-    }
-    let conteudo;
-    try {
-      conteudo = await fs.readFile(cachePath, "utf8");
-    } catch (e) {
-      throw new Error(`[model cache] Erro ao ler o cache ${e.message}`);
-    }
-
-    const blocos = conteudo
-      .split("\n\n")
-      .map((b) => b.trim())
-      .filter(Boolean);
-
-    const blocosMantidos = blocos.filter((bloco) => {
+    for await (const line of rl) {
       try {
-        const obj = JSON.parse(bloco);
-        return obj.identificador !== registroAlvo.identificador;
+        const obj = JSON.parse(line);
+        if (obj.identificador === identificadorAlvo) {
+          encontrado = true;
+          continue; // nÃ£o escreve essa linha (Ã© o alvo)
+        }
+        output.write(line + "\n");
       } catch {
-        return true;
+        // se a linha for invÃ¡lida, preserva por seguranÃ§a
+        output.write(line + "\n");
       }
-    });
+    }
 
-    const novoConteudo = blocosMantidos.join("\n\n") + "\n\n";
     try {
-      await fs.writeFile(cachePath, novoConteudo, "utf8");
-      addInfo(
-        `[model cache] Registro '${registroAlvo.identificador}' removido com sucesso do cache!`
-      );
-    } catch (e) {
+      output.end();
+      await new Promise((res, rej) => {
+        output.on("finish", res);
+        output.on("error", rej);
+      });
+    } finally {
+      output?.close?.();
+    }
+
+    if (!encontrado) {
       throw new Error(
-        `[model cache] Erro ao reescrever os dados sem o registro removido no cache!, erro: ${e.message}`
+        `[cache] Registro '${identificadorAlvo}' nÃ£o encontrado no cache.`
       );
     }
+    try{
+      await fs.rename(tempPath, cachePath);
+
+    } catch(e){
+      throw new Error(`[cache file] Erro ao substituir o cache pelo cache temp durante a logica de exclusÃ£o de um registro do cache`)
+    }
+    
+    addInfo(
+      `[cache JSONL] Registro '${identificadorAlvo}' removido com sucesso.`
+    );
     return true;
   } catch (e) {
-    throw new Error(`erro ao deletar um registro do cache, erro: ${e.message}`);
+    throw new Error(`[cache JSONL] Erro ao excluir registro: ${e.message}`);
   } finally {
+    if (await fileExists(tempPath)) {
+      await fs.unlink(tempPath).catch(() => {});
+    }
     await releaseLock(lockFilePath);
-  }
-}
-
-----------------------------
-createSchemaMode.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\model\createSchemaMode.js
-import db, { schema } from "../../config/db.js";
-
-/**
- * @param {{
- *    tabela: string
- * }} metadados
- * @returns {Promise<Object>} Mapeamento de colunas para tipos (string, int, date, decimal, etc.)
- */
-export async function createSchemaFromTable(metadados) {
-  const { tabela } = metadados;
-
-  if (!tabela || typeof tabela !== "string") {
-    throw new Error(`[model schema] Nome da tabela invÃ¡lido`);
-  }
-  try {
-    let results;
-    [results] = await db.query(
-      `
-      SELECT COLUMN_NAME, DATA_TYPE
-      FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_NAME = ?
-      AND TABLE_SCHEMA = ?
-    `,
-      [tabela, schema]
-    );
-
-    if (!results || results.length === 0) {
-      throw new Error(
-        `[model schema] Tabela '${tabela}' nÃ£o encontrada no banco de dados`
-      );
-    }
-    const tipagem = {};
-    for (const col of results) {
-      const coluna = col.COLUMN_NAME;
-      const tipo = col.DATA_TYPE.toLowerCase();
-
-      // Mapear tipos SQL para tipos simplificados
-      switch (tipo) {
-        case "int":
-        case "bigint":
-        case "smallint":
-        case "tinyint":
-          tipagem[coluna] = "int";
-          break;
-        case "decimal":
-        case "float":
-        case "double":
-        case "numeric":
-          tipagem[coluna] = "float";
-          break;
-        case "date":
-        case "datetime":
-        case "timestamp":
-          tipagem[coluna] = "date";
-          break;
-        case "time":
-          tipagem[coluna] = "time";
-          break;
-        default:
-          tipagem[coluna] = "string";
-      }
-    }
-    return tipagem;
-  } catch (e) {
-    throw new Error(
-      `[model schema] Erro ao criar tipagem da tabela: ${e.message}`
-    );
+    if (rl) rl.close();
+    if (input) input.close?.();
   }
 }
 
@@ -2772,13 +2762,27 @@ export default function isCsvFile(filePath) {
 ----------------------------
 mapearTipos.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\mapearTipos.js
 export default function mapearTipo(tipoSql) {
-  if (["int", "bigint", "smallint", "mediumint"].includes(tipoSql))
-    return "int";
-  if (["decimal", "float", "double"].includes(tipoSql)) return "decimal";
-  if (["date"].includes(tipoSql)) return "date";
-  if (["time"].includes(tipoSql)) return "time";
-  if (["datetime"].includes(tipoSql)) return "datetime";
-  return "string";
+  const tipo = tipoSql?.toLowerCase?.();
+
+  switch (true) {
+    case ["int", "bigint", "smallint", "mediumint", "tinyint"].includes(tipo):
+      return "int";
+
+    case ["decimal", "float", "double", "numeric"].includes(tipo):
+      return "decimal";
+
+    case ["date"].includes(tipo):
+      return "date";
+
+    case ["datetime", "timestamp"].includes(tipo):
+      return "datetime";
+
+    case ["time"].includes(tipo):
+      return "time";
+
+    default:
+      return "string";
+  }
 }
 
 ----------------------------
@@ -2917,6 +2921,15 @@ export function sanitizeValue(value, tipoEsperado) {
       ) {
         const [_, d, m, y, h, min, s] = match;
         return `${y}-${m}-${d} ${h}:${min}:${s}`;
+      }
+
+      if (
+        (match = str.match(
+          /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})\.(\d{3})(Z)?$/
+        ))
+      ) {
+        const [_, y, m, d, h, min, s, ms] = match;
+        return `${y}-${m}-${d} ${h}:${min}:${s}.${ms}`;
       }
 
       return null;

@@ -26,7 +26,8 @@ async function acquireLock(
           const lockTime = parseInt(conteudo.trim(), 10);
           const diff = Date.now() - lockTime;
 
-          if (isNaN(lockTime)) { //remove o locker se não for um numero, visando liberar a fila de espera
+          if (isNaN(lockTime)) {
+            //remove o locker se não for um numero, visando liberar a fila de espera
             addInfo(
               `[locker] Conteúdo inválido em ${lockFilePath}, script esperava a data, forçando remoção`
             );
@@ -38,19 +39,18 @@ async function acquireLock(
             continue;
           }
 
-          if (diff > timeout) {// se a diferença for maior que o time out, esse locker tá vencido, 
+          if (diff > timeout) {
+            // se a diferença for maior que o time out, esse locker tá vencido,
             addInfo(
               `[lock] Lock expirado (${diff}ms), removendo ${lockFilePath}`
             );
-            try{
+            try {
               await fs.unlink(lockFilePath);
-
-            } catch(e){
-              addErro("erro ao excluir o locker, pós locker vencido")
+            } catch (e) {
+              addErro("erro ao excluir o locker, pós locker vencido");
             }
             continue;
           }
-
         } catch (readErr) {
           addErro(`[lock] Erro ao ler lock existente: ${readErr.message}`);
         }
@@ -98,7 +98,9 @@ async function releaseLock(lockFilePath) {
         );
       }
     } catch (err2) {
-      addErro(`[lock] Falha crítica ao remover lock: ${err2.message} informar ao Lucas`); 
+      addErro(
+        `[lock] Falha crítica ao remover lock: ${err2.message} informar ao Lucas`
+      );
     }
   }
 }
@@ -109,7 +111,7 @@ async function initCacheFile(tabela) {
     await fs.mkdir(dirPath, { recursive: true });
 
     // Aqui cria o caminho do arquivo cache específico para a tabela
-    const cacheFilePath = path.resolve(dirPath, `cacheHash_${tabela}.txt`);
+    const cacheFilePath = path.resolve(dirPath, `cacheHash_${tabela}.jsonl`);
 
     try {
       await fs.access(cacheFilePath);
@@ -155,7 +157,8 @@ export async function insertHashInCache(logData) {
       identificador: parts.join("_"),
     };
     const jsonString = JSON.stringify(enrichedLogData);
-    if (!jsonString) throw new Error("Erro ao serializar logData");
+    if (!jsonString)
+      throw new Error("[hash in cache] Erro ao serializar logData");
 
     await fs.appendFile(cachePath, jsonString + "\n", "utf8");
     addInfo("[model cache] Objeto salvo no cache com sucesso!");
@@ -224,6 +227,9 @@ export async function deleteRegisterFromCache(destino) {
   }
   parts.push(nome_arquivo);
   const identificadorAlvo = parts.join("_");
+
+
+  // inicia logica do delete
   let rl, output, input;
   try {
     input = createReadStream(cachePath);
@@ -260,8 +266,13 @@ export async function deleteRegisterFromCache(destino) {
         `[cache] Registro '${identificadorAlvo}' não encontrado no cache.`
       );
     }
+    try{
+      await fs.rename(tempPath, cachePath);
 
-    await fs.rename(tempPath, cachePath);
+    } catch(e){
+      throw new Error(`[cache file] Erro ao substituir o cache pelo cache temp durante a logica de exclusão de um registro do cache`)
+    }
+    
     addInfo(
       `[cache JSONL] Registro '${identificadorAlvo}' removido com sucesso.`
     );
