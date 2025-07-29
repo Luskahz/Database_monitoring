@@ -9,11 +9,18 @@ export function sanitizeValue(value, tipoEsperado) {
     }
 
     case "decimal": {
-      // Remove tudo que não for dígito, vírgula, ponto ou sinal negativo
-      let clean = String(value).replace(/[^\d,.-]/g, "");
-      // Troca vírgula por ponto se houver
-      clean = clean.replace(",", ".");
-      const parsed = parseFloat(clean);
+      let raw = String(value)
+        .trim()
+        .replace(/[^\d.,-]/g, "");
+
+      if (raw.includes(",")) {
+        raw = raw.replace(/\./g, ""); // remove separador de milhar
+        raw = raw.replace(",", "."); // troca vírgula por ponto
+      } else {
+        raw = raw;
+      }
+
+      const parsed = parseFloat(raw);
       return isNaN(parsed) ? null : parsed;
     }
 

@@ -87,7 +87,7 @@ export default async function createJsonController(filePath) {
 
         if (nomesUsados[chave]) {
           nomesUsados[chave]++;
-          nomeFinal = `${chave}_${nomesUsados[chave]}`;
+          nomeFinal = `${chave}_${nomesUsados[chave] + 1}`;
         } else {
           nomesUsados[chave] = 1;
         }
