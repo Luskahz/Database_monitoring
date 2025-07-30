@@ -1,8 +1,11 @@
 import { addAviso } from "../middleware/errorHandler.js";
 import { getDateColumnsFromTable } from "../model/tableModel.js";
-import { updateLoggerController } from "../middleware/logger.js";
+import {
+  getLoggerContext,
+  updateLoggerController,
+} from "../middleware/logger.js";
 
-export async function doesCsvHaveDataController(tabela, data_json) {
+export async function doesCsvHaveDataController(tabela, data_json, contexto) {
   try {
     const dataCol = await getDateColumnsFromTable(tabela);
     if (!dataCol) return null;
@@ -13,8 +16,8 @@ export async function doesCsvHaveDataController(tabela, data_json) {
     const index = chavesJson.findIndex((key) => key === dataCol);
 
     if (index === -1) {
-      addAviso(`Coluna de data '${dataCol}' não encontrada no CSV.`);
-      await updateLoggerController(metadados);
+      addAviso(`Coluna de data '${dataCol}' não encontrada no CSV.`, contexto);
+      updateLoggerController(getLoggerContext({}, {}, contexto), contexto);
       return null;
     }
 
@@ -40,29 +43,46 @@ export async function doesCsvHaveDataController(tabela, data_json) {
  * }} metadados
  */
 export async function insertValidator(list, metadados) {
+  const contexto = metadados.caminho_original;
   if (list === null) {
     return "cadastro";
   } else {
     const { coluna_data, data_json } = metadados; //null caso for cadastral
     if (!Array.isArray(data_json) || data_json.length === 0) {
       addAviso(
-        "[Controller insersão] JSON de dados está vazio. Nenhuma validação de coluna de data será feita."
+        "[Controller insersão] JSON de dados está vazio. Nenhuma validação de coluna de data será feita.",
+        contexto
       );
-      await updateLoggerController(metadados);
+      await updateLoggerController(
+        getLoggerContext(metadados, {}, contexto),
+        contexto
+      );
       return null;
     }
     try {
-      const datasBanco = extrairDatasValidas(list, coluna_data, "Banco");
-      const datasCsv = extrairDatasValidas(data_json, coluna_data, "CSV");
+      const datasBanco = extrairDatasValidas(
+        list,
+        coluna_data,
+        "Banco",
+        contexto
+      );
+      const datasCsv = extrairDatasValidas(
+        data_json,
+        coluna_data,
+        "CSV",
+        contexto
+      );
       const conflito = [...datasCsv].some((data) => datasBanco.has(data));
 
-      return conflito
-        ? (addAviso(
-            "[Controller insersão] Conflito detectado: datas do CSV já existem na base. Os dados serão reprocessados."
-          ),
-          "substituir",
-          await updateLoggerController(metadados))
-        : "inserir";
+      if (conflito) {
+        addAviso(
+          "[Controller insersão] Conflito detectado: datas do CSV já existem na base. Os dados serão reprocessados.",
+          contexto
+        );
+        await updateLoggerController(metadados, contexto);
+        return "substituir";
+      }
+      return "inserir";
     } catch (e) {
       throw new Error(
         `[Controller insersão] Erro ao validar datas para inserção, Erro: ${e.message}`
@@ -71,7 +91,7 @@ export async function insertValidator(list, metadados) {
   }
 }
 
-function extrairDatasValidas(array, coluna, contexto = "CSV") {
+function extrairDatasValidas(array, coluna, csvOrDataBase = "CSV", contexto) {
   return new Set(
     array
       .map((linha, i) => {
@@ -79,7 +99,8 @@ function extrairDatasValidas(array, coluna, contexto = "CSV") {
         const date = new Date(raw);
         if (isNaN(date)) {
           addAviso(
-            `[Controller insersão] Linha ${i}: valor inválido em '${coluna}' → '${raw}'. Registro ignorado [${contexto}].`
+            `[Controller insersão] Linha ${i}: valor inválido em '${coluna}' → '${raw}'. Registro ignorado [${csvOrDataBase}].`,
+            contexto
           );
           return null;
         }

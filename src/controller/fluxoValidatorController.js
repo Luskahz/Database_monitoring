@@ -25,48 +25,49 @@ import { getLogByData, getAllHashesFromTable } from "../model/logModel.js";
  * }} logData
  */
 export default async function fluxoValidatorController(metadados, logData) {
+  const contexto = metadados.caminho_original
   let logs = [];
   let allHashes = [];
 
   try {
     logs = await getLogByData(metadados);
   } catch (e) {
-    addErro(`erro ao extrair os logs referentes a data, erro: ${e.message}`);
+    addErro(`erro ao extrair os logs referentes a data, erro: ${e.message}`, contexto);
   } finally{
-    await updateLoggerController(metadados)
+    await updateLoggerController(metadados, contexto)
   }
 
   try {
     allHashes = await getAllHashesFromTable(metadados);
   } catch (e) {
-    addErro(`Erro ao extrair os hashs dos logs referentes a essa data`);
+    addErro(`Erro ao extrair os hashs dos logs referentes a essa data`, contexto);
    } finally{
-    await updateLoggerController(metadados)
+    await updateLoggerController(metadados, contexto)
   }
 
   const hashJaExiste = allHashes.some(
     (entry) => entry.hash_arquivo === logData.hash_arquivo
   );
   if (!logData.hash_arquivo) {
-    addErro("Hash do arquivo não foi passado ao validador do fluxo.");
-    await updateLoggerController(metadados)
+    addErro("Hash do arquivo não foi passado ao validador do fluxo.", contexto);
+    await updateLoggerController(metadados, contexto)
   }
 
   if (hashJaExiste) {
     addInfo(
-      `[ARQUIVO DUPLICADO] O conteúdo de ${metadados.nome_arquivo} já está presente na base.`
+      `[ARQUIVO DUPLICADO] O conteúdo de ${metadados.nome_arquivo} já está presente na base.`, contexto
     );
-    await updateLoggerController(metadados)
+    await updateLoggerController(metadados, contexto)
     return "ignorar";
   } else if (!logs || logs.length === 0) {
-    addInfo(`[NOVO ARQUIVO] ${metadados.nome_arquivo} será processado.`);
-    await updateLoggerController(metadados)
+    addInfo(`[NOVO ARQUIVO] ${metadados.nome_arquivo} será processado.`, contexto);
+    await updateLoggerController(metadados, contexto)
     return "inserir";
   } else {
     addInfo(
-      `[ARQUIVO MODIFICADO] ${metadados.nome_arquivo} já existia, mas foi alterado. Reprocessando.`
+      `[ARQUIVO MODIFICADO] ${metadados.nome_arquivo} já existia, mas foi alterado. Reprocessando.`, contexto
     );
-    await updateLoggerController(metadados)
+    await updateLoggerController(metadados, contexto)
     return "reprocessar";
   }
 }

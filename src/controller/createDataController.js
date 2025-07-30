@@ -6,18 +6,19 @@ import createJsonController from "../utils/createJsonController.js";
 import { addAviso, addErro } from "../middleware/errorHandler.js";
 
 export default async function createDataController(filePath, action) {
+  const contexto = filePath
   let dataJson;
   try {
     dataJson = await createJsonController(filePath);
     if (!dataJson || dataJson.length === 0) {
-      addAviso("CSV vazio, validar se está válido");
+      addAviso("CSV vazio, validar se está válido", contexto);
       return null 
     } else if (Object.keys(dataJson[0]).length === 0) {
-      addAviso("CSV possui registros, mas sem colunas detectadas.");
+      addAviso("CSV possui registros, mas sem colunas detectadas.", contexto);
       return null
     }
   } catch (e) {
-    addErro(`Erro ao converter CSV para JSON: ${e.message}`);
+    addErro(`Erro ao converter CSV para JSON: ${e.message}`, contexto);
     throw e;
   }
 
@@ -26,11 +27,12 @@ export default async function createDataController(filePath, action) {
     const { metadados, logData } = await createFundamentalDocsController(
       filePath,
       dataJson,
-      action
+      action,
+      contexto
     );
     return { metadados, logData };
   } catch (e) {
-    addErro(`Erro ao gerar metadados e logData: ${e.message}`);
+    addErro(`Erro ao gerar metadados e logData: ${e.message}`, contexto);
     throw e;
   }
 }
@@ -42,7 +44,7 @@ export async function createMetadadosController(
   action
 ) {
   const destino = destinoByFilePath(filePath);
-  const infos = await extractInfosByData(destino.tabela_destino, dataJson);
+  const infos = await extractInfosByData(destino.tabela_destino, dataJson, filePath);
 
   return {
     nome_arquivo: destino.nome_arquivo,
@@ -80,8 +82,11 @@ export function createLogDataController(metadados) {
 export async function createFundamentalDocsController(
   filePath,
   dataJson,
-  action
+  action,
+  contexto
 ) {
+
+  
   try {
     const hash = createHashByData(dataJson);
     const metadados = await createMetadadosController(
@@ -95,15 +100,16 @@ export async function createFundamentalDocsController(
     return { metadados, logData };
   } catch (e) {
     addErro(
-      `Erro ao gerar os objetos fundamentais, metadados e logdata, erro: ${e.message}`
+      `Erro ao gerar os objetos fundamentais, metadados e logdata, erro: ${e.message}`, contexto
     );
     throw e;
   }
 }
 
-async function extractInfosByData(tabelaName, dataJson) {
+async function extractInfosByData(tabelaName, dataJson, filePath) {
+  const contexto = filePath
   try {
-    const dataColun = await doesCsvHaveDataController(tabelaName, dataJson);
+    const dataColun = await doesCsvHaveDataController(tabelaName, dataJson, contexto);
     const tiposEsperados = await getTiposFromTable(tabelaName);
     const colunsTable = await getColumnsFromTable(tabelaName);
     const colunsJson = Object.keys(dataJson[0] || {});
@@ -116,7 +122,7 @@ async function extractInfosByData(tabelaName, dataJson) {
     };
   } catch (e) {
     addErro(
-      `[FATAL] Erro ao extrair informações da tabela destino ou colunas do Json csv, erro: ${e.message}`
+      `[FATAL] Erro ao extrair informações da tabela destino ou colunas do Json csv, erro: ${e.message}`, contexto
     );
     throw e;
   }

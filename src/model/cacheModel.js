@@ -2,7 +2,12 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
+import {
+  addAviso,
+  addErro,
+  addInfo,
+  clearAllErrors,
+} from "../middleware/errorHandler.js";
 import readline from "readline";
 import { createReadStream, createWriteStream } from "fs";
 
@@ -75,31 +80,33 @@ async function fileExists(filePath) {
 }
 
 async function releaseLock(lockFilePath) {
+  const contexto = lockFilePath;
+  clearAllErrors(contexto);
   // Verifica se o arquivo lock existe antes de tentar apagar
   const exists = await fileExists(lockFilePath);
   if (!exists) {
-    addAviso(`[loc] Lock '${lockFilePath}' não existe mais, nada a remover.`);
+    addAviso(`[loc] Lock '${lockFilePath}' não existe mais, nada a remover.`, contexto);
     return;
   }
 
   try {
     await fs.unlink(lockFilePath);
   } catch (err) {
-    addErro(`[lock] Falha ao remover lock, tentando novamente: ${err.message}`);
+    addErro(`[lock] Falha ao remover lock, tentando novamente: ${err.message}`, contexto);
     try {
       await new Promise((r) => setTimeout(r, 100));
 
       if (await fileExists(lockFilePath)) {
         await fs.unlink(lockFilePath);
-        addInfo("[lock] Lock removido com sucesso na segunda tentativa.");
+        addInfo("[lock] Lock removido com sucesso na segunda tentativa.", contexto);
       } else {
         addInfo(
-          `[lock] Lock '${lockFilePath}' foi removido por outro processo antes da segunda tentativa.`
+          `[lock] Lock '${lockFilePath}' foi removido por outro processo antes da segunda tentativa.`, contexto
         );
       }
     } catch (err2) {
       addErro(
-        `[lock] Falha crítica ao remover lock: ${err2.message} informar ao Lucas`
+        `[lock] Falha crítica ao remover lock: ${err2.message} informar ao Lucas`, contexto
       );
     }
   }
@@ -161,7 +168,7 @@ export async function insertHashInCache(logData) {
       throw new Error("[hash in cache] Erro ao serializar logData");
 
     await fs.appendFile(cachePath, jsonString + "\n", "utf8");
-    addInfo("[model cache] Objeto salvo no cache com sucesso!");
+    addInfo("[model cache] Objeto salvo no cache com sucesso!", lockFilePath);
   } catch (e) {
     throw new Error(
       `erro gerado ao inserir o hash no cache, erro: ${e.message}`
@@ -228,7 +235,6 @@ export async function deleteRegisterFromCache(destino) {
   parts.push(nome_arquivo);
   const identificadorAlvo = parts.join("_");
 
-
   // inicia logica do delete
   let rl, output, input;
   try {
@@ -266,15 +272,16 @@ export async function deleteRegisterFromCache(destino) {
         `[cache] Registro '${identificadorAlvo}' não encontrado no cache.`
       );
     }
-    try{
+    try {
       await fs.rename(tempPath, cachePath);
-
-    } catch(e){
-      throw new Error(`[cache file] Erro ao substituir o cache pelo cache temp durante a logica de exclusão de um registro do cache`)
+    } catch (e) {
+      throw new Error(
+        `[cache file] Erro ao substituir o cache pelo cache temp durante a logica de exclusão de um registro do cache`
+      );
     }
-    
+
     addInfo(
-      `[cache JSONL] Registro '${identificadorAlvo}' removido com sucesso.`
+      `[cache JSONL] Registro '${identificadorAlvo}' removido com sucesso.`, lockFilePath
     );
     return true;
   } catch (e) {

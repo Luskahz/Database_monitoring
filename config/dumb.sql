@@ -3,18 +3,6 @@ CREATE DATABASE IF NOT EXISTS diretorio;
 USE diretorio;
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_11_42` (
-    mapa INT not null,
-    veiculo INT,
-    placa VARCHAR(20),
-    dt_entrega DATE,
-    motorista VARCHAR(25),
-    km_inicial INT,
-    km_final INT,
-    km_rodado INT
-  );
-
-CREATE TABLE -- colunas data: 1
   IF NOT EXISTS `03_11_40` (
     mapa INT not null,
     veiculo INT,
@@ -580,7 +568,7 @@ CREATE TABLE -- colunas data: 1
     red_icms_st decimal(10, 2),
     red_fecop_st VARCHAR(25),
     unnamed_2 varchar(25)
-    
+
   ) ROW_FORMAT = DYNAMIC;
 
 CREATE TABLE -- colunas data: 1
@@ -604,8 +592,7 @@ CREATE TABLE -- colunas data: 1
     entregas int,
     pedidos int,
     d_size_agend decimal(10, 2),
-    d_size_total decimal(10, 2),
-    unnamed_20 VARCHAR(25)
+    d_size_total decimal(10, 2)
   );
 
 CREATE TABLE -- colunas data: 1
@@ -629,8 +616,7 @@ CREATE TABLE -- colunas data: 1
     entregas int,
     pedidos int,
     d_size_agend decimal(10, 2),
-    d_size_total decimal(10, 2),
-    unnamed_20 VARCHAR(25)
+    d_size_total decimal(10, 2)
   );
 
 CREATE TABLE -- colunas data: 1
@@ -641,8 +627,8 @@ CREATE TABLE -- colunas data: 1
     mapa int,
     veiculo int,
     placa VARCHAR(25),
-    motorista VARCHAR(25),
-    cod_produto VARCHAR(25),
+    motorista int,
+    cod_produto int ,
     descricao_1 VARCHAR(25),
     cod_cliente int,
     descricao_2 VARCHAR(25),
@@ -654,8 +640,7 @@ CREATE TABLE -- colunas data: 1
     entregas int,
     pedidos int,
     d_size_agend decimal(10, 2),
-    d_size_total decimal(10, 2),
-    unnamed_20 VARCHAR(25)
+    d_size_total decimal(10, 2)
   );
 
 CREATE TABLE -- colunas data: 1
@@ -668,7 +653,7 @@ CREATE TABLE -- colunas data: 1
     motorista int,
     cod_produto INT,
     descricao VARCHAR(25),
-    cod_cliente_1 int,
+    cod_cliente int,
     descricao_1 VARCHAR(25),
     peso int,
     perc_ocup int,

@@ -103,20 +103,7 @@ CREATE DATABASE IF NOT EXISTS diretorio;
 USE diretorio;
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_11_42` ( 
-    mapa INT not null,
-    veiculo INT,
-    placa VARCHAR(20),
-    dt_entrega DATE,
-    motorista VARCHAR(25),
-    km_inicial INT,
-    km_final INT,
-    km_rodado INT
-    
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_11_40` ( 
+  IF NOT EXISTS `03_11_40` (
     mapa INT not null,
     veiculo INT,
     placa VARCHAR(20),
@@ -135,7 +122,6 @@ CREATE TABLE -- colunas data: 1
     km_inicial INT,
     km_final INT,
     km_rodado INT
-    
   );
 
 CREATE TABLE -- colunas data: 1
@@ -183,11 +169,10 @@ CREATE TABLE -- colunas data: 1
     regras_de_blitz_classificadas VARCHAR(25),
     utilizou_percentual_minimo VARCHAR(25),
     palete_iniciado_com_produto VARCHAR(10)
-    
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_01_46_06` ( 
+  IF NOT EXISTS `03_01_46_06` (
     id_pedido bigint,
     unb bigint,
     cliente bigint,
@@ -204,7 +189,7 @@ CREATE TABLE -- colunas data: 1
     status_exportacao_p VARCHAR(25),
     etapa_pedido VARCHAR(25),
     sem_estoque VARCHAR(25),
-    taxa_fora_rota int,
+    taxa_fora_rota decimal(10, 2),
     codigo_pedido_promax varchar(25),
     data_geracao_arquivo_p DATETIME,
     status_critica VARCHAR(25),
@@ -225,14 +210,13 @@ CREATE TABLE -- colunas data: 1
     motivo_cancelamento VARCHAR(100),
     taxa_adf_utilizada decimal(10, 2),
     taxa_adf_escalonada decimal(10, 2),
-    valor_pedido_minimo int,
+    valor_pedido_minimo decimal(10, 2),
     indicador_entrega_alternativa VARCHAR(25),
     importado_pelo_hercules VARCHAR(25)
-    
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_18_05` ( 
+  IF NOT EXISTS `03_18_05` (
     unb int,
     descricao_unb VARCHAR(25),
     codigo_cliente int,
@@ -303,11 +287,10 @@ CREATE TABLE -- colunas data: 1
     tipo_cliente VARCHAR(25),
     setor_venda int,
     unnamed_69 VARCHAR(25)
-    
-  ) ROW_FORMAT=DYNAMIC;
+  ) ROW_FORMAT = DYNAMIC;
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_11_29` ( 
+  IF NOT EXISTS `03_11_29` (
     data date,
     mapa int,
     placa VARCHAR(25),
@@ -319,11 +302,11 @@ CREATE TABLE -- colunas data: 1
     ajudante_1 VARCHAR(25),
     nome_ajudante_1 int,
     ajudante_2 VARCHAR(25),
-    nome_ajudante_2 int   
+    nome_ajudante_2 int
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_08_05` ( 
+  IF NOT EXISTS `03_08_05` (
     data DATE,
     transp int,
     entrega VARCHAR(20),
@@ -368,11 +351,10 @@ CREATE TABLE -- colunas data: 1
     peso_carga_kg DECIMAL(10, 2),
     classificacao_roadshow VARCHAR(20),
     classificacao_roads VARCHAR(20)
-    
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS base_rating ( 
+  IF NOT EXISTS base_rating (
     data_avaliacao date,
     avaliacao int,
     classificacao VARCHAR(25),
@@ -386,11 +368,10 @@ CREATE TABLE -- colunas data: 1
     comentario VARCHAR(25),
     estado VARCHAR(25),
     cidade VARCHAR(25)
-   
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS jornada_laboral ( 
+  IF NOT EXISTS jornada_laboral (
     data date,
     funcionario VARCHAR(25),
     matricula int,
@@ -399,11 +380,10 @@ CREATE TABLE -- colunas data: 1
     ra time,
     s time,
     trabalhadas time
-    
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_01_47_01` ( 
+  IF NOT EXISTS `03_01_47_01` (
     cod_puxada int,
     nome_filial VARCHAR(50),
     geografia VARCHAR(50),
@@ -462,11 +442,11 @@ CREATE TABLE -- colunas data: 1
     nome_filial_origem VARCHAR(50),
     mapa int,
     pedido_quebra_original VARCHAR(50),
-    pedido_cliente int,
+    pedido_cliente bigint,
     pedido_sistema_origem VARCHAR(25),
     data_entrega_nf varchar(25),
     entrega_real DATETIME,
-    visita_otif VARCHAR(20),
+    visita_otif VARCHAR(50),
     primeira_quebra VARCHAR(20),
     cliente_ponto_de_apoio VARCHAR(25),
     data_hora_envio_road_magali DATETIME,
@@ -475,11 +455,10 @@ CREATE TABLE -- colunas data: 1
     descricao_condicao_de_pagamento VARCHAR(25),
     quantidade INT,
     unid_venda VARCHAR(10)
-    
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_02_24` ( 
+  IF NOT EXISTS `03_02_24` (
     mapa bigint,
     data date,
     unb_nota VARCHAR(25),
@@ -503,7 +482,7 @@ CREATE TABLE -- colunas data: 1
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_02_37_operacao_veiculo_mapa` ( 
+  IF NOT EXISTS `03_02_37_operacao_veiculo_mapa` (
     empresa int,
     filial int,
     operacao int,
@@ -530,7 +509,7 @@ CREATE TABLE -- colunas data: 1
     adic_finan decimal(10, 2),
     desconto decimal(10, 2),
     total decimal(10, 2),
-    mapa_2 int,
+    mapa_1 int,
     nr_tit_bco int,
     nr_pedido int,
     ipi decimal(10, 2),
@@ -599,13 +578,15 @@ CREATE TABLE -- colunas data: 1
     red_fecop_st VARCHAR(25),
     cod_situacao_tributaria VARCHAR(25),
     campo_extra VARCHAR(10)
-  )ROW_FORMAT=DYNAMIC;
+  ) ROW_FORMAT = DYNAMIC;
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_02_37_tipo_movto` ( 
+  IF NOT EXISTS `03_02_37_tipo_movto` (
     empresa int,
     filial int,
     tipo_movto int,
+    unnamed int,
+    unnamed_1 int,
     dt_operacao varchar(25),
     emissao date,
     nota bigint,
@@ -646,7 +627,7 @@ CREATE TABLE -- colunas data: 1
     data_contingencia VARCHAR(25),
     hora_contingencia VARCHAR(25),
     nr_protocolo VARCHAR(25),
-    chave_de_acesso_nf_e VARCHAR(25),
+    chave_de_acesso_nf_e VARCHAR(100),
     indicador_nf_e VARCHAR(25),
     hora_envio VARCHAR(25),
     hora_retorno VARCHAR(25),
@@ -660,7 +641,7 @@ CREATE TABLE -- colunas data: 1
     estoque_atualizado VARCHAR(25),
     dt_emissao_fiscal VARCHAR(25),
     nota_fiscal_exportada_para_promax_central VARCHAR(25),
-    prazo VARCHAR(25),
+    prazo int,
     nf_retorno_vasilhame VARCHAR(25),
     nf_venda_ag_produto_material VARCHAR(25),
     nf_retorno_remessa_puxada_ag VARCHAR(25),
@@ -678,27 +659,20 @@ CREATE TABLE -- colunas data: 1
     valor_sugerido VARCHAR(25),
     cod_setor_atendimento VARCHAR(25),
     tipo_setor_atendimento VARCHAR(25),
-    setor int,
-    codigo_escalonada_pedido VARCHAR(25),
-    tipo_escalonada_pedido VARCHAR(25),
-    faixa_escalonada_pedido VARCHAR(25),
-    indicador_preco_pontual VARCHAR(25),
-    indicador_preco_cheio VARCHAR(25),
-    ttv_escalonada_pedido VARCHAR(25),
-    indicador_unidade VARCHAR(25),
     data_captura_pedido VARCHAR(25),
-    nf_regerada VARCHAR(25),
-    serie_nf_regerada VARCHAR(25),
+    nf_regerada int,
+    serie_nf_regerada int,
     indicador_cancelamento VARCHAR(25),
     red_icms_proprio VARCHAR(25),
     red_fecop_proprio VARCHAR(25),
-    red_icms_st VARCHAR(25),
+    red_icms_st decimal(10, 2),
     red_fecop_st VARCHAR(25),
-    cod_situacao_tributaria VARCHAR(25)
-  )ROW_FORMAT=DYNAMIC;
+    unnamed_2 varchar(25)
+
+  ) ROW_FORMAT = DYNAMIC;
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_05_30_cliente` ( 
+  IF NOT EXISTS `03_05_30_cliente` (
     cod_cliente int,
     descricao VARCHAR(25),
     data date,
@@ -718,12 +692,11 @@ CREATE TABLE -- colunas data: 1
     entregas int,
     pedidos int,
     d_size_agend decimal(10, 2),
-    d_size_total decimal(10, 2),
-    unnamed_20 VARCHAR(25)
+    d_size_total decimal(10, 2)
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_05_30_cod_ajudante` ( 
+  IF NOT EXISTS `03_05_30_cod_ajudante` (
     cod_ajudante int,
     descricao VARCHAR(25),
     data date,
@@ -743,8 +716,7 @@ CREATE TABLE -- colunas data: 1
     entregas int,
     pedidos int,
     d_size_agend decimal(10, 2),
-    d_size_total decimal(10, 2),
-    unnamed_20 VARCHAR(25)
+    d_size_total decimal(10, 2)
   );
 
 CREATE TABLE -- colunas data: 1
@@ -755,8 +727,8 @@ CREATE TABLE -- colunas data: 1
     mapa int,
     veiculo int,
     placa VARCHAR(25),
-    motorista VARCHAR(25),
-    cod_produto VARCHAR(25),
+    motorista int,
+    cod_produto int ,
     descricao_1 VARCHAR(25),
     cod_cliente int,
     descricao_2 VARCHAR(25),
@@ -768,12 +740,11 @@ CREATE TABLE -- colunas data: 1
     entregas int,
     pedidos int,
     d_size_agend decimal(10, 2),
-    d_size_total decimal(10, 2),
-    unnamed_20 VARCHAR(25)
+    d_size_total decimal(10, 2)
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_05_30_mapa` ( 
+  IF NOT EXISTS `03_05_30_mapa` (
     mapa int,
     data date,
     mapa_1 int,
@@ -782,7 +753,7 @@ CREATE TABLE -- colunas data: 1
     motorista int,
     cod_produto INT,
     descricao VARCHAR(25),
-    cod_cliente_1 int,
+    cod_cliente int,
     descricao_1 VARCHAR(25),
     peso int,
     perc_ocup int,
@@ -796,15 +767,15 @@ CREATE TABLE -- colunas data: 1
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS base_bees_deliver_old ( 
+  IF NOT EXISTS base_bees_deliver_old (
     tour_display_id bigint,
     tour_date date,
     distribution_center_id int,
     driver_name VARCHAR(25),
     poc_external_id int,
     status VARCHAR(25),
-    trip_start_timestamp datetime(3),
-    trip_end_timestamp datetime(3),
+    trip_start_timestamp datetime (3),
+    trip_end_timestamp datetime (3),
     visit_order int,
     within_radius VARCHAR(25),
     actual_delivery_time int,
@@ -826,7 +797,7 @@ CREATE TABLE -- colunas data: 1
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS base_bees_deliver_new ( 
+  IF NOT EXISTS base_bees_deliver_new (
     tour_display_id bigint,
     tour_date date,
     distribution_center_id int,
@@ -836,8 +807,8 @@ CREATE TABLE -- colunas data: 1
     poc_name varchar(25),
     critical_poc varchar(10),
     status VARCHAR(25),
-    trip_start_timestamp datetime(3),
-    trip_end_timestamp datetime(3),
+    trip_start_timestamp datetime (3),
+    trip_end_timestamp datetime (3),
     original_order int,
     order_updated int,
     visit_order int,
@@ -846,9 +817,9 @@ CREATE TABLE -- colunas data: 1
     skipped_reason varchar(10),
     out_of_radius_reason varchar(100),
     actual_delivery_time int,
-    driver_notification_time datetime(3),
-    arrived_at datetime(3),
-    finished_at datetime(3),
+    driver_notification_time datetime (3),
+    arrived_at datetime (3),
+    finished_at datetime (3),
     last_reason_waiting_modulation VARCHAR(25),
     last_reason_rescheduled VARCHAR(25),
     devolution_waiting_modulation varchar(25),
@@ -877,7 +848,7 @@ CREATE TABLE -- colunas data: 1
   );
 
 CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS `01_20_11` ( 
+  IF NOT EXISTS `01_20_11` (
     grupo_de_perfil int,
     cod_setor int,
     descricao_setor VARCHAR(25),
@@ -914,7 +885,7 @@ CREATE TABLE -- colunas data: 0 -- verificar
   );
 
 CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS `01_11` ( 
+  IF NOT EXISTS `01_11` (
     codigo bigint,
     descricao VARCHAR(25),
     pgv int,
@@ -966,7 +937,7 @@ CREATE TABLE -- colunas data: 0 -- verificar
   );
 
 CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS veiculos ( 
+  IF NOT EXISTS veiculos (
     frota INT,
     placa VARCHAR(20),
     modelo VARCHAR(25),
@@ -974,7 +945,7 @@ CREATE TABLE -- colunas data: 0 -- verificar
   );
 
 CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS motoristas ( 
+  IF NOT EXISTS motoristas (
     cod_filial VARCHAR(25),
     descricao_filial VARCHAR(25),
     cod_motorista VARCHAR(25),
@@ -993,7 +964,7 @@ CREATE TABLE -- colunas data: 0 -- verificar
   );
 
 CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS ajudante ( 
+  IF NOT EXISTS ajudante (
     cod INT,
     nome VARCHAR(100),
     cpf VARCHAR(20),
@@ -1005,19 +976,19 @@ CREATE TABLE -- colunas data: 0 -- verificar
 
 -- log tabelas
 CREATE TABLE
- IF NOT EXISTS log_ingestao (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  tabela_destino VARCHAR(50) NOT NULL,         -- Ex: "03_11_40"
-  nome_arquivo VARCHAR(50) NOT NULL,           -- Ex: "janeiro.csv"
-  ano INT NOT NULL,                             -- Ex: 2025
-  mes varchar(25),
-  dia int, 
-  coluna_data varchar(25),
-  data_upload DATETIME NOT NULL,                -- Ex: NOW()
-  hash_arquivo CHAR(64) NOT NULL,               -- SHA-256 hash
-  sucesso BOOLEAN NOT NULL,                     -- true / false
-  mensagem_erro TEXT                            -- null ou texto com o erro
-)
+  IF NOT EXISTS log_ingestao (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tabela_destino VARCHAR(50) NOT NULL, -- Ex: "03_11_40"
+    nome_arquivo VARCHAR(50) NOT NULL, -- Ex: "janeiro.csv"
+    ano INT NOT NULL, -- Ex: 2025
+    mes varchar(25),
+    dia int,
+    coluna_data varchar(25),
+    data_upload DATETIME NOT NULL, -- Ex: NOW()
+    hash_arquivo CHAR(64) NOT NULL, -- SHA-256 hash
+    sucesso BOOLEAN NOT NULL, -- true / false
+    mensagem_erro TEXT -- null ou texto com o erro
+  )
 
 ----------------------------
 monitoring.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\monitoring.js
@@ -1097,15 +1068,24 @@ app.listen(port, () => {
 });
 
 ----------------------------
-cacheHash_01_11.txt --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_01_11.txt
-
-
+cacheHash_03_05_30_cliente.jsonl --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_03_05_30_cliente.jsonl
 
 ----------------------------
-cacheHash_03_01_46_06.txt --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_03_01_46_06.txt
+cacheHash_03_05_30_cod_ajudante.jsonl --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_03_05_30_cod_ajudante.jsonl
 
 ----------------------------
-cacheHash_03_01_47_01.txt --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_03_01_47_01.txt
+cacheHash_03_05_30_mapa.jsonl --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_03_05_30_mapa.jsonl
+{"tabela_destino":"03_05_30_mapa","nome_arquivo":"jul.csv","ano":2025,"mes":"jul","dia":null,"coluna_data":"data","data_upload":"2025-07-30T19:18:43.956Z","hash_arquivo":"b21eb9aebee0ca95d957a55247106960de9faeab95a683159a8875ddc6ae9ac1","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\030530\\03_05_30_mapa\\2025\\jul.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_05_30_mapa_2025_jul_jul.csv"}
+{"tabela_destino":"03_05_30_mapa","nome_arquivo":"jun.csv","ano":2025,"mes":"jun","dia":null,"coluna_data":"data","data_upload":"2025-07-30T19:18:43.956Z","hash_arquivo":"e5255c784982d904d4217e12352919e66a691bfd18269b3d77137b7eeee40228","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\030530\\03_05_30_mapa\\2025\\jun.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_05_30_mapa_2025_jun_jun.csv"}
+{"tabela_destino":"03_05_30_mapa","nome_arquivo":"mai.csv","ano":2025,"mes":"mai","dia":null,"coluna_data":"data","data_upload":"2025-07-30T19:18:43.962Z","hash_arquivo":"9dc64156c3985606a9b8c2f9ad612793ea6f75a3b84bfff9307fe3fdbdcb529b","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\030530\\03_05_30_mapa\\2025\\mai.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_05_30_mapa_2025_mai_mai.csv"}
+{"tabela_destino":"03_05_30_mapa","nome_arquivo":"abr.csv","ano":2025,"mes":"abr","dia":null,"coluna_data":"data","data_upload":"2025-07-30T19:18:43.955Z","hash_arquivo":"cbdd37e1e630b6e1c6757ec671bd06af80ace56dfff81cea4e19eb08749c6687","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\030530\\03_05_30_mapa\\2025\\abr.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_05_30_mapa_2025_abr_abr.csv"}
+{"tabela_destino":"03_05_30_mapa","nome_arquivo":"mar.csv","ano":2025,"mes":"mar","dia":null,"coluna_data":"data","data_upload":"2025-07-30T19:18:43.956Z","hash_arquivo":"5ae1bf54ceed0ff180ab1479c7373bb216307239453c675b8977cc55f39d17ed","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\030530\\03_05_30_mapa\\2025\\mar.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_05_30_mapa_2025_mar_mar.csv"}
+{"tabela_destino":"03_05_30_mapa","nome_arquivo":"fev.csv","ano":2025,"mes":"fev","dia":null,"coluna_data":"data","data_upload":"2025-07-30T19:18:43.958Z","hash_arquivo":"463eef2fa34a12d154bbbba1cfc3d16df6db4c92bf503149cd37fbf5e513a937","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\030530\\03_05_30_mapa\\2025\\fev.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_05_30_mapa_2025_fev_fev.csv"}
+{"tabela_destino":"03_05_30_mapa","nome_arquivo":"jan.csv","ano":2025,"mes":"jan","dia":null,"coluna_data":"data","data_upload":"2025-07-30T19:18:43.957Z","hash_arquivo":"4faa5fc686c89881a3caf99f5f218bfe2b4817b9e0969e6d1a34d86fb70cf997","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\030530\\03_05_30_mapa\\2025\\jan.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_05_30_mapa_2025_jan_jan.csv"}
+
+----------------------------
+cacheHash_03_11_40.jsonl --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_03_11_40.jsonl
+{"tabela_destino":"03_11_40","nome_arquivo":"julho.csv","ano":2025,"mes":"julho","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-07-30T19:33:48.993Z","hash_arquivo":"451c1a2482f994dfd63366d527c1f1aa86f7dd4fbec12db9739384610162b774","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_11_40\\2025\\julho.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_julho_julho.csv"}
 
 ----------------------------
 createDataController.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\controller\createDataController.js
@@ -1117,18 +1097,19 @@ import createJsonController from "../utils/createJsonController.js";
 import { addAviso, addErro } from "../middleware/errorHandler.js";
 
 export default async function createDataController(filePath, action) {
+  const contexto = filePath
   let dataJson;
   try {
     dataJson = await createJsonController(filePath);
     if (!dataJson || dataJson.length === 0) {
-      addAviso("CSV vazio, validar se estÃ¡ vÃ¡lido");
+      addAviso("CSV vazio, validar se estÃ¡ vÃ¡lido", contexto);
       return null 
     } else if (Object.keys(dataJson[0]).length === 0) {
-      addAviso("CSV possui registros, mas sem colunas detectadas.");
+      addAviso("CSV possui registros, mas sem colunas detectadas.", contexto);
       return null
     }
   } catch (e) {
-    addErro(`Erro ao converter CSV para JSON: ${e.message}`);
+    addErro(`Erro ao converter CSV para JSON: ${e.message}`, contexto);
     throw e;
   }
 
@@ -1137,11 +1118,12 @@ export default async function createDataController(filePath, action) {
     const { metadados, logData } = await createFundamentalDocsController(
       filePath,
       dataJson,
-      action
+      action,
+      contexto
     );
     return { metadados, logData };
   } catch (e) {
-    addErro(`Erro ao gerar metadados e logData: ${e.message}`);
+    addErro(`Erro ao gerar metadados e logData: ${e.message}`, contexto);
     throw e;
   }
 }
@@ -1153,7 +1135,7 @@ export async function createMetadadosController(
   action
 ) {
   const destino = destinoByFilePath(filePath);
-  const infos = await extractInfosByData(destino.tabela_destino, dataJson);
+  const infos = await extractInfosByData(destino.tabela_destino, dataJson, filePath);
 
   return {
     nome_arquivo: destino.nome_arquivo,
@@ -1191,8 +1173,11 @@ export function createLogDataController(metadados) {
 export async function createFundamentalDocsController(
   filePath,
   dataJson,
-  action
+  action,
+  contexto
 ) {
+
+  
   try {
     const hash = createHashByData(dataJson);
     const metadados = await createMetadadosController(
@@ -1206,15 +1191,16 @@ export async function createFundamentalDocsController(
     return { metadados, logData };
   } catch (e) {
     addErro(
-      `Erro ao gerar os objetos fundamentais, metadados e logdata, erro: ${e.message}`
+      `Erro ao gerar os objetos fundamentais, metadados e logdata, erro: ${e.message}`, contexto
     );
     throw e;
   }
 }
 
-async function extractInfosByData(tabelaName, dataJson) {
+async function extractInfosByData(tabelaName, dataJson, filePath) {
+  const contexto = filePath
   try {
-    const dataColun = await doesCsvHaveDataController(tabelaName, dataJson);
+    const dataColun = await doesCsvHaveDataController(tabelaName, dataJson, contexto);
     const tiposEsperados = await getTiposFromTable(tabelaName);
     const colunsTable = await getColumnsFromTable(tabelaName);
     const colunsJson = Object.keys(dataJson[0] || {});
@@ -1227,7 +1213,7 @@ async function extractInfosByData(tabelaName, dataJson) {
     };
   } catch (e) {
     addErro(
-      `[FATAL] Erro ao extrair informaÃ§Ãµes da tabela destino ou colunas do Json csv, erro: ${e.message}`
+      `[FATAL] Erro ao extrair informaÃ§Ãµes da tabela destino ou colunas do Json csv, erro: ${e.message}`, contexto
     );
     throw e;
   }
@@ -1290,48 +1276,49 @@ import { getLogByData, getAllHashesFromTable } from "../model/logModel.js";
  * }} logData
  */
 export default async function fluxoValidatorController(metadados, logData) {
+  const contexto = metadados.caminho_original
   let logs = [];
   let allHashes = [];
 
   try {
     logs = await getLogByData(metadados);
   } catch (e) {
-    addErro(`erro ao extrair os logs referentes a data, erro: ${e.message}`);
+    addErro(`erro ao extrair os logs referentes a data, erro: ${e.message}`, contexto);
   } finally{
-    await updateLoggerController(metadados)
+    await updateLoggerController(metadados, contexto)
   }
 
   try {
     allHashes = await getAllHashesFromTable(metadados);
   } catch (e) {
-    addErro(`Erro ao extrair os hashs dos logs referentes a essa data`);
+    addErro(`Erro ao extrair os hashs dos logs referentes a essa data`, contexto);
    } finally{
-    await updateLoggerController(metadados)
+    await updateLoggerController(metadados, contexto)
   }
 
   const hashJaExiste = allHashes.some(
     (entry) => entry.hash_arquivo === logData.hash_arquivo
   );
   if (!logData.hash_arquivo) {
-    addErro("Hash do arquivo nÃ£o foi passado ao validador do fluxo.");
-    await updateLoggerController(metadados)
+    addErro("Hash do arquivo nÃ£o foi passado ao validador do fluxo.", contexto);
+    await updateLoggerController(metadados, contexto)
   }
 
   if (hashJaExiste) {
     addInfo(
-      `[ARQUIVO DUPLICADO] O conteÃºdo de ${metadados.nome_arquivo} jÃ¡ estÃ¡ presente na base.`
+      `[ARQUIVO DUPLICADO] O conteÃºdo de ${metadados.nome_arquivo} jÃ¡ estÃ¡ presente na base.`, contexto
     );
-    await updateLoggerController(metadados)
+    await updateLoggerController(metadados, contexto)
     return "ignorar";
   } else if (!logs || logs.length === 0) {
-    addInfo(`[NOVO ARQUIVO] ${metadados.nome_arquivo} serÃ¡ processado.`);
-    await updateLoggerController(metadados)
+    addInfo(`[NOVO ARQUIVO] ${metadados.nome_arquivo} serÃ¡ processado.`, contexto);
+    await updateLoggerController(metadados, contexto)
     return "inserir";
   } else {
     addInfo(
-      `[ARQUIVO MODIFICADO] ${metadados.nome_arquivo} jÃ¡ existia, mas foi alterado. Reprocessando.`
+      `[ARQUIVO MODIFICADO] ${metadados.nome_arquivo} jÃ¡ existia, mas foi alterado. Reprocessando.`, contexto
     );
-    await updateLoggerController(metadados)
+    await updateLoggerController(metadados, contexto)
     return "reprocessar";
   }
 }
@@ -1340,9 +1327,12 @@ export default async function fluxoValidatorController(metadados, logData) {
 insertValidator.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\controller\insertValidator.js
 import { addAviso } from "../middleware/errorHandler.js";
 import { getDateColumnsFromTable } from "../model/tableModel.js";
-import { updateLoggerController } from "../middleware/logger.js";
+import {
+  getLoggerContext,
+  updateLoggerController,
+} from "../middleware/logger.js";
 
-export async function doesCsvHaveDataController(tabela, data_json) {
+export async function doesCsvHaveDataController(tabela, data_json, contexto) {
   try {
     const dataCol = await getDateColumnsFromTable(tabela);
     if (!dataCol) return null;
@@ -1353,8 +1343,8 @@ export async function doesCsvHaveDataController(tabela, data_json) {
     const index = chavesJson.findIndex((key) => key === dataCol);
 
     if (index === -1) {
-      addAviso(`Coluna de data '${dataCol}' nÃ£o encontrada no CSV.`);
-      await updateLoggerController(metadados);
+      addAviso(`Coluna de data '${dataCol}' nÃ£o encontrada no CSV.`, contexto);
+      updateLoggerController(getLoggerContext({}, {}, contexto), contexto);
       return null;
     }
 
@@ -1380,29 +1370,46 @@ export async function doesCsvHaveDataController(tabela, data_json) {
  * }} metadados
  */
 export async function insertValidator(list, metadados) {
+  const contexto = metadados.caminho_original;
   if (list === null) {
     return "cadastro";
   } else {
     const { coluna_data, data_json } = metadados; //null caso for cadastral
     if (!Array.isArray(data_json) || data_json.length === 0) {
       addAviso(
-        "[Controller insersÃ£o] JSON de dados estÃ¡ vazio. Nenhuma validaÃ§Ã£o de coluna de data serÃ¡ feita."
+        "[Controller insersÃ£o] JSON de dados estÃ¡ vazio. Nenhuma validaÃ§Ã£o de coluna de data serÃ¡ feita.",
+        contexto
       );
-      await updateLoggerController(metadados);
+      await updateLoggerController(
+        getLoggerContext(metadados, {}, contexto),
+        contexto
+      );
       return null;
     }
     try {
-      const datasBanco = extrairDatasValidas(list, coluna_data, "Banco");
-      const datasCsv = extrairDatasValidas(data_json, coluna_data, "CSV");
+      const datasBanco = extrairDatasValidas(
+        list,
+        coluna_data,
+        "Banco",
+        contexto
+      );
+      const datasCsv = extrairDatasValidas(
+        data_json,
+        coluna_data,
+        "CSV",
+        contexto
+      );
       const conflito = [...datasCsv].some((data) => datasBanco.has(data));
 
-      return conflito
-        ? (addAviso(
-            "[Controller insersÃ£o] Conflito detectado: datas do CSV jÃ¡ existem na base. Os dados serÃ£o reprocessados."
-          ),
-          "substituir",
-          await updateLoggerController(metadados))
-        : "inserir";
+      if (conflito) {
+        addAviso(
+          "[Controller insersÃ£o] Conflito detectado: datas do CSV jÃ¡ existem na base. Os dados serÃ£o reprocessados.",
+          contexto
+        );
+        await updateLoggerController(metadados, contexto);
+        return "substituir";
+      }
+      return "inserir";
     } catch (e) {
       throw new Error(
         `[Controller insersÃ£o] Erro ao validar datas para inserÃ§Ã£o, Erro: ${e.message}`
@@ -1411,7 +1418,7 @@ export async function insertValidator(list, metadados) {
   }
 }
 
-function extrairDatasValidas(array, coluna, contexto = "CSV") {
+function extrairDatasValidas(array, coluna, csvOrDataBase = "CSV", contexto) {
   return new Set(
     array
       .map((linha, i) => {
@@ -1419,7 +1426,8 @@ function extrairDatasValidas(array, coluna, contexto = "CSV") {
         const date = new Date(raw);
         if (isNaN(date)) {
           addAviso(
-            `[Controller insersÃ£o] Linha ${i}: valor invÃ¡lido em '${coluna}' â†’ '${raw}'. Registro ignorado [${contexto}].`
+            `[Controller insersÃ£o] Linha ${i}: valor invÃ¡lido em '${coluna}' â†’ '${raw}'. Registro ignorado [${csvOrDataBase}].`,
+            contexto
           );
           return null;
         }
@@ -1442,9 +1450,22 @@ import tiparLinha from "../utils/tiparLinha.js";
 import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
 import { updateLoggerController } from "../middleware/logger.js";
 
+const linhasPorArquivo = new Map();
+let proximaLinhaDisponivel = 1;
+
+function reservarLinhaParaArquivo(nomeArquivo) {
+  if (!linhasPorArquivo.has(nomeArquivo)) {
+    linhasPorArquivo.set(nomeArquivo, proximaLinhaDisponivel++);
+  }
+  return linhasPorArquivo.get(nomeArquivo);
+}
+
 export async function manageInsertController(metadados) {
+  const contexto = metadados.caminho_original
+  const nomeArquivo = metadados.nome_arquivo ?? "arquivo-desconhecido";
+  const linhaProgresso = reservarLinhaParaArquivo(nomeArquivo);
   if (!Array.isArray(metadados.data_json) || metadados.data_json.length === 0) {
-    addAviso("Nenhuma linha disponÃ­vel para inserÃ§Ã£o.");
+    addAviso("Nenhuma linha disponÃ­vel para inserÃ§Ã£o.", contexto);
     return;
   }
 
@@ -1452,68 +1473,84 @@ export async function manageInsertController(metadados) {
   try {
     listFromTable = await listPeriodInTable(metadados); //caso a base seja cadastral, vai retornar null aqui se nÃ£o, vai retornar um objeto com {dataCol: 'data da linha'}
   } catch (e) {
-    addErro(`Erro ao consultar o perÃ­odo no banco: ${e.message}`);
+    addErro(`Erro ao consultar o perÃ­odo no banco: ${e.message}`, contexto);
     throw e;
   }
 
-  const validator = insertValidator(listFromTable, metadados);
+  const validator = await insertValidator(listFromTable, metadados);
   const erros = [];
   let sucesso = 0;
-  if( validator === "cadastro"){
-    try{
-      await deleteFromTable(metadados)
-      addInfo(`[Delete dados] - dados excluidos, tabela do banco pronta pra reincersÃ£o dos novos dados cadastrais`)
-    } catch(e){
-      addErro(
-        `[delete tabela cadastro] - Erro ao deletar os dados do cadastro antes da reinserÃ§Ã£o, erro: ${e.message}`
+  if (validator === "cadastro") {
+    try {
+      await deleteFromTable(metadados);
+      addInfo(
+        `[Delete dados] - dados excluidos, tabela do banco pronta pra reincersÃ£o dos novos dados cadastrais`, contexto
       );
-      await updateLoggerController(metadados);
+    } catch (e) {
+      addErro(
+        `[delete tabela cadastro] - Erro ao deletar os dados do cadastro antes da reinserÃ§Ã£o, erro: ${e.message}`, contexto
+      );
+      await updateLoggerController(metadados, contexto);
       return;
-
     }
-    
   } else if (validator === "substituir") {
     try {
       await deleteFromTable(metadados);
-      addAviso(`[gerenciamento de inserÃ§Ãµes] operaÃ§Ã£o de substituiÃ§Ã£o, dados referente a data inserida foram excluidos`)
-
+      addAviso(
+        `[gerenciamento de inserÃ§Ãµes] operaÃ§Ã£o de substituiÃ§Ã£o, dados referente a data inserida foram excluidos`, contexto
+      );
     } catch (e) {
       addErro(
-        `Erro ao deletar perÃ­odo antes da reinserÃ§Ã£o, erro: ${e.message}`
+        `Erro ao deletar perÃ­odo antes da reinserÃ§Ã£o, erro: ${e.message}`, contexto
       );
-      await updateLoggerController(metadados);
+      await updateLoggerController(metadados, contexto);
       return;
     }
-  } 
-
+  } else if (validator === null) {
+    addErro(
+      "ValidaÃ§Ã£o retornou nulo. Dados possivelmente invÃ¡lidos ou sem coluna de data.", contexto
+    );
+    await updateLoggerController(metadados, contexto);
+    return;
+  }
+  addInfo("iniciando processo de insersÃ£o dos dados na tabela...", contexto);
+  const total = metadados.data_json.length;
   for (let i = 0; i < metadados.data_json.length; i++) {
     try {
       const linhaOriginal = metadados.data_json[i];
       const linhaTipada = tiparLinha(linhaOriginal, metadados.tipos_esperados);
-      const { result, linhaTipada: linhaInserida } =
-        await insertRegisterinTable(metadados.tabela, linhaTipada);
 
+      const { result, linhaTipada: linhaInserida } = await insertRegisterinTable(metadados.tabela, linhaTipada);
       // Log detalhado: original e tipada
-      console.log(
-        `Linha ${i} inserida:\r\n`
-          +`\r\n`+
-          `Original: ${JSON.stringify(linhaOriginal)}\r\n`
-          +`\r\n`+
-          `Tipada:   ${JSON.stringify(linhaInserida)}\r\n`
-          +`\r\n`+
-          `----------------------------------------------`
-      );
+      //console.log(
+      //  `Linha ${i} inserida:\r\n`
+      //    +`\r\n`+
+      //    `Original: ${JSON.stringify(linhaOriginal)}\r\n`
+      //    +`\r\n`+
+      //    `Tipada:   ${JSON.stringify(linhaInserida)}\r\n`
+      //    +`\r\n`+
+      //    `----------------------------------------------`
+      //);
       sucesso++;
+      const porcentagem = (((i + 1) / total) * 100).toFixed(1);
+      process.stdout.write(`\x1b[${linhaProgresso};0H`);
+      process.stdout.write(
+        `ðŸ“ Inserindo dados... ${porcentagem}% (${
+          i + 1
+        }/${total}) arquivo: ${nomeArquivo}, tabela: ${metadados.tabela}      `
+      );
     } catch (e) {
-      addErro(`Erro ao inserir linha ${i}, erro: ${e.message}`);
+      addErro(`Erro ao inserir linha ${i}, erro: ${e.message}`, contexto);
       erros.push({
         linha: i,
         erro: e.message,
         dados: metadados.data_json[i],
       });
-      await updateLoggerController(metadados);
+      await updateLoggerController(metadados, contexto);
     }
   }
+  process.stdout.write(`\x1b[${linhaProgresso + 1};0H`);
+  addInfo("processo de insersÃ£o finalizado, validar caso erros", contexto);
   return {
     erro: erros.length > 0,
     total: metadados.data_json.length,
@@ -1525,21 +1562,26 @@ export async function manageInsertController(metadados) {
 }
 
 export async function managerDeleterController(logData) {
+  const contexto = logData.caminho_original
   try {
     await deleteFromTable(logData);
     return { erro: false };
   } catch (e) {
     addErro(
-      `Erro ao deletar perÃ­odo no banco pÃ³s exclusÃ£o do arquivo, erro: ${e.message}`
+      `Erro ao deletar perÃ­odo no banco pÃ³s exclusÃ£o do arquivo, erro: ${e.message}`, contexto
     );
-    await updateLoggerController(logData.caminho_original);
+    await updateLoggerController(logData, contexto);
     return { erro: true, mensagem: e.message };
   }
 }
 
 ----------------------------
 createdHandler.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\controller\Handlers\createdHandler.js
-import { addErro, addInfo, clearAllErrors } from "../../middleware/errorHandler.js";
+import {
+  addErro,
+  addInfo,
+  clearAllErrors,
+} from "../../middleware/errorHandler.js";
 import {
   createLoggerController,
   finalLoggerController,
@@ -1553,10 +1595,15 @@ import fluxoValidatorController from "../fluxoValidatorController.js";
 import { manageInsertController } from "../managerDataController.js";
 
 export default async function createdHandler(filePath) {
-  let metadados, logData
+  if (!filePath) {
+    addErro("caminho do arquivo nÃ£o definido no handler, sem como identificar qual arquivo deu erro...")
+    return
+  }
+  const contexto = filePath;
+  let metadados, logData;
   try {
     // ------------criando logger -----------------
-    clearAllErrors();
+    clearAllErrors(contexto);
     await createLoggerController(filePath);
     //---------- criando os docs, e validando o fluxo de insersÃ£o -----------
 
@@ -1565,16 +1612,24 @@ export default async function createdHandler(filePath) {
       resultado = await createDataController(filePath);
       ({ metadados, logData } = resultado);
     } catch (e) {
-      addErro(`erro ao gerar os dados fundamentais, erro:${e.message}`);
+      addErro(
+        `erro ao gerar os dados fundamentais, erro:${e.message}`,
+        contexto
+      );
       return;
     } finally {
-      await updateLoggerController(getLoggerContext(metadados ?? {}, logData ?? {}, filePath));
+      await updateLoggerController(
+        getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
+        contexto
+      );
     }
-     
 
     if (!metadados || !logData) {
-      addErro(`metadados ou logData nÃ£o foram gerados corretamente`);
-      await updateLoggerController(filePath);
+      addErro(`metadados ou logData nÃ£o foram gerados corretamente`, contexto);
+      await updateLoggerController(
+        getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
+        contexto
+      );
       return;
     }
 
@@ -1582,10 +1637,13 @@ export default async function createdHandler(filePath) {
     try {
       fluxo = await fluxoValidatorController(metadados, logData);
     } catch (e) {
-      addErro(`Erro ao validar fluxo de ingestÃ£o: ${e.message}`);
+      addErro(`Erro ao validar fluxo de ingestÃ£o: ${e.message}`, contexto);
       return;
-    } finally{
-      await updateLoggerController(getLoggerContext(metadados ?? {}, logData ?? {}, filePath));
+    } finally {
+      await updateLoggerController(
+        getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
+        contexto
+      );
     }
 
     //-------------- vai retorna o logdata o metadados e o fluxo -----------
@@ -1599,35 +1657,55 @@ export default async function createdHandler(filePath) {
         logData.mensagem_erro = resultado?.mensagem || null;
 
         if (resultado?.erro) {
-          addErro(logData.mensagem_erro);
+          addErro(logData.mensagem_erro, contexto);
         }
       } catch (e) {
         logData.sucesso = false;
         logData.mensagem_erro = `Erro durante execuÃ§Ã£o do managerDataController: ${e.message}`;
-        addErro(`Erro durante execuÃ§Ã£o do managerDataController: ${e.message}`);
+        addErro(
+          `Erro durante execuÃ§Ã£o do managerDataController: ${e.message}`,
+          contexto
+        );
       } finally {
         await insertHashInCache(logData);
         await insertLog(logData);
-        await updateLoggerController(getLoggerContext(metadados ?? {}, logData ?? {}, filePath));
+        await updateLoggerController(
+          getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
+          contexto
+        );
       }
     } else {
       addInfo(
-        `[ARQUIVO IGNORADO] ${metadados.nome_arquivo} jÃ¡ existe e nÃ£o foi modificado.`
+        `[ARQUIVO IGNORADO] ${metadados.nome_arquivo} jÃ¡ existe e nÃ£o foi modificado.`,
+        contexto
       );
-      await updateLoggerController(getLoggerContext(metadados ?? {}, logData ?? {}, filePath));
+      await updateLoggerController(
+        getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
+        contexto
+      );
       return;
     }
   } catch (e) {
-    addErro(`erro no createdHandler, erro: ${e.message}, caminho do erro: ${e.stack}`);
+    addErro(
+      `erro no createdHandler, erro: ${e.message}, caminho do erro: ${e.stack}`,
+      contexto
+    );
     return;
   } finally {
-    await finalLoggerController(getLoggerContext(metadados ?? {}, logData ?? {}, filePath));
+    await finalLoggerController(
+      getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
+      contexto
+    );
   }
 }
 
 ----------------------------
 deletedHandler.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\controller\Handlers\deletedHandler.js
-import { addAviso, addErro, clearAllErrors } from "../../middleware/errorHandler.js";
+import {
+  addAviso,
+  addErro,
+  clearAllErrors,
+} from "../../middleware/errorHandler.js";
 import {
   finalLoggerController,
   getLoggerContext,
@@ -1642,100 +1720,120 @@ import { destinoByFilePath } from "../createDataController.js";
 import { managerDeleterController } from "../managerDataController.js";
 
 export default async function deletedHandler(filePath) {
-  clearAllErrors()
+  const contexto = filePath;
+  clearAllErrors(contexto);
   let logData;
   try {
     const destino = destinoByFilePath(filePath);
     try {
       logData = await getRegisterFromCache(destino);
-      addAviso("tentativa de extraÃ§Ã£o do cache finalizada.");
+      addAviso("tentativa de extraÃ§Ã£o do cache finalizada.", contexto);
       if (!logData) {
         addErro(
-          `Nenhum registro de cache encontrado para ${filePath} logica de exclusÃ£o travada`
+          `Nenhum registro de cache encontrado para ${filePath} logica de exclusÃ£o travada`,
+          contexto
         );
         return;
       }
     } catch (e) {
-      addErro(`Erro ao extrair o logdata do cache, verifique o cache`);
+      addErro(
+        `Erro ao extrair o logdata do cache, verifique o cache`,
+        contexto
+      );
     } finally {
-      await updateLoggerController(getLoggerContext({}, logData, filePath));
+      await updateLoggerController(
+        getLoggerContext({}, logData, filePath),
+        contexto
+      );
     }
     let resultado;
     try {
-      addAviso("logica de exclusÃ£o dos dados iniciada...");
+      addAviso("logica de exclusÃ£o dos dados iniciada...", contexto);
       resultado = await managerDeleterController(logData);
-      addAviso("logica de exclusÃ£o dos dados finalizada...");
+      addAviso("logica de exclusÃ£o dos dados finalizada...", contexto);
       if (resultado?.erro) {
         addErro(
           `Erro durante managerDeleterController: ${
             resultado.mensagem || "Erro desconhecido"
-          }`
+          }`,
+          contexto
         );
         return; // ou `throw new Error(...)` dependendo da criticidade
       }
       await deleteLogByHash(logData);
       await deleteRegisterFromCache(destino);
-      addAviso("exclusÃ£o do log no cache e no banco finalizadas");
+      addAviso("exclusÃ£o do log no cache e no banco finalizadas", contexto);
     } catch (e) {
       addErro(
-        `problema ao apagar o hash do banco ou do cache, erro: ${e.message}`
+        `problema ao apagar o hash do banco ou do cache, erro: ${e.message}`,
+        contexto
       );
       return;
     } finally {
-      await updateLoggerController(getLoggerContext({}, logData, filePath));
+      await updateLoggerController(
+        getLoggerContext({}, logData, filePath),
+        contexto
+      );
     }
   } catch (e) {
-    addErro(`Erro no deletedHandler, erro: ${e.message}, ${e.stack}`);
+    addErro(`Erro no deletedHandler, erro: ${e.message}, ${e.stack}`, contexto);
     return;
   } finally {
-    
-    await finalLoggerController(getLoggerContext({}, logData, filePath));
+    await finalLoggerController(
+      getLoggerContext({}, logData, filePath),
+      contexto
+    );
   }
 }
 
 ----------------------------
 errorHandler.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\middleware\errorHandler.js
-const mensagens = {
-  erros: [],
-  infos: [],
-  avisos: [],
-};
+const contextoDeMensagens = new Map();
 
-export function addErro(msg) {
-  mensagens.erros.push(msg);
+export function addErro(msg, contexto = "__global") {
+  if (!contextoDeMensagens.has(contexto)) {
+    contextoDeMensagens.set(contexto, { erros: [], infos: [], avisos: [] });
+  }
+  contextoDeMensagens.get(contexto).erros.push(msg);
 }
 
-export function addInfo(msg) {
-  mensagens.infos.push(msg);
+export function addInfo(msg, contexto = "__global") {
+  if (!contextoDeMensagens.has(contexto)) {
+    contextoDeMensagens.set(contexto, { erros: [], infos: [], avisos: [] });
+  }
+  contextoDeMensagens.get(contexto).infos.push(msg);
 }
 
-export function addAviso(msg) {
-  mensagens.avisos.push(msg);
+export function addAviso(msg, contexto = "__global") {
+  if (!contextoDeMensagens.has(contexto)) {
+    contextoDeMensagens.set(contexto, { erros: [], infos: [], avisos: [] });
+  }
+  contextoDeMensagens.get(contexto).avisos.push(msg);
 }
 
-export function getAllErrors() {
-  return { ...mensagens }; // CÃ³pia segura
+export function getAllErrors(contexto = "__global") {
+  return contextoDeMensagens.get(contexto) || { erros: [], infos: [], avisos: [] };
 }
 
-export function clearAllErrors() {
-  mensagens.erros = [];
-  mensagens.infos = [];
-  mensagens.avisos = [];
+export function clearAllErrors(contexto = "__global") {
+  contextoDeMensagens.set(contexto, { erros: [], infos: [], avisos: [] });
 }
 
-
+export function clearAllContexts() {
+  contextoDeMensagens.clear();
+}
 
 ----------------------------
 logger.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\middleware\logger.js
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { getAllErrors, clearAllErrors } from "./errorHandler.js";
+import { getAllErrors, clearAllErrors, addErro } from "./errorHandler.js";
 import colunsValidator from "../utils/colunsValidator.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-function TextoLogger(dadosLogger) {
-  const all = getAllErrors();
+function TextoLogger(dadosLogger, contexto = "__global") {
+  const all = getAllErrors(contexto);
   const now = new Date();
   const dataHora = now.toLocaleString("pt-BR");
 
@@ -1800,23 +1898,31 @@ function TextoLogger(dadosLogger) {
 }
 
 function getLoggerFileName(dir, name) {
-  return path.join(dir, `Logger_${name}.txt`);
+  const loggerDir = path.join(dir, "loggers");
+  return path.join(loggerDir, `Logger_${name}.txt`);
 }
 
 export async function createLoggerController(filePath) {
   const dir = path.dirname(filePath);
   const { name } = path.parse(filePath);
   const logPath = getLoggerFileName(dir, name);
+
   try {
+    // Garante que a pasta 'loggers' exista
+    await fs.mkdir(path.dirname(logPath), { recursive: true });
+
     await fs.writeFile(logPath, "Processo iniciado....", "utf8");
   } catch (e) {
     console.log(
-      "[Logger] erro ao iniciar o processo de log, arquivo criado porem erro na interaÃ§Ã£o inicial"
+      "[Logger] erro ao iniciar o processo de log, arquivo criado porÃ©m erro na interaÃ§Ã£o inicial"
     );
   }
 }
 
-export async function updateLoggerController(dadosLogger) {
+export async function updateLoggerController(
+  dadosLogger,
+  contexto = "__global"
+) {
   let filePath, dadosParaLog;
 
   if (typeof dadosLogger === "string") {
@@ -1841,7 +1947,7 @@ export async function updateLoggerController(dadosLogger) {
   const dir = path.dirname(filePath);
   const logPath = getLoggerFileName(dir, name);
 
-  const texto = TextoLogger(dadosParaLog);
+  const texto = TextoLogger(dadosParaLog, contexto);
   try {
     await fs.writeFile(logPath, texto, "utf8");
   } catch (e) {
@@ -1851,7 +1957,10 @@ export async function updateLoggerController(dadosLogger) {
   }
 }
 
-export async function finalLoggerController(dadosLogger) {
+export async function finalLoggerController(
+  dadosLogger,
+  contexto = "__global"
+) {
   let filePath, dadosParaLog;
 
   if (typeof dadosLogger === "string") {
@@ -1877,13 +1986,13 @@ export async function finalLoggerController(dadosLogger) {
   const logPath = getLoggerFileName(dir, name);
   let texto;
   try {
-    texto = TextoLogger(dadosParaLog);
+    texto = TextoLogger(dadosParaLog, contexto);
     await fs.writeFile(logPath, texto, "utf8");
-    if (texto) console.log(texto);
   } catch (e) {
     try {
       addErro(
-        `[logger] Erro ao montar ou salvar log: ${e.message}\n${e.stack}`
+        `[logger] Erro ao montar ou salvar log: ${e.message}\n${e.stack}`,
+        contexto
       );
     } catch {
       // Fallback simples: imprimir direto no console, sem usar addErro
@@ -1894,8 +2003,11 @@ export async function finalLoggerController(dadosLogger) {
   }
 }
 
-export async function errorLoggerController(dadosLogger) {
-  const texto = TextoLogger(dadosLogger);
+export async function errorLoggerController(
+  dadosLogger,
+  contexto = "__global"
+) {
+  const texto = TextoLogger(dadosLogger, contexto);
   let file;
   try {
     file = await loggerFileInit(dadosLogger);
@@ -1912,7 +2024,7 @@ export async function errorLoggerController(dadosLogger) {
       );
     }
   }
-  clearAllErrors();
+  clearAllErrors(contexto);
   console.log(texto);
 }
 
@@ -1930,7 +2042,12 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
+import {
+  addAviso,
+  addErro,
+  addInfo,
+  clearAllErrors,
+} from "../middleware/errorHandler.js";
 import readline from "readline";
 import { createReadStream, createWriteStream } from "fs";
 
@@ -2003,31 +2120,33 @@ async function fileExists(filePath) {
 }
 
 async function releaseLock(lockFilePath) {
+  const contexto = lockFilePath;
+  clearAllErrors(contexto);
   // Verifica se o arquivo lock existe antes de tentar apagar
   const exists = await fileExists(lockFilePath);
   if (!exists) {
-    addAviso(`[loc] Lock '${lockFilePath}' nÃ£o existe mais, nada a remover.`);
+    addAviso(`[loc] Lock '${lockFilePath}' nÃ£o existe mais, nada a remover.`, contexto);
     return;
   }
 
   try {
     await fs.unlink(lockFilePath);
   } catch (err) {
-    addErro(`[lock] Falha ao remover lock, tentando novamente: ${err.message}`);
+    addErro(`[lock] Falha ao remover lock, tentando novamente: ${err.message}`, contexto);
     try {
       await new Promise((r) => setTimeout(r, 100));
 
       if (await fileExists(lockFilePath)) {
         await fs.unlink(lockFilePath);
-        addInfo("[lock] Lock removido com sucesso na segunda tentativa.");
+        addInfo("[lock] Lock removido com sucesso na segunda tentativa.", contexto);
       } else {
         addInfo(
-          `[lock] Lock '${lockFilePath}' foi removido por outro processo antes da segunda tentativa.`
+          `[lock] Lock '${lockFilePath}' foi removido por outro processo antes da segunda tentativa.`, contexto
         );
       }
     } catch (err2) {
       addErro(
-        `[lock] Falha crÃ­tica ao remover lock: ${err2.message} informar ao Lucas`
+        `[lock] Falha crÃ­tica ao remover lock: ${err2.message} informar ao Lucas`, contexto
       );
     }
   }
@@ -2089,7 +2208,7 @@ export async function insertHashInCache(logData) {
       throw new Error("[hash in cache] Erro ao serializar logData");
 
     await fs.appendFile(cachePath, jsonString + "\n", "utf8");
-    addInfo("[model cache] Objeto salvo no cache com sucesso!");
+    addInfo("[model cache] Objeto salvo no cache com sucesso!", lockFilePath);
   } catch (e) {
     throw new Error(
       `erro gerado ao inserir o hash no cache, erro: ${e.message}`
@@ -2156,7 +2275,6 @@ export async function deleteRegisterFromCache(destino) {
   parts.push(nome_arquivo);
   const identificadorAlvo = parts.join("_");
 
-
   // inicia logica do delete
   let rl, output, input;
   try {
@@ -2194,15 +2312,16 @@ export async function deleteRegisterFromCache(destino) {
         `[cache] Registro '${identificadorAlvo}' nÃ£o encontrado no cache.`
       );
     }
-    try{
+    try {
       await fs.rename(tempPath, cachePath);
-
-    } catch(e){
-      throw new Error(`[cache file] Erro ao substituir o cache pelo cache temp durante a logica de exclusÃ£o de um registro do cache`)
+    } catch (e) {
+      throw new Error(
+        `[cache file] Erro ao substituir o cache pelo cache temp durante a logica de exclusÃ£o de um registro do cache`
+      );
     }
-    
+
     addInfo(
-      `[cache JSONL] Registro '${identificadorAlvo}' removido com sucesso.`
+      `[cache JSONL] Registro '${identificadorAlvo}' removido com sucesso.`, lockFilePath
     );
     return true;
   } catch (e) {
@@ -2680,8 +2799,97 @@ import fs from "fs/promises";
 import iconv from "iconv-lite";
 import Papa from "papaparse";
 
+function detectarColunasDuplicadas(headers, contexto) {
+  const set = new Set();
+  const duplicadas = [];
+
+  for (const col of headers) {
+    if (set.has(col)) duplicadas.push(col);
+    set.add(col);
+  }
+
+  if (duplicadas.length > 0) {
+    addAviso(
+      `[Json] - Colunas duplicadas detectadas e renomeadas: ${duplicadas.join(
+        ", "
+      )}`,
+      contexto
+    );
+  }
+}
+
+function logarErrosDoParse(errors, contexto) {
+  if (!errors.length) return;
+
+  const resumo = [
+    `${errors.length} [Json] erros detectados durante o parsing do CSV:`,
+  ];
+
+  errors.slice(0, 5).forEach((err) => {
+    resumo.push(`[Json] â†’ Linha ${err.row ?? "?"}: ${err.message}`);
+  });
+
+  if (errors.length > 5) {
+    resumo.push(
+      `[Json] â†’ ...e mais ${errors.length - 5} erro(s) nÃ£o exibido(s).`
+    );
+  }
+
+  addAviso(resumo.join("\n"), contexto);
+}
+
+function limparCamposExtras(data) {
+  return data.map((linha) => {
+    if ("__parsed_extra" in linha) delete linha.__parsed_extra;
+    return linha;
+  });
+}
+
+function filtrarLinhasValidas(data) {
+  return data.filter((linha) => {
+    const extras =
+      Array.isArray(linha.__parsed_extra) && linha.__parsed_extra.length > 0;
+    const preenchidos = Object.values(linha).filter(
+      (v) => typeof v === "string" && v.trim() !== ""
+    ).length;
+    return preenchidos >= 3 && !extras;
+  });
+}
+
+function normalizarCabecalhosEValores(linha, contexto) {
+  const novaLinha = {};
+  const nomesUsados = {};
+
+  Object.entries(linha).forEach(([chave, valor], i) => {
+    let nomeFinal = chave?.trim() || `unnamed_${i + 1}`;
+
+    if (!chave?.trim()) {
+      addAviso(
+        `[parser CSV] Coluna sem nome detectada na posiÃ§Ã£o ${i}. Nomeada como '${nomeFinal}'`,
+        contexto
+      );
+    }
+
+    if (nomesUsados[nomeFinal]) {
+      nomesUsados[nomeFinal]++;
+      nomeFinal = `${nomeFinal}_${nomesUsados[nomeFinal]}`;
+    } else {
+      nomesUsados[nomeFinal] = 1;
+    }
+
+    novaLinha[nomeFinal] = valor;
+  });
+
+  return novaLinha;
+}
+
+// =================== FunÃ§Ã£o principal ===================
+
 export default async function createJsonController(filePath) {
+  const contexto = filePath;
   const destino = destinoByFilePath(filePath);
+  const tabelaName = destino.tabela_destino;
+
   let buffer;
   try {
     buffer = await fs.readFile(filePath);
@@ -2691,100 +2899,56 @@ export default async function createJsonController(filePath) {
 
   const data = iconv.decode(buffer, "latin1");
   const firstLine = data.split(/\r?\n/)[0];
-  const tabelaName = destino.tabela_destino;
 
-  if (firstLine.includes(",") || firstLine.includes(";")) {
-    const delimiter = firstLine.includes(";") ? ";" : ",";
-
-    const parsed = Papa.parse(data, {
-      header: true,
-      delimiter,
-      skipEmptyLines: true,
-      transformHeader: (h) => normalizar(h.trim()),
-      transform: (value) => value.trim(),
-    });
-    const linhasCorrigidas = parsed.data.map((linha) => {
-      if ("__parsed_extra" in linha) {
-        delete linha.__parsed_extra;
-      }
-      return linha;
-    });
-
-    if (parsed.errors.length) {
-      const resumo = [
-        `${parsed.errors.length} [Json] erros detectados durante o parsing do CSV:`,
-      ];
-
-      parsed.errors.slice(0, 5).forEach((err, i) => {
-        resumo.push(`[Json] â†’ Linha ${err.row ?? "?"}: ${err.message}`);
-      });
-
-      if (parsed.errors.length > 5) {
-        resumo.push(
-          `[Json] â†’ ...e mais ${
-            parsed.errors.length - 5
-          } erro(s) nÃ£o exibido(s).`
-        );
-      }
-
-      addAviso(resumo.join("\n"));
-    }
-    const linhasValidas = parsed.data.filter((linha) => {
-      const possuiCamposExtras =
-        Array.isArray(linha.__parsed_extra) && linha.__parsed_extra.length > 0;
-      const valores = Object.values(linha);
-      const preenchidos = valores.filter(
-        (v) => typeof v === "string" && v.trim() !== ""
-      ).length;
-      return preenchidos >= 3 && !possuiCamposExtras;
-    });
-    if (linhasValidas.length === 0) {
-      addAviso(
-        `[Json] - Nenhuma linha vÃ¡lida encontrada no arquivo ${filePath}.`
-      );
-    }
-    let tiposEsperados;
-    try {
-      tiposEsperados = await getTiposFromTable(tabelaName)
-    } catch (e) {
-      throw new Error(
-        `[Json] - erro ao gerar os tipos esperados, [erro: ${e.message}]`
-      );
-    }
-    const dataJsonNormalized = linhasValidas.map((linha) => {
-      const novaLinha = {};
-      const nomesUsados = {}; // vai registrar quantas vezes um nome foi usado
-
-      for (const chave in linha) {
-        let nomeFinal = chave;
-
-        if (nomesUsados[chave]) {
-          nomesUsados[chave]++;
-          nomeFinal = `${chave}_${nomesUsados[chave]}`;
-        } else {
-          nomesUsados[chave] = 1;
-        }
-
-        novaLinha[nomeFinal] = linha[chave];
-      }
-
-      return novaLinha;
-    });
-    const dataSanitized = dataJsonNormalized.map((linha) => {
-      //console.log("Antes do sanitize:", JSON.stringify(linha));
-      const sanitized = sanitizeRow(linha, tiposEsperados);
-      //console.log("Depois do sanitize:", JSON.stringify(sanitized));
-      return sanitized;
-    });
-    addInfo(
-      `[Json] - ${linhasValidas.length} linhas vÃ¡lidas extraÃ­das de ${filePath}`
-    );
-    return dataSanitized;
-  } else {
+  if (!(firstLine.includes(",") || firstLine.includes(";"))) {
     throw new Error(
       `[Json]  Arquivo ignorado: ${filePath} - NÃ£o Ã© um CSV vÃ¡lido`
     );
   }
+
+  const delimiter = firstLine.includes(";") ? ";" : ",";
+  const parsed = Papa.parse(data, {
+    header: true,
+    delimiter,
+    skipEmptyLines: true,
+    transformHeader: (h) => {
+      const header = h?.trim?.() ?? "";
+      return header === "" ? "unnamed" : normalizar(header);
+    },
+    transform: (value) => value.trim(),
+  });
+
+  detectarColunasDuplicadas(parsed.meta?.fields, contexto);
+  logarErrosDoParse(parsed.errors, contexto);
+
+  const linhasCorrigidas = limparCamposExtras(parsed.data);
+  const linhasValidas = filtrarLinhasValidas(linhasCorrigidas);
+
+  if (linhasValidas.length === 0) {
+    addAviso(
+      `[Json] - Nenhuma linha vÃ¡lida encontrada no arquivo ${filePath}.`,
+      contexto
+    );
+  }
+
+  let tiposEsperados;
+  try {
+    tiposEsperados = await getTiposFromTable(tabelaName);
+  } catch (e) {
+    throw new Error(
+      `[Json] - erro ao gerar os tipos esperados, [erro: ${e.message}]`
+    );
+  }
+
+  const dataSanitized = linhasValidas
+    .map((linha) => normalizarCabecalhosEValores(linha, contexto))
+    .map((linha) => sanitizeRow(linha, tiposEsperados));
+
+  addInfo(
+    `[Json] - ${linhasValidas.length} linhas vÃ¡lidas extraÃ­das de ${filePath}`,
+    contexto
+  );
+  return dataSanitized;
 }
 
 ----------------------------
@@ -2872,11 +3036,18 @@ export function sanitizeValue(value, tipoEsperado) {
     }
 
     case "decimal": {
-      // Remove tudo que nÃ£o for dÃ­gito, vÃ­rgula, ponto ou sinal negativo
-      let clean = String(value).replace(/[^\d,.-]/g, "");
-      // Troca vÃ­rgula por ponto se houver
-      clean = clean.replace(",", ".");
-      const parsed = parseFloat(clean);
+      let raw = String(value)
+        .trim()
+        .replace(/[^\d.,-]/g, "");
+
+      if (raw.includes(",")) {
+        raw = raw.replace(/\./g, ""); // remove separador de milhar
+        raw = raw.replace(",", "."); // troca vÃ­rgula por ponto
+      } else {
+        raw = raw;
+      }
+
+      const parsed = parseFloat(raw);
       return isNaN(parsed) ? null : parsed;
     }
 

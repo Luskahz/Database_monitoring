@@ -1,12 +1,12 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { getAllErrors, clearAllErrors } from "./errorHandler.js";
+import { getAllErrors, clearAllErrors, addErro } from "./errorHandler.js";
 import colunsValidator from "../utils/colunsValidator.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-function TextoLogger(dadosLogger) {
-  const all = getAllErrors();
+function TextoLogger(dadosLogger, contexto = "__global") {
+  const all = getAllErrors(contexto);
   const now = new Date();
   const dataHora = now.toLocaleString("pt-BR");
 
@@ -71,23 +71,31 @@ function TextoLogger(dadosLogger) {
 }
 
 function getLoggerFileName(dir, name) {
-  return path.join(dir, `Logger_${name}.txt`);
+  const loggerDir = path.join(dir, "loggers");
+  return path.join(loggerDir, `Logger_${name}.txt`);
 }
 
 export async function createLoggerController(filePath) {
   const dir = path.dirname(filePath);
   const { name } = path.parse(filePath);
   const logPath = getLoggerFileName(dir, name);
+
   try {
+    // Garante que a pasta 'loggers' exista
+    await fs.mkdir(path.dirname(logPath), { recursive: true });
+
     await fs.writeFile(logPath, "Processo iniciado....", "utf8");
   } catch (e) {
     console.log(
-      "[Logger] erro ao iniciar o processo de log, arquivo criado porem erro na interação inicial"
+      "[Logger] erro ao iniciar o processo de log, arquivo criado porém erro na interação inicial"
     );
   }
 }
 
-export async function updateLoggerController(dadosLogger) {
+export async function updateLoggerController(
+  dadosLogger,
+  contexto = "__global"
+) {
   let filePath, dadosParaLog;
 
   if (typeof dadosLogger === "string") {
@@ -112,7 +120,7 @@ export async function updateLoggerController(dadosLogger) {
   const dir = path.dirname(filePath);
   const logPath = getLoggerFileName(dir, name);
 
-  const texto = TextoLogger(dadosParaLog);
+  const texto = TextoLogger(dadosParaLog, contexto);
   try {
     await fs.writeFile(logPath, texto, "utf8");
   } catch (e) {
@@ -122,7 +130,10 @@ export async function updateLoggerController(dadosLogger) {
   }
 }
 
-export async function finalLoggerController(dadosLogger) {
+export async function finalLoggerController(
+  dadosLogger,
+  contexto = "__global"
+) {
   let filePath, dadosParaLog;
 
   if (typeof dadosLogger === "string") {
@@ -148,13 +159,13 @@ export async function finalLoggerController(dadosLogger) {
   const logPath = getLoggerFileName(dir, name);
   let texto;
   try {
-    texto = TextoLogger(dadosParaLog);
+    texto = TextoLogger(dadosParaLog, contexto);
     await fs.writeFile(logPath, texto, "utf8");
-    if (texto) console.log(texto);
   } catch (e) {
     try {
       addErro(
-        `[logger] Erro ao montar ou salvar log: ${e.message}\n${e.stack}`
+        `[logger] Erro ao montar ou salvar log: ${e.message}\n${e.stack}`,
+        contexto
       );
     } catch {
       // Fallback simples: imprimir direto no console, sem usar addErro
@@ -165,8 +176,11 @@ export async function finalLoggerController(dadosLogger) {
   }
 }
 
-export async function errorLoggerController(dadosLogger) {
-  const texto = TextoLogger(dadosLogger);
+export async function errorLoggerController(
+  dadosLogger,
+  contexto = "__global"
+) {
+  const texto = TextoLogger(dadosLogger, contexto);
   let file;
   try {
     file = await loggerFileInit(dadosLogger);
@@ -183,7 +197,7 @@ export async function errorLoggerController(dadosLogger) {
       );
     }
   }
-  clearAllErrors();
+  clearAllErrors(contexto);
   console.log(texto);
 }
 
