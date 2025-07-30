@@ -27,7 +27,10 @@ export default async function createJsonController(filePath) {
       header: true,
       delimiter,
       skipEmptyLines: true,
-      transformHeader: (h) => normalizar(h.trim()),
+      transformHeader: (h) => {
+        const header = h?.trim?.() ?? "";
+        return header === "" ? "unnamed" : normalizar(header);
+      },
       transform: (value) => value.trim(),
     });
     const linhasCorrigidas = parsed.data.map((linha) => {
@@ -72,7 +75,7 @@ export default async function createJsonController(filePath) {
     }
     let tiposEsperados;
     try {
-      tiposEsperados = await getTiposFromTable(tabelaName)
+      tiposEsperados = await getTiposFromTable(tabelaName);
     } catch (e) {
       throw new Error(
         `[Json] - erro ao gerar os tipos esperados, [erro: ${e.message}]`
@@ -80,20 +83,27 @@ export default async function createJsonController(filePath) {
     }
     const dataJsonNormalized = linhasValidas.map((linha) => {
       const novaLinha = {};
-      const nomesUsados = {}; // vai registrar quantas vezes um nome foi usado
+      const nomesUsados = {};
 
-      for (const chave in linha) {
+      Object.entries(linha).forEach(([chave, valor], i) => {
         let nomeFinal = chave;
 
-        if (nomesUsados[chave]) {
-          nomesUsados[chave]++;
-          nomeFinal = `${chave}_${nomesUsados[chave] + 1}`;
-        } else {
-          nomesUsados[chave] = 1;
+        if (!chave || chave.trim() === "") {
+          nomeFinal = `unnamed_${i + 1}`;
+          addAviso(
+            `[parser CSV] Coluna sem nome detectada na posição ${i}. Nomeada como '${nomeFinal}'`
+          );
         }
 
-        novaLinha[nomeFinal] = linha[chave];
-      }
+        if (nomesUsados[nomeFinal]) {
+          nomesUsados[nomeFinal]++;
+          nomeFinal = `${nomeFinal}_${nomesUsados[nomeFinal]}`;
+        } else {
+          nomesUsados[nomeFinal] = 1;
+        }
+
+        novaLinha[nomeFinal] = valor;
+      });
 
       return novaLinha;
     });

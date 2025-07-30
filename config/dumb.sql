@@ -3,7 +3,7 @@ CREATE DATABASE IF NOT EXISTS diretorio;
 USE diretorio;
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_11_42` ( 
+  IF NOT EXISTS `03_11_42` (
     mapa INT not null,
     veiculo INT,
     placa VARCHAR(20),
@@ -12,11 +12,10 @@ CREATE TABLE -- colunas data: 1
     km_inicial INT,
     km_final INT,
     km_rodado INT
-    
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_11_40` ( 
+  IF NOT EXISTS `03_11_40` (
     mapa INT not null,
     veiculo INT,
     placa VARCHAR(20),
@@ -35,7 +34,6 @@ CREATE TABLE -- colunas data: 1
     km_inicial INT,
     km_final INT,
     km_rodado INT
-    
   );
 
 CREATE TABLE -- colunas data: 1
@@ -83,11 +81,10 @@ CREATE TABLE -- colunas data: 1
     regras_de_blitz_classificadas VARCHAR(25),
     utilizou_percentual_minimo VARCHAR(25),
     palete_iniciado_com_produto VARCHAR(10)
-    
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_01_46_06` ( 
+  IF NOT EXISTS `03_01_46_06` (
     id_pedido bigint,
     unb bigint,
     cliente bigint,
@@ -128,11 +125,10 @@ CREATE TABLE -- colunas data: 1
     valor_pedido_minimo decimal(10, 2),
     indicador_entrega_alternativa VARCHAR(25),
     importado_pelo_hercules VARCHAR(25)
-    
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_18_05` ( 
+  IF NOT EXISTS `03_18_05` (
     unb int,
     descricao_unb VARCHAR(25),
     codigo_cliente int,
@@ -203,11 +199,10 @@ CREATE TABLE -- colunas data: 1
     tipo_cliente VARCHAR(25),
     setor_venda int,
     unnamed_69 VARCHAR(25)
-    
-  ) ROW_FORMAT=DYNAMIC;
+  ) ROW_FORMAT = DYNAMIC;
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_11_29` ( 
+  IF NOT EXISTS `03_11_29` (
     data date,
     mapa int,
     placa VARCHAR(25),
@@ -219,11 +214,11 @@ CREATE TABLE -- colunas data: 1
     ajudante_1 VARCHAR(25),
     nome_ajudante_1 int,
     ajudante_2 VARCHAR(25),
-    nome_ajudante_2 int   
+    nome_ajudante_2 int
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_08_05` ( 
+  IF NOT EXISTS `03_08_05` (
     data DATE,
     transp int,
     entrega VARCHAR(20),
@@ -268,11 +263,10 @@ CREATE TABLE -- colunas data: 1
     peso_carga_kg DECIMAL(10, 2),
     classificacao_roadshow VARCHAR(20),
     classificacao_roads VARCHAR(20)
-    
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS base_rating ( 
+  IF NOT EXISTS base_rating (
     data_avaliacao date,
     avaliacao int,
     classificacao VARCHAR(25),
@@ -286,11 +280,10 @@ CREATE TABLE -- colunas data: 1
     comentario VARCHAR(25),
     estado VARCHAR(25),
     cidade VARCHAR(25)
-   
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS jornada_laboral ( 
+  IF NOT EXISTS jornada_laboral (
     data date,
     funcionario VARCHAR(25),
     matricula int,
@@ -299,11 +292,10 @@ CREATE TABLE -- colunas data: 1
     ra time,
     s time,
     trabalhadas time
-    
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_01_47_01` ( 
+  IF NOT EXISTS `03_01_47_01` (
     cod_puxada int,
     nome_filial VARCHAR(50),
     geografia VARCHAR(50),
@@ -375,11 +367,10 @@ CREATE TABLE -- colunas data: 1
     descricao_condicao_de_pagamento VARCHAR(25),
     quantidade INT,
     unid_venda VARCHAR(10)
-    
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_02_24` ( 
+  IF NOT EXISTS `03_02_24` (
     mapa bigint,
     data date,
     unb_nota VARCHAR(25),
@@ -403,7 +394,7 @@ CREATE TABLE -- colunas data: 1
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_02_37_operacao_veiculo_mapa` ( 
+  IF NOT EXISTS `03_02_37_operacao_veiculo_mapa` (
     empresa int,
     filial int,
     operacao int,
@@ -430,7 +421,7 @@ CREATE TABLE -- colunas data: 1
     adic_finan decimal(10, 2),
     desconto decimal(10, 2),
     total decimal(10, 2),
-    mapa_2 int,
+    mapa_1 int,
     nr_tit_bco int,
     nr_pedido int,
     ipi decimal(10, 2),
@@ -499,13 +490,15 @@ CREATE TABLE -- colunas data: 1
     red_fecop_st VARCHAR(25),
     cod_situacao_tributaria VARCHAR(25),
     campo_extra VARCHAR(10)
-  )ROW_FORMAT=DYNAMIC;
+  ) ROW_FORMAT = DYNAMIC;
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_02_37_tipo_movto` ( 
+  IF NOT EXISTS `03_02_37_tipo_movto` (
     empresa int,
     filial int,
     tipo_movto int,
+    unnamed int,
+    unnamed_1 int,
     dt_operacao varchar(25),
     emissao date,
     nota bigint,
@@ -546,7 +539,7 @@ CREATE TABLE -- colunas data: 1
     data_contingencia VARCHAR(25),
     hora_contingencia VARCHAR(25),
     nr_protocolo VARCHAR(25),
-    chave_de_acesso_nf_e VARCHAR(25),
+    chave_de_acesso_nf_e VARCHAR(100),
     indicador_nf_e VARCHAR(25),
     hora_envio VARCHAR(25),
     hora_retorno VARCHAR(25),
@@ -560,7 +553,7 @@ CREATE TABLE -- colunas data: 1
     estoque_atualizado VARCHAR(25),
     dt_emissao_fiscal VARCHAR(25),
     nota_fiscal_exportada_para_promax_central VARCHAR(25),
-    prazo VARCHAR(25),
+    prazo int,
     nf_retorno_vasilhame VARCHAR(25),
     nf_venda_ag_produto_material VARCHAR(25),
     nf_retorno_remessa_puxada_ag VARCHAR(25),
@@ -578,27 +571,20 @@ CREATE TABLE -- colunas data: 1
     valor_sugerido VARCHAR(25),
     cod_setor_atendimento VARCHAR(25),
     tipo_setor_atendimento VARCHAR(25),
-    setor int,
-    codigo_escalonada_pedido VARCHAR(25),
-    tipo_escalonada_pedido VARCHAR(25),
-    faixa_escalonada_pedido VARCHAR(25),
-    indicador_preco_pontual VARCHAR(25),
-    indicador_preco_cheio VARCHAR(25),
-    ttv_escalonada_pedido VARCHAR(25),
-    indicador_unidade VARCHAR(25),
     data_captura_pedido VARCHAR(25),
-    nf_regerada VARCHAR(25),
-    serie_nf_regerada VARCHAR(25),
+    nf_regerada int,
+    serie_nf_regerada int,
     indicador_cancelamento VARCHAR(25),
     red_icms_proprio VARCHAR(25),
     red_fecop_proprio VARCHAR(25),
-    red_icms_st VARCHAR(25),
+    red_icms_st decimal(10, 2),
     red_fecop_st VARCHAR(25),
-    cod_situacao_tributaria VARCHAR(25)
-  )ROW_FORMAT=DYNAMIC;
+    unnamed_2 varchar(25)
+    
+  ) ROW_FORMAT = DYNAMIC;
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_05_30_cliente` ( 
+  IF NOT EXISTS `03_05_30_cliente` (
     cod_cliente int,
     descricao VARCHAR(25),
     data date,
@@ -623,7 +609,7 @@ CREATE TABLE -- colunas data: 1
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_05_30_cod_ajudante` ( 
+  IF NOT EXISTS `03_05_30_cod_ajudante` (
     cod_ajudante int,
     descricao VARCHAR(25),
     data date,
@@ -673,7 +659,7 @@ CREATE TABLE -- colunas data: 1
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_05_30_mapa` ( 
+  IF NOT EXISTS `03_05_30_mapa` (
     mapa int,
     data date,
     mapa_1 int,
@@ -696,15 +682,15 @@ CREATE TABLE -- colunas data: 1
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS base_bees_deliver_old ( 
+  IF NOT EXISTS base_bees_deliver_old (
     tour_display_id bigint,
     tour_date date,
     distribution_center_id int,
     driver_name VARCHAR(25),
     poc_external_id int,
     status VARCHAR(25),
-    trip_start_timestamp datetime(3),
-    trip_end_timestamp datetime(3),
+    trip_start_timestamp datetime (3),
+    trip_end_timestamp datetime (3),
     visit_order int,
     within_radius VARCHAR(25),
     actual_delivery_time int,
@@ -726,7 +712,7 @@ CREATE TABLE -- colunas data: 1
   );
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS base_bees_deliver_new ( 
+  IF NOT EXISTS base_bees_deliver_new (
     tour_display_id bigint,
     tour_date date,
     distribution_center_id int,
@@ -736,8 +722,8 @@ CREATE TABLE -- colunas data: 1
     poc_name varchar(25),
     critical_poc varchar(10),
     status VARCHAR(25),
-    trip_start_timestamp datetime(3),
-    trip_end_timestamp datetime(3),
+    trip_start_timestamp datetime (3),
+    trip_end_timestamp datetime (3),
     original_order int,
     order_updated int,
     visit_order int,
@@ -746,9 +732,9 @@ CREATE TABLE -- colunas data: 1
     skipped_reason varchar(10),
     out_of_radius_reason varchar(100),
     actual_delivery_time int,
-    driver_notification_time datetime(3),
-    arrived_at datetime(3),
-    finished_at datetime(3),
+    driver_notification_time datetime (3),
+    arrived_at datetime (3),
+    finished_at datetime (3),
     last_reason_waiting_modulation VARCHAR(25),
     last_reason_rescheduled VARCHAR(25),
     devolution_waiting_modulation varchar(25),
@@ -777,7 +763,7 @@ CREATE TABLE -- colunas data: 1
   );
 
 CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS `01_20_11` ( 
+  IF NOT EXISTS `01_20_11` (
     grupo_de_perfil int,
     cod_setor int,
     descricao_setor VARCHAR(25),
@@ -814,7 +800,7 @@ CREATE TABLE -- colunas data: 0 -- verificar
   );
 
 CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS `01_11` ( 
+  IF NOT EXISTS `01_11` (
     codigo bigint,
     descricao VARCHAR(25),
     pgv int,
@@ -866,7 +852,7 @@ CREATE TABLE -- colunas data: 0 -- verificar
   );
 
 CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS veiculos ( 
+  IF NOT EXISTS veiculos (
     frota INT,
     placa VARCHAR(20),
     modelo VARCHAR(25),
@@ -874,7 +860,7 @@ CREATE TABLE -- colunas data: 0 -- verificar
   );
 
 CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS motoristas ( 
+  IF NOT EXISTS motoristas (
     cod_filial VARCHAR(25),
     descricao_filial VARCHAR(25),
     cod_motorista VARCHAR(25),
@@ -893,7 +879,7 @@ CREATE TABLE -- colunas data: 0 -- verificar
   );
 
 CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS ajudante ( 
+  IF NOT EXISTS ajudante (
     cod INT,
     nome VARCHAR(100),
     cpf VARCHAR(20),
@@ -905,16 +891,16 @@ CREATE TABLE -- colunas data: 0 -- verificar
 
 -- log tabelas
 CREATE TABLE
- IF NOT EXISTS log_ingestao (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  tabela_destino VARCHAR(50) NOT NULL,         -- Ex: "03_11_40"
-  nome_arquivo VARCHAR(50) NOT NULL,           -- Ex: "janeiro.csv"
-  ano INT NOT NULL,                             -- Ex: 2025
-  mes varchar(25),
-  dia int, 
-  coluna_data varchar(25),
-  data_upload DATETIME NOT NULL,                -- Ex: NOW()
-  hash_arquivo CHAR(64) NOT NULL,               -- SHA-256 hash
-  sucesso BOOLEAN NOT NULL,                     -- true / false
-  mensagem_erro TEXT                            -- null ou texto com o erro
-)
+  IF NOT EXISTS log_ingestao (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tabela_destino VARCHAR(50) NOT NULL, -- Ex: "03_11_40"
+    nome_arquivo VARCHAR(50) NOT NULL, -- Ex: "janeiro.csv"
+    ano INT NOT NULL, -- Ex: 2025
+    mes varchar(25),
+    dia int,
+    coluna_data varchar(25),
+    data_upload DATETIME NOT NULL, -- Ex: NOW()
+    hash_arquivo CHAR(64) NOT NULL, -- SHA-256 hash
+    sucesso BOOLEAN NOT NULL, -- true / false
+    mensagem_erro TEXT -- null ou texto com o erro
+  )
