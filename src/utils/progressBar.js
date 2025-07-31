@@ -2,14 +2,15 @@ import cliProgress from "cli-progress";
 
 const multiBar = new cliProgress.MultiBar(
   {
-    clearOnComplete: true,
+    clearOnComplete: false,
     hideCursor: true,
     format:
-      "{filename} → [{bar}] {percentage}% | {value}/{total} linhas → {tabela}",
+      "[{filename}] → [{bar}] {percentage}% | [{value}/{total}  {tabela}]",
     barCompleteChar: "\u2588",
     barIncompleteChar: "\u2591",
-    autopadding: true,
-    stopOnComplete: true,
+    autopadding: false,
+    stopOnComplete: false,
+    fps: 5
   },
   cliProgress.Presets.shades_grey
 );
@@ -45,10 +46,13 @@ export function atualizarBarra(id) {
 /**
  * Finaliza e remove a barra do controle
  */
-export function finalizarBarra(id) {
+export async function finalizarBarra(id) {
   const bar = barras.get(id);
   if (bar) {
-    bar.update(bar.getTotal());
+    if (bar.value < bar.getTotal()) {
+      bar.update(bar.value); // força refresh da linha com valor real
+      await new Promise((r) => setTimeout(r, 20)); // dá tempo de atualizar
+    }
     bar.stop();
     barras.delete(id);
     barrasAtivas--;
@@ -73,13 +77,19 @@ export function logBarra(mensagem) {
   multiBar.log(mensagem);
 }
 
+export function finalizarTodasAsBarras() {
+  for (const id of barras.keys()) {
+    finalizarBarra(id);
+  }
+}
+
 /**
  * Log inteligente: se barra ativa, usa multiBar.log, senão console.log
  */
-export function safeLog(mensagem) {
-  if (isBarraAtiva()) {
-    logBarra(mensagem);
-  } else {
-    console.log(mensagem);
-  }
-}
+//export function safeLog(mensagem) {
+//  if (isBarraAtiva()) {
+//    logBarra(mensagem);
+//  } else {
+//    console.log(mensagem);
+//  }
+//}

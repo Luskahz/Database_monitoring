@@ -86,35 +86,43 @@ export async function manageInsertController(metadados) {
   const total = metadados.data_json.length;
   const barraId = nomeArquivo;
   iniciarBarra(barraId, total, nomeArquivo, metadados.tabela);
-  for (let i = 0; i < metadados.data_json.length; i++) {
-    try {
-      const linhaOriginal = metadados.data_json[i];
-      const linhaTipada = tiparLinha(linhaOriginal, metadados.tipos_esperados);
+  try {
+    for (let i = 0; i < metadados.data_json.length; i++) {
+      try {
+        const linhaOriginal = metadados.data_json[i];
+        const linhaTipada = tiparLinha(
+          linhaOriginal,
+          metadados.tipos_esperados
+        );
 
-      const { result, linhaTipada: linhaInserida } =
-        await insertRegisterinTable(metadados.tabela, linhaTipada);
-      // Log detalhado: original e tipada
-      //console.log(
-      //  `Linha ${i} inserida:\r\n`
-      //    +`\r\n`+
-      //    `Original: ${JSON.stringify(linhaOriginal)}\r\n`
-      //    +`\r\n`+
-      //    `Tipada:   ${JSON.stringify(linhaInserida)}\r\n`
-      //    +`\r\n`+
-      //    `----------------------------------------------`
-      //);
-      sucesso++;
-      atualizarBarra(barraId);
-    } catch (e) {
-      addErro(`Erro ao inserir linha ${i}, erro: ${e.message}`, contexto);
-      erros.push({
-        linha: i,
-        erro: e.message,
-        dados: metadados.data_json[i],
-      });
-      await updateLoggerController(metadados, contexto);
+        const { result, linhaTipada: linhaInserida } =
+          await insertRegisterinTable(metadados.tabela, linhaTipada);
+        // Log detalhado: original e tipada
+        //console.log(
+        //  `Linha ${i} inserida:\r\n`
+        //    +`\r\n`+
+        //    `Original: ${JSON.stringify(linhaOriginal)}\r\n`
+        //    +`\r\n`+
+        //    `Tipada:   ${JSON.stringify(linhaInserida)}\r\n`
+        //    +`\r\n`+
+        //    `----------------------------------------------`
+        //);
+        sucesso++;
+        atualizarBarra(barraId);
+      } catch (e) {
+        addErro(`Erro ao inserir linha ${i}, erro: ${e.message}`, contexto);
+        erros.push({
+          linha: i,
+          erro: e.message,
+          dados: metadados.data_json[i],
+        });
+        await updateLoggerController(metadados, contexto);
+      }
     }
+  } finally {
+    finalizarBarra(barraId);
   }
+
   addInfo("processo de insersão finalizado, validar caso erros", contexto);
   finalizarBarra(barraId);
   return {

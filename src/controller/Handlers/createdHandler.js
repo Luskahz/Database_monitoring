@@ -14,6 +14,7 @@ import { insertLog } from "../../model/logModel.js";
 import createDataController from "../createDataController.js";
 import fluxoValidatorController from "../fluxoValidatorController.js";
 import { manageInsertController } from "../managerDataController.js";
+import { finalizarTodasAsBarras } from "../../utils/progressBar.js";
 
 export default async function createdHandler(filePath) {
   if (!filePath) {
@@ -117,5 +118,6 @@ export default async function createdHandler(filePath) {
       getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
       contexto
     );
+    finalizarTodasAsBarras();
   }
 }

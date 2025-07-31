@@ -224,7 +224,7 @@ export async function deleteRegisterFromCache(destino) {
   const lockFilePath = cachePath + ".lock";
   const tempPath = cachePath + ".tmp";
 
-  await acquireLock(lockFilePath, 10, 200);
+  await acquireLock(lockFilePath, 20, 500);
 
   // monta identificador
   const { tabela_destino, ano, mes, dia, nome_arquivo } = destino;

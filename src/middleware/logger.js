@@ -3,7 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { getAllErrors, clearAllErrors, addErro } from "./errorHandler.js";
 import colunsValidator from "../utils/colunsValidator.js";
-import { safeLog } from "../utils/progressBar.js";
+//import { safeLog } from "../utils/progressBar.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function TextoLogger(dadosLogger, contexto = "__global") {
@@ -71,34 +71,34 @@ function TextoLogger(dadosLogger, contexto = "__global") {
   return corpoBase.join("\n\n");
 }
 
-async function getLoggerFileName(dir, name) {
-  let currentDir = dir;
+export async function getLoggerFileName(dir, name) {
   const filename = `Logger_${name}.txt`;
 
-  while (true) {
-    const loggerDir = path.join(currentDir, "loggers");
-    try {
-      await fs.mkdir(loggerDir, { recursive: false });
-      return path.join(loggerDir, filename);
-    } catch (err) {
-      // Se falhou por outro motivo que não é "pasta não existente", lança
-      if (err.code !== "ENOENT") throw err;
+  const tentativas = [
+    path.join(dir, "loggers"),
+    path.join(path.dirname(dir), "loggers"),
+  ];
 
-      // Sobe um nível
-      const parent = path.dirname(currentDir);
-      if (parent === currentDir) {
-        // Chegou na raiz do sistema
-        throw new Error("Não foi possível encontrar um diretório válido para salvar o log.");
-      }
-      currentDir = parent;
+  for (const tentativa of tentativas) {
+    try {
+      await fs.mkdir(tentativa, { recursive: true });
+      return path.join(tentativa, filename);
+    } catch (err) {
+      // Tenta próximo caminho
+      continue;
     }
   }
+
+  // Fallback absoluto
+  const fallbackDir = path.resolve(__dirname, "../fallback_loggers");
+  await fs.mkdir(fallbackDir, { recursive: true });
+  return path.join(fallbackDir, filename);
 }
 
 export async function createLoggerController(filePath) {
   const dir = path.dirname(filePath);
   const { name } = path.parse(filePath);
-  const logPath = getLoggerFileName(dir, name);
+  const logPath = await getLoggerFileName(dir, name);
 
   try {
     // Garante que a pasta 'loggers' exista
@@ -138,7 +138,7 @@ export async function updateLoggerController(
   }
   const { name } = path.parse(filePath);
   const dir = path.dirname(filePath);
-  const logPath = getLoggerFileName(dir, name);
+  const logPath = await getLoggerFileName(dir, name);
 
   const texto = TextoLogger(dadosParaLog, contexto);
   try {
@@ -176,7 +176,7 @@ export async function finalLoggerController(
   }
   const { name } = path.parse(filePath);
   const dir = path.dirname(filePath);
-  const logPath = getLoggerFileName(dir, name);
+  const logPath = await getLoggerFileName(dir, name);
   let texto;
   try {
     texto = TextoLogger(dadosParaLog, contexto);
@@ -200,10 +200,12 @@ export async function errorLoggerController(
   dadosLogger,
   contexto = "__global"
 ) {
+  const { name } = path.parse(dadosLogger?.caminho_original ?? "fallback");
+  const dir = path.dirname(dadosLogger?.caminho_original ?? __dirname);
   const texto = TextoLogger(dadosLogger, contexto);
   let file;
   try {
-    file = await loggerFileInit(dadosLogger);
+    file = await getLoggerFileName(dir, name);
   } catch (e) {
     console.warn(e.message);
   }
@@ -219,7 +221,7 @@ export async function errorLoggerController(
   }
   clearAllErrors(contexto);
 
-  safeLog(texto);
+  //safeLog(texto);
 }
 
 export function getLoggerContext(metadados = {}, logData = {}, filePath) {
