@@ -3,6 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { getAllErrors, clearAllErrors, addErro } from "./errorHandler.js";
 import colunsValidator from "../utils/colunsValidator.js";
+import { safeLog } from "../utils/progressBar.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function TextoLogger(dadosLogger, contexto = "__global") {
@@ -70,9 +71,28 @@ function TextoLogger(dadosLogger, contexto = "__global") {
   return corpoBase.join("\n\n");
 }
 
-function getLoggerFileName(dir, name) {
-  const loggerDir = path.join(dir, "loggers");
-  return path.join(loggerDir, `Logger_${name}.txt`);
+async function getLoggerFileName(dir, name) {
+  let currentDir = dir;
+  const filename = `Logger_${name}.txt`;
+
+  while (true) {
+    const loggerDir = path.join(currentDir, "loggers");
+    try {
+      await fs.mkdir(loggerDir, { recursive: false });
+      return path.join(loggerDir, filename);
+    } catch (err) {
+      // Se falhou por outro motivo que não é "pasta não existente", lança
+      if (err.code !== "ENOENT") throw err;
+
+      // Sobe um nível
+      const parent = path.dirname(currentDir);
+      if (parent === currentDir) {
+        // Chegou na raiz do sistema
+        throw new Error("Não foi possível encontrar um diretório válido para salvar o log.");
+      }
+      currentDir = parent;
+    }
+  }
 }
 
 export async function createLoggerController(filePath) {
@@ -198,7 +218,8 @@ export async function errorLoggerController(
     }
   }
   clearAllErrors(contexto);
-  console.log(texto);
+
+  safeLog(texto);
 }
 
 export function getLoggerContext(metadados = {}, logData = {}, filePath) {

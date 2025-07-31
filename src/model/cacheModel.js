@@ -16,9 +16,9 @@ const __dirname = dirname(__filename);
 
 async function acquireLock(
   lockFilePath,
-  retries = 10,
-  delay = 100,
-  timeout = 30000
+  retries = 20,
+  delay = 200,
+  timeout = 60000
 ) {
   for (let i = 0; i < retries; i++) {
     try {

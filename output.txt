@@ -70,6 +70,7 @@ package.json --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\package.json
     "express": "^5.1.0",
     "iconv-lite": "^0.6.3",
     "mysql2": "^3.14.1",
+    "p-limit": "^6.2.0",
     "papaparse": "^5.5.3"
   },
   "devDependencies": {
@@ -322,10 +323,10 @@ CREATE TABLE -- colunas data: 1
     cx_carreg DECIMAL(10, 2),
     cx_entreg DECIMAL(10, 2),
     ocup DECIMAL(6, 2),
-    cx_rota int,
-    cx_as int,
-    veicbm DECIMAL(6, 2),
-    rshow int,
+    cx_rota decimal(10, 2),
+    cx_as decimal(10, 2),
+    veic_bm DECIMAL(6, 2),
+    rshow int,  
     entr_vol VARCHAR(20),
     hr_sai TIME,
     hr_entr TIME,
@@ -994,16 +995,22 @@ CREATE TABLE
 monitoring.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\monitoring.js
 // monitoring/monitoring.js
 import chokidar from "chokidar";
+import pLimit from "p-limit";
 import path from "path";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import isCsvFile from "./utils/isCsvFile.js";
 import createdHandler from "./controller/Handlers/createdHandler.js";
 import deletedHandler from "./controller/Handlers/deletedHandler.js";
+import { addErro } from "./middleware/errorHandler.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const limit = pLimit(5);
 
 export async function startMonitoring() {
-  const monitorPath = path.resolve(__dirname, "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL");
+  const monitorPath = path.resolve(
+    __dirname,
+    "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL"
+  );
 
   const watcher = chokidar.watch(monitorPath, {
     persistent: true,
@@ -1023,28 +1030,39 @@ export async function startMonitoring() {
   });
 
   watcher
-    .on("add", (filePath) => {
+    .on("add", async (filePath) => {
       if (isCsvFile(filePath)) {
         console.log(`ðŸŸ¢ Arquivo adicionado: ${filePath}`);
-        createdHandler(filePath, "created");
-        
+        limit(() => createdHandler(filePath, "created")).catch((e) => {
+          console.log(
+            `[monitoramento] Erro ao inserir arquivo cujo path Ã©: ${filePath}, erro: ${e.message}`
+          );
+        });
       }
     })
-    .on("change", (filePath) =>{
+    .on("change", async (filePath) => {
       if (isCsvFile(filePath)) {
         console.log(`ðŸŸ¡ Arquivo modificado: ${filePath}`);
-        createdHandler(filePath, "modified");
+        limit(() => createdHandler(filePath, "modified")).catch((e) => {
+          console.log(
+            `[monitoramento] Erro ao modificar arquivo cujo path Ã©: ${filePath}, erro: ${e.message}`
+          );
+        });
       }
     })
-    .on("unlink", (filePath) => {
+    .on("unlink", async (filePath) => {
       if (isCsvFile(filePath)) {
         console.log(`ðŸ”´ Arquivo removido: ${filePath}`);
-        deletedHandler(filePath, "deleted");
+        limit(() => deletedHandler(filePath, "deleted")).catch((e) => {
+          console.log(
+            `[monitoramento] Erro ao apagar arquivo cujo path Ã©: ${filePath}, erro: ${e.message}`
+          );
+        });
       }
     })
     .on("error", (error) => {
       console.error(`âŒ Erro no monitoramento: ${error}`);
-      chokidarErrorHandler(error)
+      addErro(`Erro no monitoramento, erro: ${error.message}`);
     })
     .on("ready", () => {
       console.log(`âœ… Pronto! Monitorando alteraÃ§Ãµes em: ${monitorPath}`);
@@ -1082,10 +1100,66 @@ cacheHash_03_05_30_mapa.jsonl --> C:\Users\lucas.l\Desktop\Banco\database_monito
 {"tabela_destino":"03_05_30_mapa","nome_arquivo":"mar.csv","ano":2025,"mes":"mar","dia":null,"coluna_data":"data","data_upload":"2025-07-30T19:18:43.956Z","hash_arquivo":"5ae1bf54ceed0ff180ab1479c7373bb216307239453c675b8977cc55f39d17ed","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\030530\\03_05_30_mapa\\2025\\mar.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_05_30_mapa_2025_mar_mar.csv"}
 {"tabela_destino":"03_05_30_mapa","nome_arquivo":"fev.csv","ano":2025,"mes":"fev","dia":null,"coluna_data":"data","data_upload":"2025-07-30T19:18:43.958Z","hash_arquivo":"463eef2fa34a12d154bbbba1cfc3d16df6db4c92bf503149cd37fbf5e513a937","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\030530\\03_05_30_mapa\\2025\\fev.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_05_30_mapa_2025_fev_fev.csv"}
 {"tabela_destino":"03_05_30_mapa","nome_arquivo":"jan.csv","ano":2025,"mes":"jan","dia":null,"coluna_data":"data","data_upload":"2025-07-30T19:18:43.957Z","hash_arquivo":"4faa5fc686c89881a3caf99f5f218bfe2b4817b9e0969e6d1a34d86fb70cf997","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\030530\\03_05_30_mapa\\2025\\jan.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_05_30_mapa_2025_jan_jan.csv"}
+{"tabela_destino":"03_05_30_mapa","nome_arquivo":"jul.csv","ano":2025,"mes":"jul","dia":null,"coluna_data":"data","data_upload":"2025-07-31T15:10:19.466Z","hash_arquivo":"b21eb9aebee0ca95d957a55247106960de9faeab95a683159a8875ddc6ae9ac1","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\030530\\03_05_30_mapa\\2025\\jul.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_05_30_mapa_2025_jul_jul.csv"}
+{"tabela_destino":"03_05_30_mapa","nome_arquivo":"jun.csv","ano":2025,"mes":"jun","dia":null,"coluna_data":"data","data_upload":"2025-07-31T15:10:19.467Z","hash_arquivo":"e5255c784982d904d4217e12352919e66a691bfd18269b3d77137b7eeee40228","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\030530\\03_05_30_mapa\\2025\\jun.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_05_30_mapa_2025_jun_jun.csv"}
+{"tabela_destino":"03_05_30_mapa","nome_arquivo":"mai.csv","ano":2025,"mes":"mai","dia":null,"coluna_data":"data","data_upload":"2025-07-31T15:10:27.408Z","hash_arquivo":"9dc64156c3985606a9b8c2f9ad612793ea6f75a3b84bfff9307fe3fdbdcb529b","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\030530\\03_05_30_mapa\\2025\\mai.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_05_30_mapa_2025_mai_mai.csv"}
+{"tabela_destino":"03_05_30_mapa","nome_arquivo":"abr.csv","ano":2025,"mes":"abr","dia":null,"coluna_data":"data","data_upload":"2025-07-31T15:10:27.407Z","hash_arquivo":"cbdd37e1e630b6e1c6757ec671bd06af80ace56dfff81cea4e19eb08749c6687","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\030530\\03_05_30_mapa\\2025\\abr.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_05_30_mapa_2025_abr_abr.csv"}
+{"tabela_destino":"03_05_30_mapa","nome_arquivo":"mar.csv","ano":2025,"mes":"mar","dia":null,"coluna_data":"data","data_upload":"2025-07-31T15:10:27.407Z","hash_arquivo":"5ae1bf54ceed0ff180ab1479c7373bb216307239453c675b8977cc55f39d17ed","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\030530\\03_05_30_mapa\\2025\\mar.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_05_30_mapa_2025_mar_mar.csv"}
+{"tabela_destino":"03_05_30_mapa","nome_arquivo":"fev.csv","ano":2025,"mes":"fev","dia":null,"coluna_data":"data","data_upload":"2025-07-31T15:10:27.407Z","hash_arquivo":"463eef2fa34a12d154bbbba1cfc3d16df6db4c92bf503149cd37fbf5e513a937","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\030530\\03_05_30_mapa\\2025\\fev.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_05_30_mapa_2025_fev_fev.csv"}
+{"tabela_destino":"03_05_30_mapa","nome_arquivo":"jan.csv","ano":2025,"mes":"jan","dia":null,"coluna_data":"data","data_upload":"2025-07-31T15:10:27.407Z","hash_arquivo":"4faa5fc686c89881a3caf99f5f218bfe2b4817b9e0969e6d1a34d86fb70cf997","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\030530\\03_05_30_mapa\\2025\\jan.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_05_30_mapa_2025_jan_jan.csv"}
+
+----------------------------
+cacheHash_03_08_05.jsonl --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_03_08_05.jsonl
+{"tabela_destino":"03_08_05","nome_arquivo":"8.csv","ano":2025,"mes":"maio","dia":"8","coluna_data":"data","data_upload":"2025-07-31T14:39:36.941Z","hash_arquivo":"8316f592449123c3352ff739f674df6167ce2775a16221ec3742fcbf2173d206","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\8.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_8_8.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"27.csv","ano":2025,"mes":"maio","dia":"27","coluna_data":"data","data_upload":"2025-07-31T14:39:36.934Z","hash_arquivo":"5d79b6c14853a417bdc9e0a6505f8756d041765ec89a85c8e1f39cbe1a6cd3b1","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\27.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_27_27.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"28.csv","ano":2025,"mes":"maio","dia":"28","coluna_data":"data","data_upload":"2025-07-31T14:39:36.929Z","hash_arquivo":"a86096df01c18e74da46c6054acb1b05aa3ab5ff88ec794a093f1eacb66b2b4b","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\28.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_28_28.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"30.csv","ano":2025,"mes":"maio","dia":"30","coluna_data":"data","data_upload":"2025-07-31T14:39:36.934Z","hash_arquivo":"76570966bc1bf77cc911a8ae248077d1cec2dc093f9547347e3d2dca6dbed157","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\30.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_30_30.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"29.csv","ano":2025,"mes":"maio","dia":"29","coluna_data":"data","data_upload":"2025-07-31T14:39:36.935Z","hash_arquivo":"f97c4bcd885b644af456f3bc1fc487f3f5082f031e845df06397c3905f1df095","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\29.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_29_29.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"9.csv","ano":2025,"mes":"maio","dia":"9","coluna_data":"data","data_upload":"2025-07-31T14:39:36.941Z","hash_arquivo":"c201c33c7dc83fb087f80f8409479c4753b092c90d792d7ab9d3c2dc300e1ba8","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\9.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_9_9.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"31.csv","ano":2025,"mes":"maio","dia":"31","coluna_data":"data","data_upload":"2025-07-31T14:39:36.938Z","hash_arquivo":"8d2137bddb47b1fcd3e4261525792ff342b020c79601789cf5a8ffd9fba57c0a","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\31.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_31_31.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"21.csv","ano":2025,"mes":"maio","dia":"21","coluna_data":"data","data_upload":"2025-07-31T14:42:24.466Z","hash_arquivo":"d1c7d824d55e05899211244999b08520c4a26408ea7461d0ffc2e1766dd5a41d","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\21.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_21_21.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"28.csv","ano":2025,"mes":"maio","dia":"28","coluna_data":"data","data_upload":"2025-07-31T14:42:24.474Z","hash_arquivo":"018cdb523040c3ee9d66e951ff11795fea15a17b895f5858905cbf5473846ab4","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\28.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_28_28.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"29.csv","ano":2025,"mes":"maio","dia":"29","coluna_data":"data","data_upload":"2025-07-31T14:42:24.472Z","hash_arquivo":"35ee2155614f1b2ec593b606c418088b0f2be7fb605c6a316c685b57ae73a4d6","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\29.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_29_29.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"9.csv","ano":2025,"mes":"maio","dia":"9","coluna_data":"data","data_upload":"2025-07-31T14:42:24.485Z","hash_arquivo":"58a4bda376d63e24b69e40e382b970960470557e9c4e5970980746f89a5f47b1","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\9.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_9_9.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"30.csv","ano":2025,"mes":"maio","dia":"30","coluna_data":"data","data_upload":"2025-07-31T14:42:24.485Z","hash_arquivo":"f68bd47579df179ae0d4c63564148a79e5b16e3cf129a517b49cd3a81ef8c4d1","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\30.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_30_30.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"31.csv","ano":2025,"mes":"maio","dia":"31","coluna_data":"data","data_upload":"2025-07-31T14:42:24.486Z","hash_arquivo":"eb51793ded5b394a23d0f3f163a1c88b777dfd494c719d98f8a3df8dc2dbbf66","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\31.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_31_31.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"8.csv","ano":2025,"mes":"maio","dia":"8","coluna_data":"data","data_upload":"2025-07-31T14:42:24.481Z","hash_arquivo":"6a02a2d185c5be0d8616f561734cd83ceefdab02d0f305e3dedecfad3055c83d","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\8.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_8_8.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"27.csv","ano":2025,"mes":"maio","dia":"27","coluna_data":"data","data_upload":"2025-07-31T14:42:24.481Z","hash_arquivo":"7ec2c0159284db6a225d8fe50c52cbbeb8278fe70fb276ca5db601cc71409cc2","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\27.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_27_27.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"5.csv","ano":2025,"mes":"maio","dia":"5","coluna_data":"data","data_upload":"2025-07-31T14:49:47.105Z","hash_arquivo":"95d6cd531e197ccd148dc3a2de726cf8855801a124dcc50f471deb6409ffb944","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\5.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_5_5.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"6.csv","ano":2025,"mes":"maio","dia":"6","coluna_data":"data","data_upload":"2025-07-31T14:49:47.102Z","hash_arquivo":"295b0239815dadd656aa9163ed54a78f22d694c7ce9c0b4eca802e8a97cc7f8f","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\6.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_6_6.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"9.csv","ano":2025,"mes":"maio","dia":"9","coluna_data":"data","data_upload":"2025-07-31T14:49:47.105Z","hash_arquivo":"2ca5c986efc806d772895ef7bca4c5cc8ba46289a4fa12a9b51f57eb06bae1f9","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\9.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_9_9.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"8.csv","ano":2025,"mes":"maio","dia":"8","coluna_data":"data","data_upload":"2025-07-31T14:49:47.108Z","hash_arquivo":"4d7b498f411b37d66a963859c9bea0df971a1e6af972691fecc415d6d6fecf85","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\8.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_8_8.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"21.csv","ano":2025,"mes":"maio","dia":"21","coluna_data":"data","data_upload":"2025-07-31T14:49:47.091Z","hash_arquivo":"080df4b4729e88f231464293f40a970608b7ac4f4123ae66de8a5e8cca185a1c","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\21.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_21_21.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"28.csv","ano":2025,"mes":"maio","dia":"28","coluna_data":"data","data_upload":"2025-07-31T14:49:47.102Z","hash_arquivo":"a53d08643f65c723000ebc699791104c173874e444976802ded365ed6710c6ac","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\28.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_28_28.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"30.csv","ano":2025,"mes":"maio","dia":"30","coluna_data":"data","data_upload":"2025-07-31T14:49:47.102Z","hash_arquivo":"bec26c0f530edda705bf1d1e84de7e3d75b54373a118027ef5c743a9586ba7a9","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\30.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_30_30.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"29.csv","ano":2025,"mes":"maio","dia":"29","coluna_data":"data","data_upload":"2025-07-31T14:49:47.103Z","hash_arquivo":"00c5ba9069587a97d6ac2801b60f8c0536ce43d1bd5992c42896325d7e682a14","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\29.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_29_29.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"27.csv","ano":2025,"mes":"maio","dia":"27","coluna_data":"data","data_upload":"2025-07-31T14:49:47.102Z","hash_arquivo":"1cb85fc19ff84f2b411b4f7364b4e56a7c2208a4ef8013943034341f117ccd69","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\27.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_27_27.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"31.csv","ano":2025,"mes":"maio","dia":"31","coluna_data":"data","data_upload":"2025-07-31T14:49:47.103Z","hash_arquivo":"db98217ca1743329c6cc0a09043c6611b42c995383079539cacb75ecfd00ba46","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\31.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_31_31.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"26.csv","ano":2025,"mes":"maio","dia":"26","coluna_data":"data","data_upload":"2025-07-31T15:12:17.126Z","hash_arquivo":"bf821d79538840030d14bdfa0621f88d783cc4c55c75db222ac53b377c2cbda7","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\26.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_26_26.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"16.csv","ano":2025,"mes":"maio","dia":"16","coluna_data":"data","data_upload":"2025-07-31T15:12:17.105Z","hash_arquivo":"c77346587590a9a4472829efcf598ff724fc537952baeaa4eb059497c0c19983","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\16.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_16_16.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"5.csv","ano":2025,"mes":"maio","dia":"5","coluna_data":"data","data_upload":"2025-07-31T15:12:17.121Z","hash_arquivo":"95d6cd531e197ccd148dc3a2de726cf8855801a124dcc50f471deb6409ffb944","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\5.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_5_5.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"24.csv","ano":2025,"mes":"maio","dia":"24","coluna_data":"data","data_upload":"2025-07-31T15:12:17.125Z","hash_arquivo":"13aa4a098b7c56b3d33cceeca03c8eca7225d284c6759601a5d8765d7c4cf597","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\24.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_24_24.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"3.csv","ano":2025,"mes":"maio","dia":"3","coluna_data":"data","data_upload":"2025-07-31T15:12:17.126Z","hash_arquivo":"49f1e6e9dffb77dfeb55dcbca552877b271e0228651ed98419ddca586dd5da57","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\3.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_3_3.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"14.csv","ano":2025,"mes":"maio","dia":"14","coluna_data":"data","data_upload":"2025-07-31T15:12:17.106Z","hash_arquivo":"4f4cd555405147ee03f9d9327a029b7dc1e0bfaf5f73edf33b6acfa6d2e3a2d9","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\14.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_14_14.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"21.csv","ano":2025,"mes":"maio","dia":"21","coluna_data":"data","data_upload":"2025-07-31T15:12:17.116Z","hash_arquivo":"080df4b4729e88f231464293f40a970608b7ac4f4123ae66de8a5e8cca185a1c","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\21.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_21_21.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"28.csv","ano":2025,"mes":"maio","dia":"28","coluna_data":"data","data_upload":"2025-07-31T15:12:17.112Z","hash_arquivo":"a53d08643f65c723000ebc699791104c173874e444976802ded365ed6710c6ac","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\28.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_28_28.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"30.csv","ano":2025,"mes":"maio","dia":"30","coluna_data":"data","data_upload":"2025-07-31T15:12:17.125Z","hash_arquivo":"bec26c0f530edda705bf1d1e84de7e3d75b54373a118027ef5c743a9586ba7a9","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\30.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_30_30.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"7.csv","ano":2025,"mes":"maio","dia":"7","coluna_data":"data","data_upload":"2025-07-31T15:12:17.125Z","hash_arquivo":"092fc184ccf246f11c106a125c003f577a280ec940eae100e8920b8d12275097","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\7.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_7_7.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"27.csv","ano":2025,"mes":"maio","dia":"27","coluna_data":"data","data_upload":"2025-07-31T15:12:17.115Z","hash_arquivo":"1cb85fc19ff84f2b411b4f7364b4e56a7c2208a4ef8013943034341f117ccd69","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\27.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_27_27.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"6.csv","ano":2025,"mes":"maio","dia":"6","coluna_data":"data","data_upload":"2025-07-31T15:12:17.125Z","hash_arquivo":"295b0239815dadd656aa9163ed54a78f22d694c7ce9c0b4eca802e8a97cc7f8f","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\6.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_6_6.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"8.csv","ano":2025,"mes":"maio","dia":"8","coluna_data":"data","data_upload":"2025-07-31T15:12:17.131Z","hash_arquivo":"4d7b498f411b37d66a963859c9bea0df971a1e6af972691fecc415d6d6fecf85","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\8.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_8_8.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"31.csv","ano":2025,"mes":"maio","dia":"31","coluna_data":"data","data_upload":"2025-07-31T15:12:17.116Z","hash_arquivo":"db98217ca1743329c6cc0a09043c6611b42c995383079539cacb75ecfd00ba46","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\31.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_31_31.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"2.csv","ano":2025,"mes":"maio","dia":"2","coluna_data":"data","data_upload":"2025-07-31T15:12:17.126Z","hash_arquivo":"3b86900aa3b35a069299b3ebfb9aa1a7488dd533fe9a443ddb291295d14dba47","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\2.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_2_2.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"9.csv","ano":2025,"mes":"maio","dia":"9","coluna_data":"data","data_upload":"2025-07-31T15:12:17.128Z","hash_arquivo":"2ca5c986efc806d772895ef7bca4c5cc8ba46289a4fa12a9b51f57eb06bae1f9","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\9.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_9_9.csv"}
+{"tabela_destino":"03_08_05","nome_arquivo":"29.csv","ano":2025,"mes":"maio","dia":"29","coluna_data":"data","data_upload":"2025-07-31T15:12:17.120Z","hash_arquivo":"00c5ba9069587a97d6ac2801b60f8c0536ce43d1bd5992c42896325d7e682a14","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_08_05\\2025\\maio\\29.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_29_29.csv"}
 
 ----------------------------
 cacheHash_03_11_40.jsonl --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_03_11_40.jsonl
 {"tabela_destino":"03_11_40","nome_arquivo":"julho.csv","ano":2025,"mes":"julho","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-07-30T19:33:48.993Z","hash_arquivo":"451c1a2482f994dfd63366d527c1f1aa86f7dd4fbec12db9739384610162b774","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_11_40\\2025\\julho.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_julho_julho.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"julho.csv","ano":2025,"mes":"julho","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-07-31T15:10:27.391Z","hash_arquivo":"451c1a2482f994dfd63366d527c1f1aa86f7dd4fbec12db9739384610162b774","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\DiretÃ³rios_SQL\\rotinas\\03_11_40\\2025\\julho.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_julho_julho.csv"}
+
+----------------------------
+cacheHash_2025.jsonl --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_2025.jsonl
 
 ----------------------------
 createDataController.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\controller\createDataController.js
@@ -2056,9 +2130,9 @@ const __dirname = dirname(__filename);
 
 async function acquireLock(
   lockFilePath,
-  retries = 10,
-  delay = 100,
-  timeout = 30000
+  retries = 20,
+  delay = 200,
+  timeout = 60000
 ) {
   for (let i = 0; i < retries; i++) {
     try {
@@ -2995,31 +3069,31 @@ export default function mapearTipo(tipoSql) {
 normalizar.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\normalizar.js
 export default function normalizar(nome) {
   return nome
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // remove acentos
-    .replace(/%/g, "perc")           // % â†’ perc
-    .replace(/\s*\.\s*/g, "_")       // ponto entre palavras â†’ _
-    .replace(/\./g, "")              // outros pontos â†’ remove
-    .replace(/[-\\/]/g, "_")   
-    .replace(/\s+/g, "_")            // espaÃ§o â†’ _
-    .replace(/[^a-zA-Z0-9_]/g, "")   // remove outros sÃ­mbolos
-    .replace(/_+/g, "_")             // evita mÃºltiplos __
-    .replace(/^_+|_+$/g, "")         // remove _ inÃ­cio/fim
+    .replace(/%/g, "perc") // % â†’ perc
+    .replace(/\s*\.\s*/g, "_") // ponto entre palavras â†’ _
+    .replace(/\./g, "") // outros pontos â†’ remove
+    .replace(/[-\\/]/g, "_")
+    .replace(/\s+/g, "_") // espaÃ§o â†’ _
+    .replace(/[^a-zA-Z0-9_]/g, "") // remove outros sÃ­mbolos
+    .replace(/_+/g, "_") // evita mÃºltiplos __
+    .replace(/^_+|_+$/g, "") // remove _ inÃ­cio/fim
     .toLowerCase();
 }
-
 
 export function normalizarValores(nome) {
   return nome
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // remove acentos
-    .replace(/%/g, "perc")           // % â†’ perc
-    .replace(/\s*\.\s*/g, "_")       // ponto entre palavras â†’ _
-    .replace(/\./g, "")              // outros pontos â†’ remove
-    .replace(/\s+/g, "_")            // espaÃ§o â†’ _
-    .replace(/[^a-zA-Z0-9_]/g, "")   // remove outros sÃ­mbolos
-    .replace(/_+/g, "_")             // evita mÃºltiplos __
-    .replace(/^_+|_+$/g, "")         // remove _ inÃ­cio/fim
+    .replace(/%/g, "perc") // % â†’ perc
+    .replace(/\s*\.\s*/g, "_") // ponto entre palavras â†’ _
+    .replace(/\./g, "") // outros pontos â†’ remove
+    .replace(/\s+/g, "_") // espaÃ§o â†’ _
+    .replace(/[^a-zA-Z0-9_]/g, "") // remove outros sÃ­mbolos
+    .replace(/_+/g, "_") // evita mÃºltiplos __
+    .replace(/^_+|_+$/g, "") // remove _ inÃ­cio/fim
     .toLowerCase();
 }
 

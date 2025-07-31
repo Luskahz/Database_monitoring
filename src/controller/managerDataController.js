@@ -3,6 +3,11 @@ import {
   listPeriodInTable,
   deleteFromTable,
 } from "../model/tableModel.js";
+import {
+  iniciarBarra,
+  atualizarBarra,
+  finalizarBarra,
+} from "../utils/progressBar.js";
 
 import { insertValidator } from "./insertValidator.js";
 import tiparLinha from "../utils/tiparLinha.js";
@@ -20,7 +25,7 @@ function reservarLinhaParaArquivo(nomeArquivo) {
 }
 
 export async function manageInsertController(metadados) {
-  const contexto = metadados.caminho_original
+  const contexto = metadados.caminho_original;
   const nomeArquivo = metadados.nome_arquivo ?? "arquivo-desconhecido";
   const linhaProgresso = reservarLinhaParaArquivo(nomeArquivo);
   if (!Array.isArray(metadados.data_json) || metadados.data_json.length === 0) {
@@ -43,11 +48,13 @@ export async function manageInsertController(metadados) {
     try {
       await deleteFromTable(metadados);
       addInfo(
-        `[Delete dados] - dados excluidos, tabela do banco pronta pra reincersão dos novos dados cadastrais`, contexto
+        `[Delete dados] - dados excluidos, tabela do banco pronta pra reincersão dos novos dados cadastrais`,
+        contexto
       );
     } catch (e) {
       addErro(
-        `[delete tabela cadastro] - Erro ao deletar os dados do cadastro antes da reinserção, erro: ${e.message}`, contexto
+        `[delete tabela cadastro] - Erro ao deletar os dados do cadastro antes da reinserção, erro: ${e.message}`,
+        contexto
       );
       await updateLoggerController(metadados, contexto);
       return;
@@ -56,30 +63,36 @@ export async function manageInsertController(metadados) {
     try {
       await deleteFromTable(metadados);
       addAviso(
-        `[gerenciamento de inserções] operação de substituição, dados referente a data inserida foram excluidos`, contexto
+        `[gerenciamento de inserções] operação de substituição, dados referente a data inserida foram excluidos`,
+        contexto
       );
     } catch (e) {
       addErro(
-        `Erro ao deletar período antes da reinserção, erro: ${e.message}`, contexto
+        `Erro ao deletar período antes da reinserção, erro: ${e.message}`,
+        contexto
       );
       await updateLoggerController(metadados, contexto);
       return;
     }
   } else if (validator === null) {
     addErro(
-      "Validação retornou nulo. Dados possivelmente inválidos ou sem coluna de data.", contexto
+      "Validação retornou nulo. Dados possivelmente inválidos ou sem coluna de data.",
+      contexto
     );
     await updateLoggerController(metadados, contexto);
     return;
   }
   addInfo("iniciando processo de insersão dos dados na tabela...", contexto);
   const total = metadados.data_json.length;
+  const barraId = nomeArquivo;
+  iniciarBarra(barraId, total, nomeArquivo, metadados.tabela);
   for (let i = 0; i < metadados.data_json.length; i++) {
     try {
       const linhaOriginal = metadados.data_json[i];
       const linhaTipada = tiparLinha(linhaOriginal, metadados.tipos_esperados);
 
-      const { result, linhaTipada: linhaInserida } = await insertRegisterinTable(metadados.tabela, linhaTipada);
+      const { result, linhaTipada: linhaInserida } =
+        await insertRegisterinTable(metadados.tabela, linhaTipada);
       // Log detalhado: original e tipada
       //console.log(
       //  `Linha ${i} inserida:\r\n`
@@ -91,13 +104,7 @@ export async function manageInsertController(metadados) {
       //    `----------------------------------------------`
       //);
       sucesso++;
-      const porcentagem = (((i + 1) / total) * 100).toFixed(1);
-      process.stdout.write(`\x1b[${linhaProgresso};0H`);
-      process.stdout.write(
-        `📝 Inserindo dados... ${porcentagem}% (${
-          i + 1
-        }/${total}) arquivo: ${nomeArquivo}, tabela: ${metadados.tabela}      `
-      );
+      atualizarBarra(barraId);
     } catch (e) {
       addErro(`Erro ao inserir linha ${i}, erro: ${e.message}`, contexto);
       erros.push({
@@ -108,8 +115,8 @@ export async function manageInsertController(metadados) {
       await updateLoggerController(metadados, contexto);
     }
   }
-  process.stdout.write(`\x1b[${linhaProgresso + 1};0H`);
   addInfo("processo de insersão finalizado, validar caso erros", contexto);
+  finalizarBarra(barraId);
   return {
     erro: erros.length > 0,
     total: metadados.data_json.length,
@@ -121,13 +128,14 @@ export async function manageInsertController(metadados) {
 }
 
 export async function managerDeleterController(logData) {
-  const contexto = logData.caminho_original
+  const contexto = logData.caminho_original;
   try {
     await deleteFromTable(logData);
     return { erro: false };
   } catch (e) {
     addErro(
-      `Erro ao deletar período no banco pós exclusão do arquivo, erro: ${e.message}`, contexto
+      `Erro ao deletar período no banco pós exclusão do arquivo, erro: ${e.message}`,
+      contexto
     );
     await updateLoggerController(logData, contexto);
     return { erro: true, mensagem: e.message };
