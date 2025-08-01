@@ -9,15 +9,21 @@ export function sanitizeValue(value, tipoEsperado) {
     }
 
     case "decimal": {
-      let raw = String(value)
-        .trim()
-        .replace(/[^\d.,-]/g, "");
+      const valueStr = String(value).trim();
+      let raw = valueStr.replace(/[^\d.,-]/g, "");
 
-      if (raw.includes(",")) {
-        raw = raw.replace(/\./g, ""); // remove separador de milhar
-        raw = raw.replace(",", "."); // troca vírgula por ponto
+      // Padrão coordenada com milhar e decimal pt-BR → "-23.831.402"
+      const coordMatch = valueStr.match(/^(-?\d{1,2})\.(\d{3})\.(\d{3})$/);
+      if (coordMatch) {
+        return parseFloat(`${coordMatch[1]}.${coordMatch[2]}${coordMatch[3]}`);
+      }
+
+      if ((valueStr.match(/\./g) || []).length > 1) {
+        raw = valueStr.replace(/\./g, "").replace(",", ".");
+      } else if (valueStr.includes(",") && !valueStr.includes(".")) {
+        raw = valueStr.replace(",", ".");
       } else {
-        raw = raw;
+        raw = valueStr; // já está no padrão correto
       }
 
       const parsed = parseFloat(raw);

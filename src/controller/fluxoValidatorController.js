@@ -55,18 +55,21 @@ export default async function fluxoValidatorController(metadados, logData) {
 
   if (hashJaExiste) {
     addInfo(
-      `[ARQUIVO DUPLICADO] O conteúdo de ${metadados.nome_arquivo} já está presente na base.`, contexto
+      `[ARQUIVO DUPLICADO] O conteúdo de [${metadados.nome_arquivo}] já está presente na base.`, contexto
     );
+    console.log(`[🟠 DUPLICADO] [${metadados.nome_arquivo}] não sera inserido na tabela [${metadados.colunas_tabela}]`)
     await updateLoggerController(metadados, contexto)
     return "ignorar";
   } else if (!logs || logs.length === 0) {
-    addInfo(`[NOVO ARQUIVO] ${metadados.nome_arquivo} será processado.`, contexto);
+    addInfo(`[NOVO ARQUIVO] [${metadados.nome_arquivo}] será processado.`, contexto);
+    console.log(`[🟢 NOVO] [${metadados.nome_arquivo}] sera inserido na tabela [${metadados.colunas_tabela}]`)
     await updateLoggerController(metadados, contexto)
     return "inserir";
   } else {
     addInfo(
-      `[ARQUIVO MODIFICADO] ${metadados.nome_arquivo} já existia, mas foi alterado. Reprocessando.`, contexto
+      `[ARQUIVO MODIFICADO] [${metadados.nome_arquivo}] já existia, mas foi alterado. Reprocessando.`, contexto
     );
+    console.log(`[🟡 MODIFICADO] [${metadados.nome_arquivo}] sera inserido na tabela [${metadados.colunas_tabela}], validar logica de atualização para o tipo do arquivo`)
     await updateLoggerController(metadados, contexto)
     return "reprocessar";
   }
