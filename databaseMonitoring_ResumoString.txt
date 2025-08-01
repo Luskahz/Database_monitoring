@@ -37,46 +37,6 @@ Get-ChildItem -Recurse -File | Where-Object {
 Write-Host "Compilado gerado com sucesso em 'output.txt'!" -ForegroundColor Green
 
 ----------------------------
-output.txt --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\output.txt
-----------------------------
-.gitignore --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\.gitignore
-node_modules
-
-----------------------------
-gerarcompilator.ps1 --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\gerarcompilator.ps1
-$outputPath = "output.txt"
-
-
-if (Test-Path $outputPath) {
-    Remove-Item $outputPath
-}
-
-
-$extensoesIgnoradas = @(".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp")
-$arquivosIgnorados = @("package-lock.json")
-
-
-Get-ChildItem -Recurse -File | Where-Object {
-    $_.FullName -notmatch "\\node_modules\\" -and
-    $extensoesIgnoradas -notcontains $_.Extension.ToLower() -and
-    $arquivosIgnorados -notcontains $_.Name
-} | ForEach-Object {
-    # Adiciona linha separadora
-    "----------------------------" | Out-File -FilePath $outputPath -Append -Encoding Default
-
-    # Adiciona o nome do arquivo e o caminho completo
-    "$($_.Name) --> $($_.FullName)" | Out-File -FilePath $outputPath -Append -Encoding Default
-
-    # Adiciona o conteúdo do arquivo
-    Get-Content $_.FullName -Encoding Default | Out-File -FilePath $outputPath -Append -Encoding Default
-
-    # Linha em branco para separar os arquivos
-    "" | Out-File -FilePath $outputPath -Append -Encoding Default
-}
-
-Write-Host "Compilado gerado com sucesso em 'output.txt'!" -ForegroundColor Green
-
-----------------------------
 package.json --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\package.json
 {
   "name": "database_monitoring",
@@ -255,3397 +215,7 @@ CREATE TABLE -- colunas data: 1
     valor_pedido_minimo decimal(10, 2),
     indicador_entrega_alternativa VARCHAR(25),
     importado_pelo_hercules VARCHAR(25)
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_18_05` (
-    unb int,
-    descricao_unb VARCHAR(25),
-    codigo_cliente int,
-    nome_cliente VARCHAR(25),
-    solicitacao_reposicao int,
-    tipo_solicitacao VARCHAR(25),
-    data_solicitacao Varchar(25),
-    hora time,
-    status_solicitacao VARCHAR(25),
-    data_acao date,
-    usuario_acao VARCHAR(25),
-    mapa_reposicao bigint,
-    nota_fiscal_serie VARCHAR(25),
-    status_nf VARCHAR(10),
-    produto int,
-    descricao_produto VARCHAR(25),
-    quantidade int,
-    um VARCHAR(10),
-    valor_unitario decimal(10, 2),
-    valor decimal(10, 2),
-    pallet VARCHAR(25),
-    montagem_pallet VARCHAR(10),
-    justificativa VARCHAR(10),
-    mapa_origem int,
-    nf_origem VARCHAR(25),
-    produto_origem int,
-    descricao_produto_1 VARCHAR(25),
-    quantidade_origem int,
-    um_1 VARCHAR(10),
-    veiculo int,
-    placa VARCHAR(25),
-    transportadora int,
-    nome_transportadora VARCHAR(25),
-    motorista int,
-    nome_motorista VARCHAR(25),
-    ajudante int,
-    nome_ajudante_entrega VARCHAR(25),
-    ajudante_1 int,
-    nome_ajudante_entrega_1 VARCHAR(25),
-    conferente_solicitacao_reposicao VARCHAR(25),
-    nome_conferente_solicitacao_reposicao VARCHAR(25),
-    conferente_carregamento VARCHAR(25),
-    nome_conferente_carregamento VARCHAR(25),
-    ajudante_carregamento VARCHAR(25),
-    nome_ajudante_carregamento VARCHAR(25),
-    ajudante_carregamento_1 VARCHAR(25),
-    nome_ajudante_carregamento_1 VARCHAR(25),
-    ajudante_carregamento_2 VARCHAR(25),
-    nome_ajudante_carregamento_2 VARCHAR(25),
-    ajudante_carregamento_3 VARCHAR(25),
-    nome_ajudante_carregamento_3 VARCHAR(25),
-    ajudante_carregamento_4 VARCHAR(25),
-    nome_ajudante_carregamento_4 VARCHAR(25),
-    ajudante_carregamento_5 VARCHAR(25),
-    nome_ajudante_carregamento_5 VARCHAR(25),
-    origem_blitz_carreg VARCHAR(25),
-    nr_pedido_reposicao int,
-    unb_cliente int,
-    opcao_de_reposicao VARCHAR(25),
-    status_check_reposicao VARCHAR(25),
-    usuario_acao_check VARCHAR(25),
-    data_acao_check varchar(25),
-    sistema_origem VARCHAR(25),
-    observacao VARCHAR(25),
-    perfil_aprovacao_automatica VARCHAR(25),
-    data_revisao varchar(25),
-    usuario_revisao VARCHAR(25),
-    tipo_cliente VARCHAR(25),
-    setor_venda int,
-    unnamed_69 VARCHAR(25)
   ) ROW_FORMAT = DYNAMIC;
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_11_29` (
-    data date,
-    mapa int,
-    placa VARCHAR(25),
-    regiao_entrega VARCHAR(25),
-    superv int,
-    nome_superv VARCHAR(25),
-    motorista int,
-    nome_motorista VARCHAR(25),
-    ajudante_1 VARCHAR(25),
-    nome_ajudante_1 int,
-    ajudante_2 VARCHAR(25),
-    nome_ajudante_2 int
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_08_05` (
-    data DATE,
-    transp int,
-    entrega VARCHAR(20),
-    carga_atual VARCHAR(20),
-    frota VARCHAR(20),
-    custo_spot DECIMAL(15, 2),
-    regiao int,
-    veiculo int,
-    placa VARCHAR(10),
-    mapa INT,
-    capac INT,
-    entregas INT,
-    cx_carreg DECIMAL(10, 2),
-    cx_entreg DECIMAL(10, 2),
-    ocup DECIMAL(6, 2),
-    cx_rota decimal(10, 2),
-    cx_as decimal(10, 2),
-    veic_bm DECIMAL(6, 2),
-    rshow int,  
-    entr_vol VARCHAR(20),
-    hr_sai TIME,
-    hr_entr TIME,
-    km_sai INT,
-    km_entr INT,
-    km_prev DECIMAL(8, 2),
-    tempo_prev TIME,
-    vl_pto_mot DECIMAL(10, 6),
-    vl_pto_ajd DECIMAL(10, 6),
-    vl_eq_mot DECIMAL(10, 2),
-    vl_eq_ajd DECIMAL(10, 2),
-    cd_mot INT,
-    cd_aju1 INT,
-    cd_aju2 INT,
-    km_desloc INT,
-    km_laco INT,
-    tmpo_desloc TIME,
-    tmpo_laco TIME,
-    tmpo_interno TIME,
-    mot_nao_carr int,
-    cx_carr_com DECIMAL(10, 2),
-    capacidade_veiculo_kg DECIMAL(10, 2),
-    peso_carga_kg DECIMAL(10, 2),
-    classificacao_roadshow VARCHAR(20),
-    classificacao_roads VARCHAR(20)
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS base_rating (
-    data_avaliacao date,
-    avaliacao int,
-    classificacao VARCHAR(25),
-    cod_cdd bigint,
-    motorista VARCHAR(25),
-    cod_pdv int,
-    nome_pdv VARCHAR(25),
-    transportadora VARCHAR(25),
-    mapa int,
-    motivo VARCHAR(25),
-    comentario VARCHAR(25),
-    estado VARCHAR(25),
-    cidade VARCHAR(25)
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS jornada_laboral (
-    data date,
-    funcionario VARCHAR(25),
-    matricula int,
-    e time,
-    sa time,
-    ra time,
-    s time,
-    trabalhadas time
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_01_47_01` (
-    cod_puxada int,
-    nome_filial VARCHAR(50),
-    geografia VARCHAR(50),
-    canal_de_marcacao VARCHAR(20),
-    origem VARCHAR(20),
-    gerente_vendas int,
-    nome_gerente_vendas VARCHAR(25),
-    area int,
-    nome_area VARCHAR(25),
-    setor int,
-    nome_setor VARCHAR(25),
-    vendedor int,
-    nome_vendedor VARCHAR(25),
-    cliente int,
-    nome_cliente VARCHAR(50),
-    categoria_cliente int,
-    desc_categoria_cliente VARCHAR(50),
-    tipo_movimento int,
-    desc_tipo_movimento VARCHAR(50),
-    operacao int,
-    desc_operacao VARCHAR(50),
-    transportadora int,
-    nome_transportadora VARCHAR(50),
-    nr_roadshow int,
-    data DATE,
-    pedido int,
-    nota_fiscal bigint,
-    serie int,
-    tipo_marca int,
-    desc_tipo_marca VARCHAR(50),
-    embalagem int,
-    desc_embalagem VARCHAR(50),
-    cod_prod int,
-    nome_prod VARCHAR(50),
-    volume_marcacao DECIMAL(10, 3),
-    volume_entrega DECIMAL(10, 3),
-    motivo VARCHAR(50),
-    submotivo_1 VARCHAR(50),
-    submotivo_2 VARCHAR(50),
-    codigo_marca int,
-    descricao_marca VARCHAR(50),
-    cod_municipio VARCHAR(20),
-    nome_municipio VARCHAR(50),
-    cod_rede VARCHAR(20),
-    nome_rede VARCHAR(50),
-    fora_de_rota VARCHAR(10),
-    ajuste VARCHAR(10),
-    idade_do_pedido INT,
-    situacao VARCHAR(20),
-    prioridade_road VARCHAR(20),
-    prioridade_venda VARCHAR(20),
-    hora_envio_roadshow DATETIME,
-    hora_retorno_roadshow DATETIME,
-    pedido_origem VARCHAR(50),
-    cod_filial_origem VARCHAR(20),
-    nome_filial_origem VARCHAR(50),
-    mapa int,
-    pedido_quebra_original VARCHAR(50),
-    pedido_cliente bigint,
-    pedido_sistema_origem VARCHAR(25),
-    data_entrega_nf varchar(25),
-    entrega_real DATETIME,
-    visita_otif VARCHAR(50),
-    primeira_quebra VARCHAR(20),
-    cliente_ponto_de_apoio VARCHAR(25),
-    data_hora_envio_road_magali DATETIME,
-    data_hora_retorno_road_magali DATETIME,
-    codigo_condicao_de_pagamento VARCHAR(20),
-    descricao_condicao_de_pagamento VARCHAR(25),
-    quantidade INT,
-    unid_venda VARCHAR(10)
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_02_24` (
-    mapa bigint,
-    data date,
-    unb_nota VARCHAR(25),
-    nota bigint,
-    serie int,
-    unb_cliente VARCHAR(25),
-    cod_cliente int,
-    nome_cliente VARCHAR(25),
-    telefone VARCHAR(25),
-    area int,
-    setor int,
-    placa VARCHAR(25),
-    valor decimal(10, 2),
-    volume decimal(10, 2),
-    data_devol varchar(25),
-    cod_motivo int,
-    desc_motivo VARCHAR(25),
-    orig_pedido VARCHAR(25),
-    usuario VARCHAR(25),
-    hora time
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_02_37_operacao_veiculo_mapa` (
-    empresa int,
-    filial int,
-    operacao int,
-    codigo_vei int,
-    mapa int,
-    dt_operacao varchar(25),
-    emissao date,
-    nota bigint,
-    serie int,
-    status VARCHAR(10),
-    mot_cancelamento int,
-    transf_multi_cdd VARCHAR(25),
-    cliente int,
-    nome VARCHAR(25),
-    indicador_ca_prazo VARCHAR(25),
-    produto int,
-    unidade VARCHAR(10),
-    descricao VARCHAR(25),
-    combo_vendas VARCHAR(25),
-    qtde int,
-    valor decimal(10, 2),
-    icms decimal(10, 2),
-    icms_st decimal(10, 2),
-    adic_finan decimal(10, 2),
-    desconto decimal(10, 2),
-    total decimal(10, 2),
-    mapa_1 int,
-    nr_tit_bco int,
-    nr_pedido int,
-    ipi decimal(10, 2),
-    frete VARCHAR(25),
-    adic_escal VARCHAR(25),
-    trib_pis_pauta VARCHAR(25),
-    trib_pis_aliquota VARCHAR(25),
-    trib_cofins_pauta VARCHAR(25),
-    trib_cofins_aliquota VARCHAR(25),
-    nf_referencia VARCHAR(25),
-    serie_nf_referencia VARCHAR(25),
-    data_nf_referencia VARCHAR(25),
-    status_nf_e VARCHAR(25),
-    motivo_rejeicao_denegacao int,
-    descricao_motivo VARCHAR(25),
-    data_contingencia VARCHAR(25),
-    hora_contingencia VARCHAR(25),
-    nr_protocolo bigint,
-    chave_de_acesso_nf_e VARCHAR(25),
-    indicador_nf_e VARCHAR(10),
-    hora_envio time,
-    hora_retorno time,
-    indicador_de_caneta VARCHAR(10),
-    indicador_fora_rota_entrega VARCHAR(10),
-    id_mensageria VARCHAR(10),
-    status_sefaz_hb_nfex int,
-    data_retorno_hb_nfex varchar(25),
-    hora_retorno_hb_nfex time,
-    data_envio_2v VARCHAR(25),
-    estoque_atualizado VARCHAR(10),
-    dt_emissao_fiscal varchar(25),
-    nota_fiscal_exportada_para_promax_central VARCHAR(25),
-    prazo VARCHAR(25),
-    nf_retorno_vasilhame VARCHAR(25),
-    nf_venda_ag_produto_material VARCHAR(25),
-    nf_retorno_remessa_puxada_ag VARCHAR(25),
-    nf_recolha_comodato VARCHAR(25),
-    nf_troca_realizada VARCHAR(25),
-    taxa_de_entrega VARCHAR(25),
-    origem_do_pedido VARCHAR(25),
-    vl_desconto_algoritmo VARCHAR(25),
-    meta_algoritmo VARCHAR(25),
-    desc_disponivel_padrao VARCHAR(25),
-    desc_disponivel_acao VARCHAR(25),
-    vl_desconto_algoritmo_aut VARCHAR(25),
-    codigo_acao_desconto_alg_fix VARCHAR(25),
-    valor_ttv_planejado VARCHAR(25),
-    valor_sugerido VARCHAR(25),
-    cod_setor_atendimento VARCHAR(25),
-    tipo_setor_atendimento VARCHAR(25),
-    setor int,
-    codigo_da_escalonada_do_pedido VARCHAR(25),
-    tipo_escalonada_do_pedido VARCHAR(25),
-    faixa_da_escalonada_do_pedido VARCHAR(25),
-    indicador_de_preco_pontual VARCHAR(25),
-    indicador_de_preco_cheio VARCHAR(25),
-    ttv_da_escalonada_do_pedido VARCHAR(25),
-    indicador_de_unidade VARCHAR(25),
-    data_captura_pedido VARCHAR(25),
-    nf_regerada VARCHAR(25),
-    serie_nf_regerada VARCHAR(25),
-    indicador_cancelamento VARCHAR(25),
-    red_icms_proprio VARCHAR(25),
-    red_fecop_proprio VARCHAR(25),
-    red_icms_st VARCHAR(25),
-    red_fecop_st VARCHAR(25),
-    cod_situacao_tributaria VARCHAR(25),
-    campo_extra VARCHAR(10)
-  ) ROW_FORMAT = DYNAMIC;
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_02_37_tipo_movto` (
-    empresa int,
-    filial int,
-    tipo_movto int,
-    unnamed int,
-    unnamed_1 int,
-    dt_operacao varchar(25),
-    emissao date,
-    nota bigint,
-    serie int,
-    status VARCHAR(25),
-    mot_cancelamento int,
-    transf_multi_cdd VARCHAR(25),
-    cliente int,
-    nome VARCHAR(25),
-    indicador_ca_prazo VARCHAR(25),
-    produto int,
-    unidade VARCHAR(10),
-    descricao VARCHAR(25),
-    combo_vendas VARCHAR(25),
-    qtde int,
-    valor decimal(10, 2),
-    icms decimal(10, 2),
-    icms_st decimal(10, 2),
-    adic_finan decimal(10, 2),
-    desconto decimal(10, 2),
-    total decimal(10, 2),
-    mapa int,
-    nr_tit_bco int,
-    nr_pedido VARCHAR(25),
-    ipi VARCHAR(25),
-    frete VARCHAR(25),
-    adic_escal VARCHAR(25),
-    trib_pis_pauta VARCHAR(25),
-    trib_pis_aliquota VARCHAR(25),
-    trib_cofins_pauta VARCHAR(25),
-    trib_cofins_aliquota VARCHAR(25),
-    nf_referencia VARCHAR(25),
-    serie_nf_referencia VARCHAR(25),
-    data_nf_referencia VARCHAR(25),
-    status_nf_e VARCHAR(25),
-    motivo_rejeicao_denegacao VARCHAR(25),
-    descricao_motivo VARCHAR(25),
-    data_contingencia VARCHAR(25),
-    hora_contingencia VARCHAR(25),
-    nr_protocolo VARCHAR(25),
-    chave_de_acesso_nf_e VARCHAR(100),
-    indicador_nf_e VARCHAR(25),
-    hora_envio VARCHAR(25),
-    hora_retorno VARCHAR(25),
-    indicador_de_caneta VARCHAR(25),
-    indicador_fora_rota_entrega VARCHAR(25),
-    id_mensageria VARCHAR(25),
-    status_sefaz_hb_nfex VARCHAR(25),
-    data_retorno_hb_nfex VARCHAR(25),
-    hora_retorno_hb_nfex VARCHAR(25),
-    data_envio_2v VARCHAR(25),
-    estoque_atualizado VARCHAR(25),
-    dt_emissao_fiscal VARCHAR(25),
-    nota_fiscal_exportada_para_promax_central VARCHAR(25),
-    prazo int,
-    nf_retorno_vasilhame VARCHAR(25),
-    nf_venda_ag_produto_material VARCHAR(25),
-    nf_retorno_remessa_puxada_ag VARCHAR(25),
-    nf_recolha_comodato VARCHAR(25),
-    nf_troca_realizada VARCHAR(25),
-    taxa_de_entrega VARCHAR(25),
-    origem_do_pedido VARCHAR(25),
-    vl_desconto_algoritmo VARCHAR(25),
-    meta_algoritmo VARCHAR(25),
-    desc_disponivel_padrao VARCHAR(25),
-    desc_disponivel_acao VARCHAR(25),
-    vl_desconto_algoritmo_aut VARCHAR(25),
-    codigo_acao_desconto_alg_fix VARCHAR(25),
-    valor_ttv_planejado VARCHAR(25),
-    valor_sugerido VARCHAR(25),
-    cod_setor_atendimento VARCHAR(25),
-    tipo_setor_atendimento VARCHAR(25),
-    data_captura_pedido VARCHAR(25),
-    nf_regerada int,
-    serie_nf_regerada int,
-    indicador_cancelamento VARCHAR(25),
-    red_icms_proprio VARCHAR(25),
-    red_fecop_proprio VARCHAR(25),
-    red_icms_st decimal(10, 2),
-    red_fecop_st VARCHAR(25),
-    unnamed_2 varchar(25)
-
-  ) ROW_FORMAT = DYNAMIC;
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_05_30_cliente` (
-    cod_cliente int,
-    descricao VARCHAR(25),
-    data date,
-    mapa int,
-    veiculo int,
-    placa VARCHAR(25),
-    motorista int,
-    cod_produto INT,
-    descricao_1 VARCHAR(25),
-    cod_cliente_1 int,
-    descricao_2 VARCHAR(25),
-    peso int,
-    perc_ocup int,
-    volume decimal(10, 4),
-    perc_ocup_1 int,
-    vol_agendado VARCHAR(25),
-    entregas int,
-    pedidos int,
-    d_size_agend decimal(10, 2),
-    d_size_total decimal(10, 2)
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_05_30_cod_ajudante` (
-    cod_ajudante int,
-    descricao VARCHAR(25),
-    data date,
-    mapa int,
-    veiculo int,
-    placa VARCHAR(25),
-    motorista int,
-    cod_produto INT,
-    descricao_1 VARCHAR(25),
-    cod_cliente int,
-    descricao_2 VARCHAR(25),
-    peso int,
-    perc_ocup int,
-    volume decimal(10, 4),
-    perc_ocup_1 int,
-    vol_agendado VARCHAR(25),
-    entregas int,
-    pedidos int,
-    d_size_agend decimal(10, 2),
-    d_size_total decimal(10, 2)
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_05_30_cod_motorista` (
-    cod_motorista int,
-    descricao VARCHAR(25),
-    data date,
-    mapa int,
-    veiculo int,
-    placa VARCHAR(25),
-    motorista int,
-    cod_produto int ,
-    descricao_1 VARCHAR(25),
-    cod_cliente int,
-    descricao_2 VARCHAR(25),
-    peso int,
-    perc_ocup int,
-    volume decimal(10, 4),
-    perc_ocup_1 int,
-    vol_agendado VARCHAR(25),
-    entregas int,
-    pedidos int,
-    d_size_agend decimal(10, 2),
-    d_size_total decimal(10, 2)
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_05_30_mapa` (
-    mapa int,
-    data date,
-    mapa_1 int,
-    veiculo int,
-    placa VARCHAR(25),
-    motorista int,
-    cod_produto INT,
-    descricao VARCHAR(25),
-    cod_cliente int,
-    descricao_1 VARCHAR(25),
-    peso int,
-    perc_ocup int,
-    volume decimal(10, 4),
-    perc_ocup_1 int,
-    vol_agendado VARCHAR(25),
-    entregas int,
-    pedidos int,
-    d_size_agend decimal(10, 2),
-    d_size_total decimal(10, 2)
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS base_bees_deliver_old (
-    tour_display_id bigint,
-    tour_date date,
-    distribution_center_id int,
-    driver_name VARCHAR(25),
-    poc_external_id int,
-    status VARCHAR(25),
-    trip_start_timestamp datetime (3),
-    trip_end_timestamp datetime (3),
-    visit_order int,
-    within_radius VARCHAR(25),
-    actual_delivery_time int,
-    arrived_at VARCHAR(25),
-    finished_at VARCHAR(25),
-    last_reason_waiting_modulation VARCHAR(25),
-    last_reason_rescheduled VARCHAR(25),
-    total_delivered_vol VARCHAR(25),
-    total_refused_vol VARCHAR(25),
-    foxtrot_adherence VARCHAR(25),
-    estimated_delivery_time int,
-    volume_hectoliters_sum VARCHAR(25),
-    bees_poc_id bigint,
-    bees_tour_id VARCHAR(25),
-    bees_trip_id VARCHAR(25),
-    bees_created_date VARCHAR(25),
-    bees_last_reason_id_waiting_modulation VARCHAR(25),
-    bees_last_reason_id_waiting_rescheduled VARCHAR(25)
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS base_bees_deliver_new (
-    tour_display_id bigint,
-    tour_date date,
-    distribution_center_id int,
-    driver_name VARCHAR(25),
-    truck_license_plate varchar(10),
-    poc_external_id int,
-    poc_name varchar(25),
-    critical_poc varchar(10),
-    status VARCHAR(25),
-    trip_start_timestamp datetime (3),
-    trip_end_timestamp datetime (3),
-    original_order int,
-    order_updated int,
-    visit_order int,
-    delivery_window varchar(25),
-    within_radius VARCHAR(25),
-    skipped_reason varchar(10),
-    out_of_radius_reason varchar(100),
-    actual_delivery_time int,
-    driver_notification_time datetime (3),
-    arrived_at datetime (3),
-    finished_at datetime (3),
-    last_reason_waiting_modulation VARCHAR(25),
-    last_reason_rescheduled VARCHAR(25),
-    devolution_waiting_modulation varchar(25),
-    return_waiting_modulation_time int,
-    return_in_treatment_time int,
-    poc_rescheduled_count int,
-    count_of_time_dispersion_alert int,
-    last_time_dispersion_handled varchar(25),
-    last_time_dispersion_reason varchar(25),
-    total_visit_delay_pending_time int,
-    total_visit_delay_in_treatment_time int,
-    total_pnp_time int,
-    total_financial_settlement_time varchar(25),
-    total_inventory_settlement_time varchar(25),
-    total_delivered_vol VARCHAR(25),
-    total_refused_vol VARCHAR(25),
-    foxtrot_adherence VARCHAR(25),
-    estimated_delivery_time int,
-    volume_hectoliters_sum VARCHAR(25),
-    bees_poc_id bigint,
-    bees_tour_id VARCHAR(25),
-    bees_trip_id VARCHAR(25),
-    bees_created_date VARCHAR(25),
-    bees_last_reason_id_waiting_modulation VARCHAR(25),
-    bees_last_reason_id_waiting_rescheduled VARCHAR(25)
-  );
-
-CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS `01_20_11` (
-    grupo_de_perfil int,
-    cod_setor int,
-    descricao_setor VARCHAR(25),
-    codigo_cliente bigint,
-    razao_social VARCHAR(25),
-    bairro VARCHAR(25),
-    ordem VARCHAR(25),
-    status_do_cliente VARCHAR(10),
-    nome_fantasia VARCHAR(25),
-    frequencia_visita VARCHAR(25),
-    periodicidade VARCHAR(25),
-    proxima_visita varchar(25),
-    visita_original varchar(25),
-    inicio_visita varchar(25),
-    cnpj VARCHAR(25),
-    inscricao_estadual VARCHAR(25),
-    cod_estabelecimento bigint,
-    nome_estabelecimento VARCHAR(25),
-    cod_pagto int,
-    descricao_pagto VARCHAR(25),
-    serasa VARCHAR(10),
-    observacao VARCHAR(25),
-    contato VARCHAR(25),
-    cnpj_1 VARCHAR(25),
-    contato_1 VARCHAR(25),
-    cnpj_2 VARCHAR(25),
-    ordem_por_historico VARCHAR(25),
-    dias_entrega VARCHAR(25),
-    el_dorado VARCHAR(10),
-    endereco VARCHAR(25),
-    cidade VARCHAR(25),
-    cod_segmento int,
-    segmento VARCHAR(25)
-  );
-
-CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS `01_11` (
-    codigo bigint,
-    descricao VARCHAR(25),
-    pgv int,
-    empresa VARCHAR(10),
-    tipo_marca VARCHAR(25),
-    linha_marca int,
-    embalagem VARCHAR(25),
-    marca int,
-    vasilhame int,
-    garrrafeira int,
-    icms int,
-    tipo_roadshow VARCHAR(10),
-    peso_bruto_kg decimal(10, 2),
-    fator int,
-    fator_hecto float,
-    fator_hecto_comercial float,
-    ind_palmtop VARCHAR(10),
-    grupo int,
-    grupo_remuneracao int,
-    ean bigint,
-    tab_icms int,
-    caixas_pallet int,
-    nr_fator_conversao decimal(10, 2),
-    lastro VARCHAR(25),
-    fam_embalagem_siv int,
-    pauta_pis_litro int,
-    pauta_cofins_litro int,
-    caixas_pallet_1 int,
-    capacidade_1 int,
-    fat_ajust_1 float,
-    caixas_pallet_2 int,
-    capacidade_2 int,
-    fat_ajust_2 float,
-    caixas_pallet_3 int,
-    capacidade_3 int,
-    fat_ajust_3 float,
-    ordem_de_carga int,
-    estoque_minimo_puxada int,
-    codigo_produto_sap int,
-    vasilhame_ficticio VARCHAR(25),
-    ncm bigint,
-    apura_royalties VARCHAR(10),
-    tipo_produto_royalties int,
-    cest bigint,
-    ean_trib bigint,
-    codigo_unitario int,
-    descricao_unitaria VARCHAR(25),
-    subtipo int
-  );
-
-CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS veiculos (
-    frota INT,
-    placa VARCHAR(20),
-    modelo VARCHAR(25),
-    tipo VARCHAR(10)
-  );
-
-CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS motoristas (
-    cod_filial VARCHAR(25),
-    descricao_filial VARCHAR(25),
-    cod_motorista VARCHAR(25),
-    nome_motorista VARCHAR(25),
-    status VARCHAR(25),
-    cod_supervisor_rota VARCHAR(25),
-    cpf VARCHAR(25),
-    data_admissao VARCHAR(25),
-    data_inativacao VARCHAR(25),
-    j_alternativa VARCHAR(25),
-    descricao_j_alternativa VARCHAR(25),
-    rota_gradativa VARCHAR(25),
-    celular_corporativo VARCHAR(25),
-    cod_cluster VARCHAR(25),
-    cluster VARCHAR(25)
-  );
-
-CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS ajudante (
-    cod INT,
-    nome VARCHAR(100),
-    cpf VARCHAR(20),
-    status VARCHAR(25)
-  );
-
-CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS expurgos (mapa INT primary key);
-
--- log tabelas
-CREATE TABLE
-  IF NOT EXISTS log_ingestao (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    tabela_destino VARCHAR(50) NOT NULL, -- Ex: "03_11_40"
-    nome_arquivo VARCHAR(50) NOT NULL, -- Ex: "janeiro.csv"
-    ano INT NOT NULL, -- Ex: 2025
-    mes varchar(25),
-    dia int,
-    coluna_data varchar(25),
-    data_upload DATETIME NOT NULL, -- Ex: NOW()
-    hash_arquivo CHAR(64) NOT NULL, -- SHA-256 hash
-    sucesso BOOLEAN NOT NULL, -- true / false
-    mensagem_erro TEXT -- null ou texto com o erro
-  )
-
-----------------------------
-monitoring.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\monitoring.js
-// monitoring/monitoring.js
-import chokidar from "chokidar";
-import pLimit from "p-limit";
-import path from "path";
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import isCsvFile from "./utils/isCsvFile.js";
-import createdHandler from "./controller/Handlers/createdHandler.js";
-import deletedHandler from "./controller/Handlers/deletedHandler.js";
-import { addErro } from "./middleware/errorHandler.js";
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const limit = pLimit(5);
-
-export async function startMonitoring() {
-  const monitorPath = path.resolve(
-    __dirname,
-    "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL"
-  );
-
-  const watcher = chokidar.watch(monitorPath, {
-    persistent: true,
-    ignoreInitial: false,
-    usePolling: true,
-    interval: 500,
-    depth: 10,
-    awaitWriteFinish: {
-      stabilityThreshold: 2000,
-      pollInterval: 100,
-    },
-    ignored: /[\\\/]database_monitoring[\\\/]/,
-    awaitWriteFinish: {
-      stabilityThreshold: 300,
-      pollInterval: 100,
-    },
-  });
-
-  watcher
-    .on("add", async (filePath) => {
-      if (isCsvFile(filePath)) {
-        console.log(`🟢 Arquivo adicionado: ${filePath}`);
-        limit(() => createdHandler(filePath, "created")).catch((e) => {
-          console.log(
-            `[monitoramento] Erro ao inserir arquivo cujo path é: ${filePath}, erro: ${e.message}`
-          );
-        });
-      }
-    })
-    .on("change", async (filePath) => {
-      if (isCsvFile(filePath)) {
-        console.log(`🟡 Arquivo modificado: ${filePath}`);
-        limit(() => createdHandler(filePath, "modified")).catch((e) => {
-          console.log(
-            `[monitoramento] Erro ao modificar arquivo cujo path é: ${filePath}, erro: ${e.message}`
-          );
-        });
-      }
-    })
-    .on("unlink", async (filePath) => {
-      if (isCsvFile(filePath)) {
-        console.log(`🔴 Arquivo removido: ${filePath}`);
-        limit(() => deletedHandler(filePath, "deleted")).catch((e) => {
-          console.log(
-            `[monitoramento] Erro ao apagar arquivo cujo path é: ${filePath}, erro: ${e.message}`
-          );
-        });
-      }
-    })
-    .on("error", (error) => {
-      console.error(`❌ Erro no monitoramento: ${error}`);
-      addErro(`Erro no monitoramento, erro: ${error.message}`);
-    })
-    .on("ready", () => {
-      console.log(`✅ Pronto! Monitorando alterações em: ${monitorPath}`);
-    });
-}
-
-----------------------------
-server.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\server.js
-import express from "express";
-import { startMonitoring } from "./monitoring.js";
-
-const app = express();
-const port = 3000;
-
-
-startMonitoring();
-
-
-app.listen(port, () => {
-  console.log(`Servidor rodando na porta ${port}`);
-});
-
-----------------------------
-cacheHash_03_08_05.jsonl --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_03_08_05.jsonl
-{"tabela_destino":"03_08_05","nome_arquivo":"12.csv","ano":2025,"mes":"julho","dia":"12","coluna_data":"data","data_upload":"2025-07-31T20:33:56.677Z","hash_arquivo":"96c4997031ec2c808202e75df6e0d5bdfb3f3436a0e983b061d9445450be51b2","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\julho\\12.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_julho_12_12.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"12.csv","ano":2025,"mes":"maio","dia":"12","coluna_data":"data","data_upload":"2025-07-31T20:57:09.950Z","hash_arquivo":"5cc59967cd3e0c0826713c558aeae9e7ce9587a82f5d23031f0fc3b81f046286","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\12.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_12_12.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"13.csv","ano":2025,"mes":"maio","dia":"13","coluna_data":"data","data_upload":"2025-07-31T20:57:09.949Z","hash_arquivo":"9ac13046ede14a794c84478883ecd6876b25859e1ce6456977bd17137f5fd998","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\13.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_13_13.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"10.csv","ano":2025,"mes":"maio","dia":"10","coluna_data":"data","data_upload":"2025-07-31T20:57:09.953Z","hash_arquivo":"1bb4559a19d222cf38446dbbebae02466314d0df8a5d8f06306ef5072039ddac","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\10.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_10_10.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"14.csv","ano":2025,"mes":"maio","dia":"14","coluna_data":"data","data_upload":"2025-07-31T20:57:09.956Z","hash_arquivo":"4f4cd555405147ee03f9d9327a029b7dc1e0bfaf5f73edf33b6acfa6d2e3a2d9","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\14.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_14_14.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"1.csv","ano":2025,"mes":"maio","dia":"1","coluna_data":"data","data_upload":"2025-07-31T20:57:09.952Z","hash_arquivo":"8a3eb8ed245c39e334e620c287bd55feecbe717a4b1404b7f9981704e56f381c","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\1.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_1_1.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"16.csv","ano":2025,"mes":"maio","dia":"16","coluna_data":"data","data_upload":"2025-07-31T20:57:10.235Z","hash_arquivo":"c77346587590a9a4472829efcf598ff724fc537952baeaa4eb059497c0c19983","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\16.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_16_16.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"19.csv","ano":2025,"mes":"maio","dia":"19","coluna_data":"data","data_upload":"2025-07-31T20:57:10.307Z","hash_arquivo":"3567c7e534a7b622315bbf7b259fcb83a3aedb04494c998ffb9b03fe34da0b0a","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\19.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_19_19.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"17.csv","ano":2025,"mes":"maio","dia":"17","coluna_data":"data","data_upload":"2025-07-31T20:57:10.247Z","hash_arquivo":"a83dca54ee438fa127799dc96e794d427dabcee9e786b167bcf4eb2c5cb7b84c","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\17.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_17_17.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"15.csv","ano":2025,"mes":"maio","dia":"15","coluna_data":"data","data_upload":"2025-07-31T20:57:10.231Z","hash_arquivo":"e051000e2d17e3b098bb4cd9cb3829c994e85fe72a4ab06dd4ad84c7e2eaa15c","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\15.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_15_15.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"2.csv","ano":2025,"mes":"maio","dia":"2","coluna_data":"data","data_upload":"2025-07-31T20:57:10.316Z","hash_arquivo":"3b86900aa3b35a069299b3ebfb9aa1a7488dd533fe9a443ddb291295d14dba47","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\2.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_2_2.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"20.csv","ano":2025,"mes":"maio","dia":"20","coluna_data":"data","data_upload":"2025-07-31T20:57:10.470Z","hash_arquivo":"f88ce01396ba8e227e7d7dd8d0410d9ca884607a8b8cc3dfb64f595aa1bd9fdd","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\20.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_20_20.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"21.csv","ano":2025,"mes":"maio","dia":"21","coluna_data":"data","data_upload":"2025-07-31T20:57:10.495Z","hash_arquivo":"080df4b4729e88f231464293f40a970608b7ac4f4123ae66de8a5e8cca185a1c","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\21.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_21_21.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"22.csv","ano":2025,"mes":"maio","dia":"22","coluna_data":"data","data_upload":"2025-07-31T20:57:10.576Z","hash_arquivo":"c6bef30c2f4b28d8c2f7f4b59a6390ee1ad5b593a6b0e050de8ccc600358095b","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\22.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_22_22.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"26.csv","ano":2025,"mes":"maio","dia":"26","coluna_data":"data","data_upload":"2025-07-31T20:57:10.771Z","hash_arquivo":"bf821d79538840030d14bdfa0621f88d783cc4c55c75db222ac53b377c2cbda7","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\26.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_26_26.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"24.csv","ano":2025,"mes":"maio","dia":"24","coluna_data":"data","data_upload":"2025-07-31T20:57:10.706Z","hash_arquivo":"13aa4a098b7c56b3d33cceeca03c8eca7225d284c6759601a5d8765d7c4cf597","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\24.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_24_24.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"23.csv","ano":2025,"mes":"maio","dia":"23","coluna_data":"data","data_upload":"2025-07-31T20:57:10.651Z","hash_arquivo":"424b0a57b9b757be554a5f32730e85ff7ecdf6e1b2225a0712dad26bbb437d81","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\23.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_23_23.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"27.csv","ano":2025,"mes":"maio","dia":"27","coluna_data":"data","data_upload":"2025-07-31T20:57:10.860Z","hash_arquivo":"1cb85fc19ff84f2b411b4f7364b4e56a7c2208a4ef8013943034341f117ccd69","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\27.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_27_27.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"3.csv","ano":2025,"mes":"maio","dia":"3","coluna_data":"data","data_upload":"2025-07-31T20:57:11.006Z","hash_arquivo":"49f1e6e9dffb77dfeb55dcbca552877b271e0228651ed98419ddca586dd5da57","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\3.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_3_3.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"29.csv","ano":2025,"mes":"maio","dia":"29","coluna_data":"data","data_upload":"2025-07-31T20:57:10.996Z","hash_arquivo":"00c5ba9069587a97d6ac2801b60f8c0536ce43d1bd5992c42896325d7e682a14","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\29.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_29_29.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"30.csv","ano":2025,"mes":"maio","dia":"30","coluna_data":"data","data_upload":"2025-07-31T20:57:11.019Z","hash_arquivo":"bec26c0f530edda705bf1d1e84de7e3d75b54373a118027ef5c743a9586ba7a9","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\30.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_30_30.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"28.csv","ano":2025,"mes":"maio","dia":"28","coluna_data":"data","data_upload":"2025-07-31T20:57:10.931Z","hash_arquivo":"a53d08643f65c723000ebc699791104c173874e444976802ded365ed6710c6ac","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\28.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_28_28.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"5.csv","ano":2025,"mes":"maio","dia":"5","coluna_data":"data","data_upload":"2025-07-31T20:57:11.411Z","hash_arquivo":"95d6cd531e197ccd148dc3a2de726cf8855801a124dcc50f471deb6409ffb944","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\5.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_5_5.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"6.csv","ano":2025,"mes":"maio","dia":"6","coluna_data":"data","data_upload":"2025-07-31T20:57:11.417Z","hash_arquivo":"295b0239815dadd656aa9163ed54a78f22d694c7ce9c0b4eca802e8a97cc7f8f","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\6.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_6_6.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"31.csv","ano":2025,"mes":"maio","dia":"31","coluna_data":"data","data_upload":"2025-07-31T20:57:11.168Z","hash_arquivo":"db98217ca1743329c6cc0a09043c6611b42c995383079539cacb75ecfd00ba46","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\31.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_31_31.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"7.csv","ano":2025,"mes":"maio","dia":"7","coluna_data":"data","data_upload":"2025-07-31T20:57:11.433Z","hash_arquivo":"092fc184ccf246f11c106a125c003f577a280ec940eae100e8920b8d12275097","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\7.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_7_7.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"8.csv","ano":2025,"mes":"maio","dia":"8","coluna_data":"data","data_upload":"2025-07-31T20:57:11.627Z","hash_arquivo":"4d7b498f411b37d66a963859c9bea0df971a1e6af972691fecc415d6d6fecf85","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\8.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_8_8.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"9.csv","ano":2025,"mes":"maio","dia":"9","coluna_data":"data","data_upload":"2025-07-31T20:57:11.635Z","hash_arquivo":"2ca5c986efc806d772895ef7bca4c5cc8ba46289a4fa12a9b51f57eb06bae1f9","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\9.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_9_9.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"5.csv","ano":2025,"mes":"junho","dia":"5","coluna_data":"data","data_upload":"2025-07-31T20:57:45.356Z","hash_arquivo":"8267d8338f995adb9c3e85f8a0c8158d2662c1f47b57bfdb6848fa9dfcf970b2","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\junho\\5.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_junho_5_5.csv"}
-
-----------------------------
-cacheHash_03_11_40.jsonl --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_03_11_40.jsonl
-{"tabela_destino":"03_11_40","nome_arquivo":"julho.csv","ano":2025,"mes":"julho","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-07-31T19:11:36.684Z","hash_arquivo":"451c1a2482f994dfd63366d527c1f1aa86f7dd4fbec12db9739384610162b774","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\julho.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_julho_julho.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"julho.csv","ano":2025,"mes":"julho","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-07-31T19:34:22.968Z","hash_arquivo":"451c1a2482f994dfd63366d527c1f1aa86f7dd4fbec12db9739384610162b774","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\julho.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_julho_julho.csv"}
-
-----------------------------
-createDataController.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\controller\createDataController.js
-import path from "path";
-import { doesCsvHaveDataController } from "./insertValidator.js";
-import { getColumnsFromTable, getTiposFromTable } from "../model/tableModel.js";
-import createHashByData from "../utils/createHashByData.js";
-import createJsonController from "../utils/createJsonController.js";
-import { addAviso, addErro } from "../middleware/errorHandler.js";
-
-export default async function createDataController(filePath, action) {
-  const contexto = filePath
-  let dataJson;
-  try {
-    dataJson = await createJsonController(filePath);
-    if (!dataJson || dataJson.length === 0) {
-      addAviso("CSV vazio, validar se está válido", contexto);
-      return null 
-    } else if (Object.keys(dataJson[0]).length === 0) {
-      addAviso("CSV possui registros, mas sem colunas detectadas.", contexto);
-      return null
-    }
-  } catch (e) {
-    addErro(`Erro ao converter CSV para JSON: ${e.message}`, contexto);
-    throw e;
-  }
-
-
-  try {
-    const { metadados, logData } = await createFundamentalDocsController(
-      filePath,
-      dataJson,
-      action,
-      contexto
-    );
-    return { metadados, logData };
-  } catch (e) {
-    addErro(`Erro ao gerar metadados e logData: ${e.message}`, contexto);
-    throw e;
-  }
-}
-
-export async function createMetadadosController(
-  filePath,
-  dataJson,
-  hash,
-  action
-) {
-  const destino = destinoByFilePath(filePath);
-  const infos = await extractInfosByData(destino.tabela_destino, dataJson, filePath);
-
-  return {
-    nome_arquivo: destino.nome_arquivo,
-    ano: destino.ano,
-    mes: destino.mes,
-    dia: destino.dia,
-    tabela: destino.tabela_destino,
-    data_json: dataJson,
-    hash: hash,
-    coluna_data: infos.coluna_data,
-    acao: action,
-    colunas_tabela: infos.colunas_tabela,
-    colunas_json: infos.colunas_json,
-    tipos_esperados: infos.tipagem,
-    caminho_original: filePath,
-  };
-}
-
-export function createLogDataController(metadados) {
-  return {
-    tabela_destino: metadados.tabela,
-    nome_arquivo: metadados.nome_arquivo,
-    ano: parseInt(metadados.ano),
-    mes: metadados.mes,
-    dia: metadados.dia,
-    coluna_data: metadados.coluna_data,
-    data_upload: new Date(),
-    hash_arquivo: metadados.hash,
-    caminho_original: metadados.caminho_original, //trocar
-    sucesso: true,
-    mensagem_erro: null,
-  };
-}
-
-export async function createFundamentalDocsController(
-  filePath,
-  dataJson,
-  action,
-  contexto
-) {
-
-  
-  try {
-    const hash = createHashByData(dataJson);
-    const metadados = await createMetadadosController(
-      filePath,
-      dataJson,
-      hash,
-      action
-    );
-    const logData = createLogDataController(metadados);
-
-    return { metadados, logData };
-  } catch (e) {
-    addErro(
-      `Erro ao gerar os objetos fundamentais, metadados e logdata, erro: ${e.message}`, contexto
-    );
-    throw e;
-  }
-}
-
-async function extractInfosByData(tabelaName, dataJson, filePath) {
-  const contexto = filePath
-  try {
-    const dataColun = await doesCsvHaveDataController(tabelaName, dataJson, contexto);
-    const tiposEsperados = await getTiposFromTable(tabelaName);
-    const colunsTable = await getColumnsFromTable(tabelaName);
-    const colunsJson = Object.keys(dataJson[0] || {});
-
-    return {
-      coluna_data: dataColun,
-      tipagem: tiposEsperados,
-      colunas_tabela: colunsTable,
-      colunas_json: colunsJson,
-    };
-  } catch (e) {
-    addErro(
-      `[FATAL] Erro ao extrair informações da tabela destino ou colunas do Json csv, erro: ${e.message}`, contexto
-    );
-    throw e;
-  }
-}
-
-export function destinoByFilePath(filePath) {
-  const fileName = path.basename(filePath);
-  const parent = path.dirname(filePath);
-  const grandParent = path.dirname(parent);
-  const greatGrandParent = path.dirname(grandParent);
-
-  const baseNameNoExt = path.basename(fileName, path.extname(fileName));
-  if (/^\d+$/.test(baseNameNoExt)) {
-    // Exemplo: .../2025/julho/1.csv
-    return {
-      nome_arquivo: fileName.toLocaleLowerCase(), //1.csv
-      ano: path.basename(grandParent).toLocaleLowerCase(), // "2025"
-      mes: path.basename(parent).toLocaleLowerCase(), // "julho"
-      dia: path.basename(fileName, path.extname(fileName)).toLocaleLowerCase(), //1
-      tabela_destino: path.basename(greatGrandParent).toLocaleLowerCase(), // "base_bees_deliver_dia"
-    };
-  } else {
-    // Exemplo: .../2025/julho.csv
-    return {
-      nome_arquivo: fileName.toLocaleLowerCase(), //julho.csv
-      ano: path.basename(parent).toLocaleLowerCase(), // "2025"
-      mes: path.basename(fileName, path.extname(fileName)).toLocaleLowerCase(), // "julho"
-      dia: null,
-      tabela_destino: path.basename(grandParent).toLocaleLowerCase(), // "base_bees_deliver_dia"
-    };
-  }
-}
-
-----------------------------
-fluxoValidatorController.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\controller\fluxoValidatorController.js
-import { addErro, addInfo } from "../middleware/errorHandler.js";
-import { updateLoggerController } from "../middleware/logger.js";
-import { getLogByData, getAllHashesFromTable } from "../model/logModel.js";
-
-/**
- * @param {{
- *   nome_arquivo: string,
- *   ano: number,
- *   mes: string,
- *   tabela: string,
- *   data_json: object
- *   coluna_data: string,
- *   acao: string,
- *   colunas_tabela: object
- *   colunas_json: object
- * }} metadados
- * @param {{
- *    tabela_destino: string
- *    nome_arquivo: string
- *    ano: int
- *    data_upload: date
- *    hash_arquivo: char64
- *    sucesso: boolean
- *    mensagem_erro: string
- * }} logData
- */
-export default async function fluxoValidatorController(metadados, logData) {
-  const contexto = metadados.caminho_original
-  let logs = [];
-  let allHashes = [];
-
-  try {
-    logs = await getLogByData(metadados);
-  } catch (e) {
-    addErro(`erro ao extrair os logs referentes a data, erro: ${e.message}`, contexto);
-  } finally{
-    await updateLoggerController(metadados, contexto)
-  }
-
-  try {
-    allHashes = await getAllHashesFromTable(metadados);
-  } catch (e) {
-    addErro(`Erro ao extrair os hashs dos logs referentes a essa data`, contexto);
-   } finally{
-    await updateLoggerController(metadados, contexto)
-  }
-
-  const hashJaExiste = allHashes.some(
-    (entry) => entry.hash_arquivo === logData.hash_arquivo
-  );
-  if (!logData.hash_arquivo) {
-    addErro("Hash do arquivo não foi passado ao validador do fluxo.", contexto);
-    await updateLoggerController(metadados, contexto)
-  }
-
-  if (hashJaExiste) {
-    addInfo(
-      `[ARQUIVO DUPLICADO] O conteúdo de ${metadados.nome_arquivo} já está presente na base.`, contexto
-    );
-    await updateLoggerController(metadados, contexto)
-    return "ignorar";
-  } else if (!logs || logs.length === 0) {
-    addInfo(`[NOVO ARQUIVO] ${metadados.nome_arquivo} será processado.`, contexto);
-    await updateLoggerController(metadados, contexto)
-    return "inserir";
-  } else {
-    addInfo(
-      `[ARQUIVO MODIFICADO] ${metadados.nome_arquivo} já existia, mas foi alterado. Reprocessando.`, contexto
-    );
-    await updateLoggerController(metadados, contexto)
-    return "reprocessar";
-  }
-}
-
-----------------------------
-insertValidator.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\controller\insertValidator.js
-import { addAviso } from "../middleware/errorHandler.js";
-import { getDateColumnsFromTable } from "../model/tableModel.js";
-import {
-  getLoggerContext,
-  updateLoggerController,
-} from "../middleware/logger.js";
-
-export async function doesCsvHaveDataController(tabela, data_json, contexto) {
-  try {
-    const dataCol = await getDateColumnsFromTable(tabela);
-    if (!dataCol) return null;
-
-    const primeiraLinha = data_json?.[0] || {};
-    const chavesJson = Object.keys(primeiraLinha);
-
-    const index = chavesJson.findIndex((key) => key === dataCol);
-
-    if (index === -1) {
-      addAviso(`Coluna de data '${dataCol}' não encontrada no CSV.`, contexto);
-      updateLoggerController(getLoggerContext({}, {}, contexto), contexto);
-      return null;
-    }
-
-    return dataCol;
-  } catch (e) {
-    throw new Error(
-      `[Controller insersão] Erro ao extrair coluna data, erro: ${e.message}`
-    );
-  }
-}
-
-/**
- * @param {{
- *    nome_arquivo: string,
- *    ano: number,
- *    mes: string,
- *    tabela: string,
- *    data_json: object
- *    coluna_data: string,
- *    acao: string,
- *    colunas_tabela: object
- *    colunas_json: object
- * }} metadados
- */
-export async function insertValidator(list, metadados) {
-  const contexto = metadados.caminho_original;
-  if (list === null) {
-    return "cadastro";
-  } else {
-    const { coluna_data, data_json } = metadados; //null caso for cadastral
-    if (!Array.isArray(data_json) || data_json.length === 0) {
-      addAviso(
-        "[Controller insersão] JSON de dados está vazio. Nenhuma validação de coluna de data será feita.",
-        contexto
-      );
-      await updateLoggerController(
-        getLoggerContext(metadados, {}, contexto),
-        contexto
-      );
-      return null;
-    }
-    try {
-      const datasBanco = extrairDatasValidas(
-        list,
-        coluna_data,
-        "Banco",
-        contexto
-      );
-      const datasCsv = extrairDatasValidas(
-        data_json,
-        coluna_data,
-        "CSV",
-        contexto
-      );
-      const conflito = [...datasCsv].some((data) => datasBanco.has(data));
-
-      if (conflito) {
-        addAviso(
-          "[Controller insersão] Conflito detectado: datas do CSV já existem na base. Os dados serão reprocessados.",
-          contexto
-        );
-        await updateLoggerController(metadados, contexto);
-        return "substituir";
-      }
-      return "inserir";
-    } catch (e) {
-      throw new Error(
-        `[Controller insersão] Erro ao validar datas para inserção, Erro: ${e.message}`
-      );
-    }
-  }
-}
-
-function extrairDatasValidas(array, coluna, csvOrDataBase = "CSV", contexto) {
-  return new Set(
-    array
-      .map((linha, i) => {
-        const raw = linha[coluna];
-        const date = new Date(raw);
-        if (isNaN(date)) {
-          addAviso(
-            `[Controller insersão] Linha ${i}: valor inválido em '${coluna}' → '${raw}'. Registro ignorado [${csvOrDataBase}].`,
-            contexto
-          );
-          return null;
-        }
-        return date.toISOString().split("T")[0];
-      })
-      .filter(Boolean)
-  );
-}
-
-----------------------------
-managerDataController.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\controller\managerDataController.js
-import {
-  insertRegisterinTable,
-  listPeriodInTable,
-  deleteFromTable,
-} from "../model/tableModel.js";
-import {
-  iniciarBarra,
-  atualizarBarra,
-  finalizarBarra,
-} from "../utils/progressBar.js";
-
-import { insertValidator } from "./insertValidator.js";
-import tiparLinha from "../utils/tiparLinha.js";
-import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
-import { updateLoggerController } from "../middleware/logger.js";
-
-const linhasPorArquivo = new Map();
-let proximaLinhaDisponivel = 1;
-
-function reservarLinhaParaArquivo(nomeArquivo) {
-  if (!linhasPorArquivo.has(nomeArquivo)) {
-    linhasPorArquivo.set(nomeArquivo, proximaLinhaDisponivel++);
-  }
-  return linhasPorArquivo.get(nomeArquivo);
-}
-
-export async function manageInsertController(metadados) {
-  const contexto = metadados.caminho_original;
-  const nomeArquivo = metadados.nome_arquivo ?? "arquivo-desconhecido";
-  const linhaProgresso = reservarLinhaParaArquivo(nomeArquivo);
-  if (!Array.isArray(metadados.data_json) || metadados.data_json.length === 0) {
-    addAviso("Nenhuma linha disponível para inserção.", contexto);
-    return;
-  }
-
-  let listFromTable;
-  try {
-    listFromTable = await listPeriodInTable(metadados); //caso a base seja cadastral, vai retornar null aqui se não, vai retornar um objeto com {dataCol: 'data da linha'}
-  } catch (e) {
-    addErro(`Erro ao consultar o período no banco: ${e.message}`, contexto);
-    throw e;
-  }
-
-  const validator = await insertValidator(listFromTable, metadados);
-  const erros = [];
-  let sucesso = 0;
-  if (validator === "cadastro") {
-    try {
-      await deleteFromTable(metadados);
-      addInfo(
-        `[Delete dados] - dados excluidos, tabela do banco pronta pra reincersão dos novos dados cadastrais`,
-        contexto
-      );
-    } catch (e) {
-      addErro(
-        `[delete tabela cadastro] - Erro ao deletar os dados do cadastro antes da reinserção, erro: ${e.message}`,
-        contexto
-      );
-      await updateLoggerController(metadados, contexto);
-      return;
-    }
-  } else if (validator === "substituir") {
-    try {
-      await deleteFromTable(metadados);
-      addAviso(
-        `[gerenciamento de inserções] operação de substituição, dados referente a data inserida foram excluidos`,
-        contexto
-      );
-    } catch (e) {
-      addErro(
-        `Erro ao deletar período antes da reinserção, erro: ${e.message}`,
-        contexto
-      );
-      await updateLoggerController(metadados, contexto);
-      return;
-    }
-  } else if (validator === null) {
-    addErro(
-      "Validação retornou nulo. Dados possivelmente inválidos ou sem coluna de data.",
-      contexto
-    );
-    await updateLoggerController(metadados, contexto);
-    return;
-  }
-  addInfo("iniciando processo de insersão dos dados na tabela...", contexto);
-  const total = metadados.data_json.length;
-  const barraId = nomeArquivo;
-  iniciarBarra(barraId, total, nomeArquivo, metadados.tabela);
-  try {
-    for (let i = 0; i < metadados.data_json.length; i++) {
-      try {
-        const linhaOriginal = metadados.data_json[i];
-        const linhaTipada = tiparLinha(
-          linhaOriginal,
-          metadados.tipos_esperados
-        );
-
-        const { result, linhaTipada: linhaInserida } =
-          await insertRegisterinTable(metadados.tabela, linhaTipada);
-        // Log detalhado: original e tipada
-        //console.log(
-        //  `Linha ${i} inserida:\r\n`
-        //    +`\r\n`+
-        //    `Original: ${JSON.stringify(linhaOriginal)}\r\n`
-        //    +`\r\n`+
-        //    `Tipada:   ${JSON.stringify(linhaInserida)}\r\n`
-        //    +`\r\n`+
-        //    `----------------------------------------------`
-        //);
-        sucesso++;
-        atualizarBarra(barraId);
-      } catch (e) {
-        addErro(`Erro ao inserir linha ${i}, erro: ${e.message}`, contexto);
-        erros.push({
-          linha: i,
-          erro: e.message,
-          dados: metadados.data_json[i],
-        });
-        await updateLoggerController(metadados, contexto);
-      }
-    }
-  } finally {
-    finalizarBarra(barraId);
-  }
-
-  addInfo("processo de insersão finalizado, validar caso erros", contexto);
-  finalizarBarra(barraId);
-  return {
-    erro: erros.length > 0,
-    total: metadados.data_json.length,
-    inseridos: sucesso,
-    falhas: erros.length,
-    mensagem: erros.length > 0 ? "Algumas linhas falharam" : null,
-    detalhes_erros: erros,
-  };
-}
-
-export async function managerDeleterController(logData) {
-  const contexto = logData.caminho_original;
-  try {
-    await deleteFromTable(logData);
-    return { erro: false };
-  } catch (e) {
-    addErro(
-      `Erro ao deletar período no banco pós exclusão do arquivo, erro: ${e.message}`,
-      contexto
-    );
-    await updateLoggerController(logData, contexto);
-    return { erro: true, mensagem: e.message };
-  }
-}
-
-----------------------------
-createdHandler.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\controller\Handlers\createdHandler.js
-import {
-  addErro,
-  addInfo,
-  clearAllErrors,
-} from "../../middleware/errorHandler.js";
-import {
-  createLoggerController,
-  finalLoggerController,
-  getLoggerContext,
-  updateLoggerController,
-} from "../../middleware/logger.js";
-import { insertHashInCache } from "../../model/cacheModel.js";
-import { insertLog } from "../../model/logModel.js";
-import createDataController from "../createDataController.js";
-import fluxoValidatorController from "../fluxoValidatorController.js";
-import { manageInsertController } from "../managerDataController.js";
-import { finalizarTodasAsBarras } from "../../utils/progressBar.js";
-
-export default async function createdHandler(filePath) {
-  if (!filePath) {
-    addErro("caminho do arquivo não definido no handler, sem como identificar qual arquivo deu erro...")
-    return
-  }
-  const contexto = filePath;
-  let metadados, logData;
-  try {
-    // ------------criando logger -----------------
-    clearAllErrors(contexto);
-    await createLoggerController(filePath);
-    //---------- criando os docs, e validando o fluxo de insersão -----------
-
-    let resultado;
-    try {
-      resultado = await createDataController(filePath);
-      ({ metadados, logData } = resultado);
-    } catch (e) {
-      addErro(
-        `erro ao gerar os dados fundamentais, erro:${e.message}`,
-        contexto
-      );
-      return;
-    } finally {
-      await updateLoggerController(
-        getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
-        contexto
-      );
-    }
-
-    if (!metadados || !logData) {
-      addErro(`metadados ou logData não foram gerados corretamente`, contexto);
-      await updateLoggerController(
-        getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
-        contexto
-      );
-      return;
-    }
-
-    let fluxo;
-    try {
-      fluxo = await fluxoValidatorController(metadados, logData);
-    } catch (e) {
-      addErro(`Erro ao validar fluxo de ingestão: ${e.message}`, contexto);
-      return;
-    } finally {
-      await updateLoggerController(
-        getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
-        contexto
-      );
-    }
-
-    //-------------- vai retorna o logdata o metadados e o fluxo -----------
-
-    if (fluxo === "inserir" || fluxo === "reprocessar") {
-      let resultado;
-      try {
-        resultado = await manageInsertController(metadados);
-
-        logData.sucesso = !resultado?.erro;
-        logData.mensagem_erro = resultado?.mensagem || null;
-
-        if (resultado?.erro) {
-          addErro(logData.mensagem_erro, contexto);
-        }
-      } catch (e) {
-        logData.sucesso = false;
-        logData.mensagem_erro = `Erro durante execução do managerDataController: ${e.message}`;
-        addErro(
-          `Erro durante execução do managerDataController: ${e.message}`,
-          contexto
-        );
-      } finally {
-        await insertHashInCache(logData);
-        await insertLog(logData);
-        await updateLoggerController(
-          getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
-          contexto
-        );
-      }
-    } else {
-      addInfo(
-        `[ARQUIVO IGNORADO] ${metadados.nome_arquivo} já existe e não foi modificado.`,
-        contexto
-      );
-      await updateLoggerController(
-        getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
-        contexto
-      );
-      return;
-    }
-  } catch (e) {
-    addErro(
-      `erro no createdHandler, erro: ${e.message}, caminho do erro: ${e.stack}`,
-      contexto
-    );
-    return;
-  } finally {
-    await finalLoggerController(
-      getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
-      contexto
-    );
-    finalizarTodasAsBarras();
-  }
-}
-
-----------------------------
-deletedHandler.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\controller\Handlers\deletedHandler.js
-import {
-  addAviso,
-  addErro,
-  clearAllErrors,
-} from "../../middleware/errorHandler.js";
-import {
-  finalLoggerController,
-  getLoggerContext,
-  updateLoggerController,
-} from "../../middleware/logger.js";
-import {
-  deleteRegisterFromCache,
-  getRegisterFromCache,
-} from "../../model/cacheModel.js";
-import { deleteLogByHash } from "../../model/logModel.js";
-import { destinoByFilePath } from "../createDataController.js";
-import { managerDeleterController } from "../managerDataController.js";
-
-export default async function deletedHandler(filePath) {
-  const contexto = filePath;
-  clearAllErrors(contexto);
-  let logData;
-  try {
-    const destino = destinoByFilePath(filePath);
-    try {
-      logData = await getRegisterFromCache(destino);
-      addAviso("tentativa de extração do cache finalizada.", contexto);
-      if (!logData) {
-        addErro(
-          `Nenhum registro de cache encontrado para ${filePath} logica de exclusão travada`,
-          contexto
-        );
-        return;
-      }
-    } catch (e) {
-      addErro(
-        `Erro ao extrair o logdata do cache, verifique o cache`,
-        contexto
-      );
-    } finally {
-      await updateLoggerController(
-        getLoggerContext({}, logData, filePath),
-        contexto
-      );
-    }
-    let resultado;
-    try {
-      addAviso("logica de exclusão dos dados iniciada...", contexto);
-      resultado = await managerDeleterController(logData);
-      addAviso("logica de exclusão dos dados finalizada...", contexto);
-      if (resultado?.erro) {
-        addErro(
-          `Erro durante managerDeleterController: ${
-            resultado.mensagem || "Erro desconhecido"
-          }`,
-          contexto
-        );
-        return; // ou `throw new Error(...)` dependendo da criticidade
-      }
-      await deleteLogByHash(logData);
-      await deleteRegisterFromCache(destino);
-      addAviso("exclusão do log no cache e no banco finalizadas", contexto);
-    } catch (e) {
-      addErro(
-        `problema ao apagar o hash do banco ou do cache, erro: ${e.message}`,
-        contexto
-      );
-      return;
-    } finally {
-      await updateLoggerController(
-        getLoggerContext({}, logData, filePath),
-        contexto
-      );
-    }
-  } catch (e) {
-    addErro(`Erro no deletedHandler, erro: ${e.message}, ${e.stack}`, contexto);
-    return;
-  } finally {
-    await finalLoggerController(
-      getLoggerContext({}, logData, filePath),
-      contexto
-    );
-  }
-}
-
-----------------------------
-errorHandler.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\middleware\errorHandler.js
-const contextoDeMensagens = new Map();
-
-export function addErro(msg, contexto = "__global") {
-  if (!contextoDeMensagens.has(contexto)) {
-    contextoDeMensagens.set(contexto, { erros: [], infos: [], avisos: [] });
-  }
-  contextoDeMensagens.get(contexto).erros.push(msg);
-}
-
-export function addInfo(msg, contexto = "__global") {
-  if (!contextoDeMensagens.has(contexto)) {
-    contextoDeMensagens.set(contexto, { erros: [], infos: [], avisos: [] });
-  }
-  contextoDeMensagens.get(contexto).infos.push(msg);
-}
-
-export function addAviso(msg, contexto = "__global") {
-  if (!contextoDeMensagens.has(contexto)) {
-    contextoDeMensagens.set(contexto, { erros: [], infos: [], avisos: [] });
-  }
-  contextoDeMensagens.get(contexto).avisos.push(msg);
-}
-
-export function getAllErrors(contexto = "__global") {
-  return contextoDeMensagens.get(contexto) || { erros: [], infos: [], avisos: [] };
-}
-
-export function clearAllErrors(contexto = "__global") {
-  contextoDeMensagens.set(contexto, { erros: [], infos: [], avisos: [] });
-}
-
-export function clearAllContexts() {
-  contextoDeMensagens.clear();
-}
-
-----------------------------
-logger.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\middleware\logger.js
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
-import { getAllErrors, clearAllErrors, addErro } from "./errorHandler.js";
-import colunsValidator from "../utils/colunsValidator.js";
-//import { safeLog } from "../utils/progressBar.js";
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-function TextoLogger(dadosLogger, contexto = "__global") {
-  const all = getAllErrors(contexto);
-  const now = new Date();
-  const dataHora = now.toLocaleString("pt-BR");
-
-  const blocos = [];
-  if (Array.isArray(all.infos) && all.infos.length > 0) {
-    blocos.push(
-      "🟩 Informações:\n" + all.infos.map((i) => `ℹ️ ${i}`).join("\n")
-    );
-  }
-  if (Array.isArray(all.avisos) && all.avisos.length > 0) {
-    blocos.push("🟨 Avisos:\n" + all.avisos.map((a) => `⚠️ ${a}`).join("\n"));
-  }
-
-  if (Array.isArray(all.erros) && all.erros.length > 0) {
-    blocos.push("🟥 Erros:\n" + all.erros.map((e) => `❌ ${e}`).join("\n"));
-  }
-
-  const blocoMensagens =
-    blocos.length > 0 ? blocos.join("\n\n") : "✅ Sem mensagens loggadas...";
-
-  const acao = dadosLogger.acao?.toLowerCase?.() ?? "created";
-
-  const titulo =
-    acao === "deleted"
-      ? `==== LOG DELETED ${dadosLogger.nome_arquivo} - ${dataHora} ====`
-      : `==== LOG CREATED ${dadosLogger.nome_arquivo} - ${dataHora} ====`;
-
-  const corpoBase = [
-    `==============================================================`,
-    titulo,
-    `Arquivo: ${dadosLogger.nome_arquivo}`,
-    `Evento/Ação: ${acao}`,
-    `Tabela: ${dadosLogger.tabela ?? dadosLogger.tabela_destino}`,
-    `Ano: ${dadosLogger.ano} | Mês: ${dadosLogger.mes} | Dia: ${dadosLogger.dia}`,
-    `hash: ${dadosLogger.hash ?? dadosLogger.hash_arquivo ?? "—"}`,
-    `Coluna de referencia: ${dadosLogger.coluna_data ?? "—"}`,
-    `=================== Resultados da operação ===================`,
-    blocoMensagens,
-  ];
-
-  if (
-    acao !== "deleted" &&
-    dadosLogger.colunas_json &&
-    dadosLogger.colunas_tabela
-  ) {
-    corpoBase.push(
-      `Colunas JSON: ${dadosLogger.colunas_json.join(", ")}`,
-      `Colunas Tabela: ${dadosLogger.colunas_tabela.join(", ")}`
-    );
-
-    const colunasValidas = colunsValidator(
-      dadosLogger.colunas_json,
-      dadosLogger.colunas_tabela
-    );
-    corpoBase.push(`${colunasValidas}`);
-  }
-  corpoBase.push(
-    `==============================================================`
-  );
-
-  return corpoBase.join("\n\n");
-}
-
-export async function getLoggerFileName(dir, name) {
-  const filename = `Logger_${name}.txt`;
-
-  const tentativas = [
-    path.join(dir, "loggers"),
-    path.join(path.dirname(dir), "loggers"),
-  ];
-
-  for (const tentativa of tentativas) {
-    try {
-      await fs.mkdir(tentativa, { recursive: true });
-      return path.join(tentativa, filename);
-    } catch (err) {
-      // Tenta próximo caminho
-      continue;
-    }
-  }
-
-  // Fallback absoluto
-  const fallbackDir = path.resolve(__dirname, "../fallback_loggers");
-  await fs.mkdir(fallbackDir, { recursive: true });
-  return path.join(fallbackDir, filename);
-}
-
-export async function createLoggerController(filePath) {
-  const dir = path.dirname(filePath);
-  const { name } = path.parse(filePath);
-  const logPath = await getLoggerFileName(dir, name);
-
-  try {
-    // Garante que a pasta 'loggers' exista
-    await fs.mkdir(path.dirname(logPath), { recursive: true });
-
-    await fs.writeFile(logPath, "Processo iniciado....", "utf8");
-  } catch (e) {
-    console.log(
-      "[Logger] erro ao iniciar o processo de log, arquivo criado porém erro na interação inicial"
-    );
-  }
-}
-
-export async function updateLoggerController(
-  dadosLogger,
-  contexto = "__global"
-) {
-  let filePath, dadosParaLog;
-
-  if (typeof dadosLogger === "string") {
-    filePath = dadosLogger;
-    dadosParaLog = {
-      nome_arquivo: path.basename(filePath),
-      acao: "erro",
-      tabela: "—",
-      tabela_destino: "—",
-      ano: "—",
-      mes: "—",
-      dia: "_",
-      hash: "—",
-      coluna_data: "—",
-      caminho_original: filePath,
-    };
-  } else {
-    filePath = dadosLogger?.caminho_original || dadosLogger?.filePath;
-    dadosParaLog = dadosLogger;
-  }
-  const { name } = path.parse(filePath);
-  const dir = path.dirname(filePath);
-  const logPath = await getLoggerFileName(dir, name);
-
-  const texto = TextoLogger(dadosParaLog, contexto);
-  try {
-    await fs.writeFile(logPath, texto, "utf8");
-  } catch (e) {
-    console.log(
-      "[Logger] Erro ao atualizar o logger, erro na insersão das atualizações do processo"
-    );
-  }
-}
-
-export async function finalLoggerController(
-  dadosLogger,
-  contexto = "__global"
-) {
-  let filePath, dadosParaLog;
-
-  if (typeof dadosLogger === "string") {
-    filePath = dadosLogger;
-    dadosParaLog = {
-      nome_arquivo: path.basename(filePath),
-      acao: "_",
-      tabela: "—",
-      tabela_destino: "—",
-      ano: "—",
-      mes: "—",
-      dia: "_",
-      hash: "—",
-      coluna_data: "—",
-      caminho_original: filePath,
-    };
-  } else {
-    filePath = dadosLogger?.caminho_original || dadosLogger?.filePath;
-    dadosParaLog = dadosLogger;
-  }
-  const { name } = path.parse(filePath);
-  const dir = path.dirname(filePath);
-  const logPath = await getLoggerFileName(dir, name);
-  let texto;
-  try {
-    texto = TextoLogger(dadosParaLog, contexto);
-    await fs.writeFile(logPath, texto, "utf8");
-  } catch (e) {
-    try {
-      addErro(
-        `[logger] Erro ao montar ou salvar log: ${e.message}\n${e.stack}`,
-        contexto
-      );
-    } catch {
-      // Fallback simples: imprimir direto no console, sem usar addErro
-      console.error(
-        `[logger] FALHA CRÍTICA no logger: ${e.message}\n${e.stack}`
-      );
-    }
-  }
-}
-
-export async function errorLoggerController(
-  dadosLogger,
-  contexto = "__global"
-) {
-  const { name } = path.parse(dadosLogger?.caminho_original ?? "fallback");
-  const dir = path.dirname(dadosLogger?.caminho_original ?? __dirname);
-  const texto = TextoLogger(dadosLogger, contexto);
-  let file;
-  try {
-    file = await getLoggerFileName(dir, name);
-  } catch (e) {
-    console.warn(e.message);
-  }
-
-  if (file) {
-    try {
-      await fs.writeFile(file, texto, "utf8");
-    } catch (e) {
-      console.log(
-        "[Logger] Erro ao atualizar o logger, erro na finalização, validar chamada no handler"
-      );
-    }
-  }
-  clearAllErrors(contexto);
-
-  //safeLog(texto);
-}
-
-export function getLoggerContext(metadados = {}, logData = {}, filePath) {
-  return {
-    ...metadados,
-    ...logData,
-    caminho_original: filePath ?? "—",
-  };
-}
-
-----------------------------
-cacheModel.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\model\cacheModel.js
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
-import {
-  addAviso,
-  addErro,
-  addInfo,
-  clearAllErrors,
-} from "../middleware/errorHandler.js";
-import readline from "readline";
-import { createReadStream, createWriteStream } from "fs";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-async function acquireLock(
-  lockFilePath,
-  retries = 20,
-  delay = 200,
-  timeout = 60000
-) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      await fs.writeFile(lockFilePath, Date.now().toString(), { flag: "wx" });
-      return;
-    } catch (e) {
-      if (e.code === "EEXIST") {
-        try {
-          const conteudo = await fs.readFile(lockFilePath, "utf8");
-          const lockTime = parseInt(conteudo.trim(), 10);
-          const diff = Date.now() - lockTime;
-
-          if (isNaN(lockTime)) {
-            //remove o locker se não for um numero, visando liberar a fila de espera
-            addInfo(
-              `[locker] Conteúdo inválido em ${lockFilePath}, script esperava a data, forçando remoção`
-            );
-            try {
-              await fs.unlink(lockFilePath);
-            } catch (e) {
-              addErro("[locker] erro ao remover o locker");
-            }
-            continue;
-          }
-
-          if (diff > timeout) {
-            // se a diferença for maior que o time out, esse locker tá vencido,
-            addInfo(
-              `[lock] Lock expirado (${diff}ms), removendo ${lockFilePath}`
-            );
-            try {
-              await fs.unlink(lockFilePath);
-            } catch (e) {
-              addErro("erro ao excluir o locker, pós locker vencido");
-            }
-            continue;
-          }
-        } catch (readErr) {
-          addErro(`[lock] Erro ao ler lock existente: ${readErr.message}`);
-        }
-
-        // Espera antes de tentar novamente
-        await new Promise((r) => setTimeout(r, delay));
-      } else {
-        throw new Error(`Erro inesperado ao tentar criar lock: ${e.message}`);
-      }
-    }
-  }
-  throw new Error("Não foi possível obter lock após várias tentativas");
-}
-
-async function fileExists(filePath) {
-  try {
-    await fs.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function releaseLock(lockFilePath) {
-  const contexto = lockFilePath;
-  clearAllErrors(contexto);
-  // Verifica se o arquivo lock existe antes de tentar apagar
-  const exists = await fileExists(lockFilePath);
-  if (!exists) {
-    addAviso(`[loc] Lock '${lockFilePath}' não existe mais, nada a remover.`, contexto);
-    return;
-  }
-
-  try {
-    await fs.unlink(lockFilePath);
-  } catch (err) {
-    addErro(`[lock] Falha ao remover lock, tentando novamente: ${err.message}`, contexto);
-    try {
-      await new Promise((r) => setTimeout(r, 100));
-
-      if (await fileExists(lockFilePath)) {
-        await fs.unlink(lockFilePath);
-        addInfo("[lock] Lock removido com sucesso na segunda tentativa.", contexto);
-      } else {
-        addInfo(
-          `[lock] Lock '${lockFilePath}' foi removido por outro processo antes da segunda tentativa.`, contexto
-        );
-      }
-    } catch (err2) {
-      addErro(
-        `[lock] Falha crítica ao remover lock: ${err2.message} informar ao Lucas`, contexto
-      );
-    }
-  }
-}
-
-async function initCacheFile(tabela) {
-  try {
-    const dirPath = path.resolve(__dirname, "../cache");
-    await fs.mkdir(dirPath, { recursive: true });
-
-    // Aqui cria o caminho do arquivo cache específico para a tabela
-    const cacheFilePath = path.resolve(dirPath, `cacheHash_${tabela}.jsonl`);
-
-    try {
-      await fs.access(cacheFilePath);
-      return cacheFilePath;
-    } catch (err) {
-      await fs.writeFile(cacheFilePath, "", "utf8");
-      console.log(
-        `Arquivo de cache criado para a tabela ${tabela} em:`,
-        cacheFilePath
-      );
-      return cacheFilePath;
-    }
-  } catch (e) {
-    throw new Error(`erro ao iniciar o arquivo cache, erro: ${e.message}`);
-  }
-}
-
-export async function insertHashInCache(logData) {
-  const { tabela_destino, ano, mes, dia, nome_arquivo } = logData;
-
-  let cachePath;
-  try {
-    cachePath = await initCacheFile(tabela_destino);
-  } catch (e) {
-    throw new Error(
-      `[model cache] erro ao criar o arquivo do cache: ${e.message}`
-    );
-  }
-
-  // implementando logica de lock
-  const lockFilePath = cachePath + ".lock";
-  await acquireLock(lockFilePath, 10, 200);
-
-  try {
-    const parts = [tabela_destino, ano, mes];
-    if (dia !== undefined && dia !== null && dia !== "") {
-      parts.push(dia);
-    }
-    parts.push(nome_arquivo);
-
-    const enrichedLogData = {
-      ...logData,
-      identificador: parts.join("_"),
-    };
-    const jsonString = JSON.stringify(enrichedLogData);
-    if (!jsonString)
-      throw new Error("[hash in cache] Erro ao serializar logData");
-
-    await fs.appendFile(cachePath, jsonString + "\n", "utf8");
-    addInfo("[model cache] Objeto salvo no cache com sucesso!", lockFilePath);
-  } catch (e) {
-    throw new Error(
-      `erro gerado ao inserir o hash no cache, erro: ${e.message}`
-    );
-  } finally {
-    await releaseLock(lockFilePath);
-  }
-}
-
-export async function getRegisterFromCache(destino, skipLock = false) {
-  const cachePath = await initCacheFile(destino.tabela_destino);
-  const lockFilePath = cachePath + ".lock";
-  if (!skipLock) await acquireLock(lockFilePath, 10, 200);
-
-  // monta o identificador
-  const { tabela_destino, ano, mes, dia, nome_arquivo } = destino;
-  const parts = [tabela_destino, ano, mes];
-  if (dia !== undefined && dia !== null && dia !== "") {
-    parts.push(dia);
-  }
-  parts.push(nome_arquivo);
-  const identificador = parts.join("_");
-  let rl, input;
-
-  try {
-    input = createReadStream(cachePath);
-    rl = readline.createInterface({ input, crlfDelay: Infinity });
-
-    for await (const line of rl) {
-      try {
-        const obj = JSON.parse(line);
-        if (obj.identificador === identificador) {
-          return obj;
-        }
-      } catch (e) {
-        console.warn(`[cache] Linha inválida ignorada: ${line}`);
-      }
-    }
-
-    // não encontrou
-    return null;
-  } catch (e) {
-    throw new Error(`[cache] Erro ao buscar no cache: ${e.message}`);
-  } finally {
-    if (rl) rl.close();
-    if (input) input?.destroy();
-    if (!skipLock) await releaseLock(lockFilePath);
-  }
-}
-
-export async function deleteRegisterFromCache(destino) {
-  const cachePath = await initCacheFile(destino.tabela_destino);
-  const lockFilePath = cachePath + ".lock";
-  const tempPath = cachePath + ".tmp";
-
-  await acquireLock(lockFilePath, 20, 500);
-
-  // monta identificador
-  const { tabela_destino, ano, mes, dia, nome_arquivo } = destino;
-  const parts = [tabela_destino, ano, mes];
-  if (dia !== undefined && dia !== null && dia !== "") {
-    parts.push(dia);
-  }
-  parts.push(nome_arquivo);
-  const identificadorAlvo = parts.join("_");
-
-  // inicia logica do delete
-  let rl, output, input;
-  try {
-    input = createReadStream(cachePath);
-    rl = readline.createInterface({ input, crlfDelay: Infinity });
-    output = createWriteStream(tempPath, { flags: "w" });
-    let encontrado = false;
-
-    for await (const line of rl) {
-      try {
-        const obj = JSON.parse(line);
-        if (obj.identificador === identificadorAlvo) {
-          encontrado = true;
-          continue; // não escreve essa linha (é o alvo)
-        }
-        output.write(line + "\n");
-      } catch {
-        // se a linha for inválida, preserva por segurança
-        output.write(line + "\n");
-      }
-    }
-
-    try {
-      output.end();
-      await new Promise((res, rej) => {
-        output.on("finish", res);
-        output.on("error", rej);
-      });
-    } finally {
-      output?.close?.();
-    }
-
-    if (!encontrado) {
-      throw new Error(
-        `[cache] Registro '${identificadorAlvo}' não encontrado no cache.`
-      );
-    }
-    try {
-      await fs.rename(tempPath, cachePath);
-    } catch (e) {
-      throw new Error(
-        `[cache file] Erro ao substituir o cache pelo cache temp durante a logica de exclusão de um registro do cache`
-      );
-    }
-
-    addInfo(
-      `[cache JSONL] Registro '${identificadorAlvo}' removido com sucesso.`, lockFilePath
-    );
-    return true;
-  } catch (e) {
-    throw new Error(`[cache JSONL] Erro ao excluir registro: ${e.message}`);
-  } finally {
-    if (await fileExists(tempPath)) {
-      await fs.unlink(tempPath).catch(() => {});
-    }
-    await releaseLock(lockFilePath);
-    if (rl) rl.close();
-    if (input) input.close?.();
-  }
-}
-
-----------------------------
-logModel.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\model\logModel.js
-import db, { schema } from "../../config/db.js";
-
-/**
- * @param {{
- *    nome_arquivo: string,
- *    ano: number,
- *    mes: string,
- *    tabela: string,
- *    data_json: object
- *    coluna_data: string,
- *    acao: string,
- *    colunas_tabela: object
- *    colunas_json: object
- * }} metadados
- */
-export async function getLogByData(metadados) {
-  const { tabela, nome_arquivo, ano } = metadados;
-  try {
-    const [result] = await db.query(
-      `
-    SELECT * FROM \`${schema}\`.log_ingestao
-    WHERE tabela_destino = ?
-     AND nome_arquivo = ?
-     AND ano = ?
-    ORDER BY data_upload DESC
-  `,
-      [tabela, nome_arquivo, ano]
-    );
-    return result;
-  } catch (e) {
-    throw new Error(
-      `[model puxar log banco] Erro ao puxar os logs referente ao mes requerido, erro: ${e.message}`
-    );
-  }
-}
-
-/**
- * @param {{
- *    nome_arquivo: string,
- *    ano: number,
- *    mes: string,
- *    tabela: string,
- *    data_json: object
- *    coluna_data: string,
- *    acao: string,
- *    colunas_tabela: object
- *    colunas_json: object
- * }} metadados
- */
-export async function getAllHashesFromTable(metadados) {
-  const { tabela } = metadados;
-  try {
-    const [result] = await db.query(
-      `
-      SELECT hash_arquivo FROM \`${schema}\`.log_ingestao
-      WHERE tabela_destino = ?
-      `,
-      [tabela]
-    );
-    return result;
-  } catch (e) {
-    throw new Error(
-      `[model puxar hashs banco] Erro ao puxar os hashs da tabela no log_ingestao`
-    );
-  }
-}
-
-export async function insertLog(logData) {
-  const {
-    tabela_destino,
-    nome_arquivo,
-    ano,
-    mes,
-    dia,
-    coluna_data,
-    data_upload,
-    hash_arquivo,
-    sucesso,
-    mensagem_erro,
-  } = logData;
-
-  try {
-    await db.query(
-      `
-    INSERT INTO \`${schema}\`.log_ingestao
-      (tabela_destino, nome_arquivo, ano, mes, dia, coluna_data, data_upload, hash_arquivo, sucesso, mensagem_erro)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `,
-      [
-        tabela_destino,
-        nome_arquivo,
-        ano,
-        mes,
-        dia,
-        coluna_data,
-        data_upload,
-        hash_arquivo,
-        sucesso,
-        mensagem_erro,
-      ]
-    );
-  } catch (e) {
-    throw new Error(
-      `[model inserir log banco] Erro ao inserir log na tabela de ingestão, erro: ${e.message}`
-    );
-  }
-}
-
-/**
- * @param {{
- *    nome_arquivo: string,
- *    ano: number,
- *    mes: string,
- *    tabela: string,
- *    data_json: object
- *    coluna_data: string,
- *    acao: string,
- *    colunas_tabela: object
- *    colunas_json: object
- * }} metadados
- */
-export async function deleteLogByHash(logData) {
-  const { hash_arquivo } = logData;
-  try {
-    return await db.query(
-      `
-    DELETE FROM \`${schema}\`.log_ingestao WHERE hash_arquivo = ?`,
-      [hash_arquivo]
-    );
-  } catch (e) {
-    throw new Error(
-      `[model delete log do banco] Erro ao deletar o log com base no hash, erro: ${e.message}`
-    );
-  }
-}
-
-----------------------------
-tableModel.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\model\tableModel.js
-import db, { schema } from "../../config/db.js";
-
-import mapearTipo from "../utils/mapearTipos.js";
-
-const meses = {
-  janeiro: 1,
-  jan: 1,
-  "jan.": 1,
-
-  fevereiro: 2,
-  fev: 2,
-  "fev.": 2,
-
-  marco: 3,
-  março: 3,
-  mar: 3,
-  "mar.": 3,
-
-  abril: 4,
-  abr: 4,
-  "abr.": 4,
-
-  maio: 5,
-  mai: 5,
-  "mai.": 5,
-
-  junho: 6,
-  jun: 6,
-  "jun.": 6,
-
-  julho: 7,
-  jul: 7,
-  "jul.": 7,
-
-  agosto: 8,
-  ago: 8,
-  "ago.": 8,
-
-  setembro: 9,
-  set: 9,
-  "set.": 9,
-
-  outubro: 10,
-  out: 10,
-  "out.": 10,
-
-  novembro: 11,
-  nov: 11,
-  "nov.": 11,
-
-  dezembro: 12,
-  dez: 12,
-  "dez.": 12,
-};
-
-export async function getAllRegistersFromTable(tabela) {
-  try {
-    const [result] = await db.query(`
-      SELECT * FROM \`${schema}\`.\`${tabela}\`
-    `);
-    return result;
-  } catch (e) {
-    throw new Error(
-      `[Model registers] Erro ao consultar os registros da tabela destino, erro: ${e.message} `
-    );
-  }
-}
-
-export async function getDateColumnsFromTable(tabela) {
-  try {
-    const [results] = await db.query(
-      `
-      SELECT COLUMN_NAME
-      FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_NAME = ?
-        AND TABLE_SCHEMA = ?
-        AND DATA_TYPE = 'date'
-    `,
-      [tabela, schema]
-    );
-
-    return results.length > 0 ? results[0].COLUMN_NAME : null;
-  } catch (e) {
-    throw new Error(
-      `[Model dataColun] Erro ao consultar colunas de data: ${e.message}`
-    );
-  }
-}
-
-export async function getColumnsFromTable(tabela) {
-  try {
-    const [results] = await db.query(
-      `
-      SELECT COLUMN_NAME
-      FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_NAME = ?
-        AND TABLE_SCHEMA = ?
-    `,
-      [tabela, schema]
-    );
-
-    return results.map((col) => col.COLUMN_NAME);
-  } catch (e) {
-    throw new Error(
-      `[model consultar colunas] Erro ao consultar colunas da tabela: ${e.message}`
-    );
-  }
-}
-
-/**
- * @param {{
- *    nome_arquivo: string,
- *    ano: number,
- *    mes: string,
- *    tabela: string,
- *    data_json: object
- *    coluna_data: string,
- *    acao: string,
- *    colunas_tabela: object
- *    colunas_json: object
- * }} metadados
- */
-export async function insertRegisterinTable(tabela, linhaTipada) {
-  let colunas;
-  try {
-    colunas = await getColumnsFromTable(tabela)
-  } catch (e) {
-    throw new Error(
-      `[model coleta de tipagem para insert] erro ao coletar as colunas da tabela, erro: ${e.message}`
-    );
-  }
-  if (!colunas || colunas.length === 0) {
-    throw new Error(
-      `[model coleta de tipagem para insert] Tabela '${tabela}' não possui colunas válidas.`
-    );
-  }
-
-  const valores = colunas.map((col) => {
-    return linhaTipada[col] ?? null;
-  });
-  const colunasSql = colunas.map((col) => `\`${col}\``).join(", ");
-  const placeholders = colunas.map(() => "?").join(", ");
-  const sql = `INSERT INTO \`${schema}\`.\`${tabela}\` (${colunasSql}) VALUES (${placeholders})`;
-
-  try {
-    const [result] = await db.query(sql, valores);
-    return { result, linhaTipada };
-  } catch (e) {
-    throw new Error(
-      `[model insert ] erro ao realizar a query de insersão do registro, erro: ${e.message}`
-    );
-  }
-}
-
-/**
- * @param {{
- *    nome_arquivo: string,
- *    ano: number,
- *    mes: string,
- *    tabela: string,
- *    data_json: object
- *    coluna_data: string,
- *    acao: string,
- *    colunas_tabela: object
- *    colunas_json: object
- * }} metadados
- */
-export async function listPeriodInTable(metadados) {
-  const { coluna_data, tabela, dia, mes, ano } = metadados;
-  if (!coluna_data) return null;
-
-  let query,
-    params = [];
-
-  if (dia) {
-    // Converte nome do mês para número (ex: "julho" → 7)
-    const numeroMes = meses[(mes || "").toLowerCase()];
-    if (!numeroMes || !ano)
-      throw new Error(`[model periodo] Mês ou ano inválido`);
-
-    query = `SELECT \`${coluna_data}\` FROM \`${schema}\`.\`${tabela}\` 
-             WHERE DAY(\`${coluna_data}\`) = ? AND MONTH(\`${coluna_data}\`) = ? AND YEAR(\`${coluna_data}\`) = ?`;
-    params = [Number(dia), numeroMes, Number(ano)];
-  } else {
-    query = `SELECT \`${coluna_data}\` FROM \`${schema}\`.\`${tabela}\``;
-  }
-
-  try {
-    const [result] = await db.query(query, params);
-    return result || [];
-  } catch (error) {
-    throw new Error(
-      `[model periodo] Erro ao buscar período da tabela, erro: ${error.message}`
-    );
-  }
-}
-
-export async function deleteFromTable(opcoes) {
-  const { tabela, tabela_destino, mes, ano, dia, coluna_data } = opcoes;
-
-  const nomeTabela = tabela || tabela_destino;
-
-  if (!nomeTabela) {
-    throw new Error("[model delete] Nome da tabela não foi informado.");
-  }
-
-  let sql,
-    params = [];
-
-  if (coluna_data && mes && ano) {
-    const numeroMes = meses[(mes || "").toLowerCase()];
-    if (!numeroMes) {
-      throw new Error(
-        `[model delete] Mês inválido: '${mes}' não está mapeado.`
-      );
-    }
-
-    if (dia) {
-      sql = `
-        DELETE FROM \`${schema}\`.\`${nomeTabela}\`
-        WHERE DAY(\`${coluna_data}\`) = ? AND MONTH(\`${coluna_data}\`) = ? AND YEAR(\`${coluna_data}\`) = ?
-      `;
-      params = [Number(dia), numeroMes, Number(ano)];
-    } else {
-      sql = `
-        DELETE FROM \`${schema}\`.\`${nomeTabela}\`
-        WHERE MONTH(\`${coluna_data}\`) = ? AND YEAR(\`${coluna_data}\`) = ?
-      `;
-      params = [numeroMes, Number(ano)];
-    }
-  } else {
-    sql = `DELETE FROM \`${schema}\`.\`${nomeTabela}\``;
-  }
-  try {
-    const [result] = await db.query(sql, params);
-    return result;
-  } catch (e) {
-    throw new Error(
-      `[model delete] Erro ao deletar dados da tabela '${nomeTabela}': ${e.message}`
-    );
-  }
-}
-
-export async function getTiposFromTable(tabela) {
-  let results;
-  try {
-    [results] = await db.query(
-      `
-      SELECT COLUMN_NAME, DATA_TYPE
-      FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_NAME = ?
-      AND TABLE_SCHEMA = ?
-    `,
-      [tabela, schema]
-    );
-  } catch (e) {
-    throw new Error(
-      `[model tipagem] Erro ao consultar tipos de colunas da tabela '${tabela}', erro: ${e.message}`
-    );
-  }
-
-  if (!results || results.length === 0) {
-    throw new Error(
-      `[model tipagem] Nenhuma coluna encontrada para a tabela '${tabela}'`
-    );
-  }
-
-  const tipos = {};
-  results.forEach(({ COLUMN_NAME, DATA_TYPE }) => {
-    tipos[COLUMN_NAME] = mapearTipo(DATA_TYPE);
-  });
-
-  return tipos;
-}
-
-----------------------------
-colunsValidator.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\colunsValidator.js
-export default function colunsValidator(json_coluns, table_coluns) {
-  let isEqual = true;
-
-  const maxLen = Math.max(json_coluns.length, table_coluns.length);
-  for (let i = 0; i < maxLen; i++) {
-    const jsonCol = json_coluns[i];
-    const tableCol = table_coluns[i];
-
-    if (jsonCol !== tableCol) {
-      isEqual = false;
-      return `❌ Diferença na posição ${i}:
-  → JSON:   '${jsonCol}'
-  → TABELA: '${tableCol}'`;
-    }
-  }
-
-  return ("Colunas iguais? ➝", isEqual);
-}
-
-----------------------------
-createHashByData.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\createHashByData.js
-import crypto from "crypto";
-
-export default function createHashByData(dataJson) {
-  try {
-    const hash = crypto
-      .createHash("sha256")
-      .update(JSON.stringify(dataJson))
-      .digest("hex");
-    return hash;
-  } catch (e) {
-   throw new Error(`Houve um erro ao gerar o hash do arquivo, erro: ${e.message}`);
-  } 
-}
-
-----------------------------
-createJsonController.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\createJsonController.js
-import { destinoByFilePath } from "../controller/createDataController.js";
-import { addAviso, addInfo } from "../middleware/errorHandler.js";
-import { getTiposFromTable } from "../model/tableModel.js";
-import normalizar from "./normalizar.js";
-import sanitizeRow from "./sanitizeValue.js";
-import fs from "fs/promises";
-import iconv from "iconv-lite";
-import Papa from "papaparse";
-
-function detectarColunasDuplicadas(headers, contexto) {
-  const set = new Set();
-  const duplicadas = [];
-
-  for (const col of headers) {
-    if (set.has(col)) duplicadas.push(col);
-    set.add(col);
-  }
-
-  if (duplicadas.length > 0) {
-    addAviso(
-      `[Json] - Colunas duplicadas detectadas e renomeadas: ${duplicadas.join(
-        ", "
-      )}`,
-      contexto
-    );
-  }
-}
-
-function logarErrosDoParse(errors, contexto) {
-  if (!errors.length) return;
-
-  const resumo = [
-    `${errors.length} [Json] erros detectados durante o parsing do CSV:`,
-  ];
-
-  errors.slice(0, 5).forEach((err) => {
-    resumo.push(`[Json] → Linha ${err.row ?? "?"}: ${err.message}`);
-  });
-
-  if (errors.length > 5) {
-    resumo.push(
-      `[Json] → ...e mais ${errors.length - 5} erro(s) não exibido(s).`
-    );
-  }
-
-  addAviso(resumo.join("\n"), contexto);
-}
-
-function limparCamposExtras(data) {
-  return data.map((linha) => {
-    if ("__parsed_extra" in linha) delete linha.__parsed_extra;
-    return linha;
-  });
-}
-
-function filtrarLinhasValidas(data) {
-  return data.filter((linha) => {
-    const extras =
-      Array.isArray(linha.__parsed_extra) && linha.__parsed_extra.length > 0;
-    const preenchidos = Object.values(linha).filter(
-      (v) => typeof v === "string" && v.trim() !== ""
-    ).length;
-    return preenchidos >= 3 && !extras;
-  });
-}
-
-function normalizarCabecalhosEValores(linha, contexto) {
-  const novaLinha = {};
-  const nomesUsados = {};
-
-  Object.entries(linha).forEach(([chave, valor], i) => {
-    let nomeFinal = chave?.trim() || `unnamed_${i + 1}`;
-
-    if (!chave?.trim()) {
-      addAviso(
-        `[parser CSV] Coluna sem nome detectada na posição ${i}. Nomeada como '${nomeFinal}'`,
-        contexto
-      );
-    }
-
-    if (nomesUsados[nomeFinal]) {
-      nomesUsados[nomeFinal]++;
-      nomeFinal = `${nomeFinal}_${nomesUsados[nomeFinal]}`;
-    } else {
-      nomesUsados[nomeFinal] = 1;
-    }
-
-    novaLinha[nomeFinal] = valor;
-  });
-
-  return novaLinha;
-}
-
-// =================== Função principal ===================
-
-export default async function createJsonController(filePath) {
-  const contexto = filePath;
-  const destino = destinoByFilePath(filePath);
-  const tabelaName = destino.tabela_destino;
-
-  let buffer;
-  try {
-    buffer = await fs.readFile(filePath);
-  } catch (e) {
-    throw new Error(`[Json] - erro ao ler o arquivo, erro: ${e.message}`);
-  }
-
-  const data = iconv.decode(buffer, "latin1");
-  const firstLine = data.split(/\r?\n/)[0];
-
-  if (!(firstLine.includes(",") || firstLine.includes(";"))) {
-    throw new Error(
-      `[Json]  Arquivo ignorado: ${filePath} - Não é um CSV válido`
-    );
-  }
-
-  const delimiter = firstLine.includes(";") ? ";" : ",";
-  const parsed = Papa.parse(data, {
-    header: true,
-    delimiter,
-    skipEmptyLines: true,
-    transformHeader: (h) => {
-      const header = h?.trim?.() ?? "";
-      return header === "" ? "unnamed" : normalizar(header);
-    },
-    transform: (value) => value.trim(),
-  });
-
-  detectarColunasDuplicadas(parsed.meta?.fields, contexto);
-  logarErrosDoParse(parsed.errors, contexto);
-
-  const linhasCorrigidas = limparCamposExtras(parsed.data);
-  const linhasValidas = filtrarLinhasValidas(linhasCorrigidas);
-
-  if (linhasValidas.length === 0) {
-    addAviso(
-      `[Json] - Nenhuma linha válida encontrada no arquivo ${filePath}.`,
-      contexto
-    );
-  }
-
-  let tiposEsperados;
-  try {
-    tiposEsperados = await getTiposFromTable(tabelaName);
-  } catch (e) {
-    throw new Error(
-      `[Json] - erro ao gerar os tipos esperados, [erro: ${e.message}]`
-    );
-  }
-
-  const dataSanitized = linhasValidas
-    .map((linha) => normalizarCabecalhosEValores(linha, contexto))
-    .map((linha) => sanitizeRow(linha, tiposEsperados));
-
-  addInfo(
-    `[Json] - ${linhasValidas.length} linhas válidas extraídas de ${filePath}`,
-    contexto
-  );
-  return dataSanitized;
-}
-
-----------------------------
-isCsvFile.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\isCsvFile.js
-import path from "path"
-
-export default function isCsvFile(filePath) {
-  const fileName = path.basename(filePath).toLowerCase();
-
-  const isValidExtension =
-    fileName.endsWith(".csv") || fileName.endsWith(".csv.inf");
-  const isExcluded = fileName.startsWith("~$") || fileName.endsWith(".tmp");
-
-  return isValidExtension && !isExcluded;
-}
-
-----------------------------
-mapearTipos.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\mapearTipos.js
-export default function mapearTipo(tipoSql) {
-  const tipo = tipoSql?.toLowerCase?.();
-
-  switch (true) {
-    case ["int", "bigint", "smallint", "mediumint", "tinyint"].includes(tipo):
-      return "int";
-
-    case ["decimal", "float", "double", "numeric"].includes(tipo):
-      return "decimal";
-
-    case ["date"].includes(tipo):
-      return "date";
-
-    case ["datetime", "timestamp"].includes(tipo):
-      return "datetime";
-
-    case ["time"].includes(tipo):
-      return "time";
-
-    default:
-      return "string";
-  }
-}
-
-----------------------------
-normalizar.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\normalizar.js
-export default function normalizar(nome) {
-  return nome
-    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // remove acentos
-    .replace(/%/g, "perc") // % → perc
-    .replace(/\s*\.\s*/g, "_") // ponto entre palavras → _
-    .replace(/\./g, "") // outros pontos → remove
-    .replace(/[-\\/]/g, "_")
-    .replace(/\s+/g, "_") // espaço → _
-    .replace(/[^a-zA-Z0-9_]/g, "") // remove outros símbolos
-    .replace(/_+/g, "_") // evita múltiplos __
-    .replace(/^_+|_+$/g, "") // remove _ início/fim
-    .toLowerCase();
-}
-
-export function normalizarValores(nome) {
-  return nome
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // remove acentos
-    .replace(/%/g, "perc") // % → perc
-    .replace(/\s*\.\s*/g, "_") // ponto entre palavras → _
-    .replace(/\./g, "") // outros pontos → remove
-    .replace(/\s+/g, "_") // espaço → _
-    .replace(/[^a-zA-Z0-9_]/g, "") // remove outros símbolos
-    .replace(/_+/g, "_") // evita múltiplos __
-    .replace(/^_+|_+$/g, "") // remove _ início/fim
-    .toLowerCase();
-}
-
-----------------------------
-progressBar.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\progressBar.js
-import cliProgress from "cli-progress";
-
-const multiBar = new cliProgress.MultiBar(
-  {
-    clearOnComplete: false,
-    hideCursor: true,
-    format:
-      "[{filename}] → [{bar}] {percentage}% | [{value}/{total}  {tabela}]",
-    barCompleteChar: "\u2588",
-    barIncompleteChar: "\u2591",
-    autopadding: false,
-    stopOnComplete: false,
-    fps: 5
-  },
-  cliProgress.Presets.shades_grey
-);
-
-const barras = new Map();
-let barrasAtivas = 0;
-
-/**
- * Cria uma barra de progresso identificada por ID único
- */
-export function iniciarBarra(id, total, filename, tabela) {
-  if (barras.has(id)) return;
-
-  const bar = multiBar.create(total, 0, {
-    filename,
-    tabela,
-  });
-
-  barras.set(id, bar);
-  barrasAtivas++;
-}
-
-/**
- * Incrementa o valor da barra de progresso
- */
-export function atualizarBarra(id) {
-  const bar = barras.get(id);
-  if (bar) {
-    bar.increment();
-  }
-}
-
-/**
- * Finaliza e remove a barra do controle
- */
-export async function finalizarBarra(id) {
-  const bar = barras.get(id);
-  if (bar) {
-    if (bar.value < bar.getTotal()) {
-      bar.update(bar.value); // força refresh da linha com valor real
-      await new Promise((r) => setTimeout(r, 20)); // dá tempo de atualizar
-    }
-    bar.stop();
-    barras.delete(id);
-    barrasAtivas--;
-  }
-
-  if (barras.size === 0) {
-    multiBar.stop();
-  }
-}
-
-/**
- * Verifica se há alguma barra em execução
- */
-export function isBarraAtiva() {
-  return barrasAtivas > 0;
-}
-
-/**
- * Loga uma mensagem fora do bloco da barra
- */
-export function logBarra(mensagem) {
-  multiBar.log(mensagem);
-}
-
-export function finalizarTodasAsBarras() {
-  for (const id of barras.keys()) {
-    finalizarBarra(id);
-  }
-}
-
-/**
- * Log inteligente: se barra ativa, usa multiBar.log, senão console.log
- */
-//export function safeLog(mensagem) {
-//  if (isBarraAtiva()) {
-//    logBarra(mensagem);
-//  } else {
-//    console.log(mensagem);
-//  }
-//}
-
-----------------------------
-sanitizeValue.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\sanitizeValue.js
-export function sanitizeValue(value, tipoEsperado) {
-  if (value === "" || value === null || value === undefined) return null;
-
-  switch (tipoEsperado) {
-    case "int": {
-      const clean = String(value).replace(/[^\d-]/g, "");
-      const parsed = parseInt(clean, 10);
-      return isNaN(parsed) ? null : parsed;
-    }
-
-    case "decimal": {
-      let raw = String(value)
-        .trim()
-        .replace(/[^\d.,-]/g, "");
-
-      if (raw.includes(",")) {
-        raw = raw.replace(/\./g, ""); // remove separador de milhar
-        raw = raw.replace(",", "."); // troca vírgula por ponto
-      } else {
-        raw = raw;
-      }
-
-      const parsed = parseFloat(raw);
-      return isNaN(parsed) ? null : parsed;
-    }
-
-    case "date": {
-      // Aceita DD/MM/YYYY, YYYY-MM-DD, DDMMYYYY, DMMYYYY, MMYYYY
-      const str = String(value).trim();
-      let match;
-      if ((match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/))) {
-        // DD/MM/YYYY
-        const [_, d, m, y] = match;
-        return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
-      }
-      if ((match = str.match(/^(\d{4})-(\d{2})-(\d{2})$/))) {
-        // YYYY-MM-DD
-        return str;
-      }
-      if ((match = str.match(/^(\d{2})(\d{2})(\d{4})$/))) {
-        // DDMMYYYY
-        const [_, d, m, y] = match;
-        return `${y}-${m}-${d}`;
-      }
-      if ((match = str.match(/^(\d{1})(\d{2})(\d{4})$/))) {
-        // DMMYYYY
-        const [_, d, m, y] = match;
-        return `${y}-${m}-${d.padStart(2, "0")}`;
-      }
-      return null;
-    }
-    case "datetime": {
-      const str = String(value).replace(/\s+/g, " ").trim();
-      let match;
-      if (
-        (match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})[ T](\d{1,2}):(\d{2})$/))
-      ) {
-        const [_, d, m, y, h, min] = match;
-        return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")} ${h.padStart(
-          2,
-          "0"
-        )}:${min}:00`;
-      }
-
-      // 1. DD/MM/YYYY HH:mm:ss
-      if (
-        (match = str.match(
-          /^(\d{2})\/(\d{2})\/(\d{4})[ T](\d{1,2}):(\d{2}):(\d{2})$/
-        ))
-      ) {
-        const [_, d, m, y, h, min, s] = match;
-        return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")} ${h.padStart(
-          2,
-          "0"
-        )}:${min}:${s}`;
-      }
-
-      // 2. YYYY-MM-DD HH:mm:ss
-      if (
-        (match = str.match(
-          /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/
-        ))
-      ) {
-        return str.replace("T", " ");
-      }
-
-      // 3. DD/MM/YYYY
-      if ((match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/))) {
-        const [_, d, m, y] = match;
-        return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")} 00:00:00`;
-      }
-
-      // 4. YYYY-MM-DD
-      if ((match = str.match(/^(\d{4})-(\d{2})-(\d{2})$/))) {
-        return `${match[1]}-${match[2]}-${match[3]} 00:00:00`;
-      }
-
-      // 5. YYYYMMDDHHmmss
-      if ((match = str.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/))) {
-        const [_, y, m, d, h, min, s] = match;
-        return `${y}-${m}-${d} ${h}:${min}:${s}`;
-      }
-
-      // 6. DDMMYYYY HHmmss
-      if (
-        (match = str.match(/^(\d{2})(\d{2})(\d{4}) (\d{2})(\d{2})(\d{2})$/))
-      ) {
-        const [_, d, m, y, h, min, s] = match;
-        return `${y}-${m}-${d} ${h}:${min}:${s}`;
-      }
-
-      if (
-        (match = str.match(
-          /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})\.(\d{3})(Z)?$/
-        ))
-      ) {
-        const [_, y, m, d, h, min, s, ms] = match;
-        return `${y}-${m}-${d} ${h}:${min}:${s}.${ms}`;
-      }
-
-      return null;
-    }
-
-    case "time": {
-      const str = String(value).trim();
-      const match = str.match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/);
-      if (!match) return null;
-
-      // Padroniza sempre como string HHH:MM:SS (mesmo se vier HHH:MM)
-      const [_, h, m, s] = match.map((v) =>
-        v !== undefined ? parseInt(v, 10) : 0
-      );
-      return `${String(h).padStart(2, "0")}:${String(m).padStart(
-        2,
-        "0"
-      )}:${String(s).padStart(2, "0")}`;
-    }
-
-    case "string":
-    default:
-      return value;
-  }
-}
-
-export default function sanitizeRow(row, tipos) {
-  const novaLinha = {};
-  for (const campo in row) {
-    const tipo = tipos[campo] || "string";
-    novaLinha[campo] = sanitizeValue(row[campo], tipo);
-  }
-  return novaLinha;
-}
-
-----------------------------
-tiparLinha.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\tiparLinha.js
-import normalizar from "./normalizar.js";
-
-export default function tiparLinha(linha, schema) {
-  const novaLinha = {};
-  for (const col in schema) {
-    const valor = linha[col] ?? linha[normalizar(col)] ?? null; // só tenta normalizar se o valor não der certo
-    const tipo = schema[col];
-
-    switch (tipo) {
-      case "int":
-        const intVal = parseInt(valor);
-        novaLinha[col] = isNaN(intVal) ? null : intVal;
-        break;
-      case "float":
-      case "decimal":
-        const floatVal = parseFloat(valor?.toString().replace(",", "."));
-        novaLinha[col] = isNaN(floatVal) ? null : floatVal;
-        break;
-      case "date": {
-        let parsed = null;
-        if (typeof valor === "string") {
-          // Aceita YYYY-MM-DD ou DD/MM/YYYY
-          if (valor.includes("/")) {
-            const [dia, mes, ano] = valor.split("/");
-            parsed = `${ano}-${mes.padStart(2, "0")}-${dia.padStart(2, "0")}`;
-          } else {
-            parsed = valor;
-          }
-        }
-        novaLinha[col] = parsed || null;
-        break;
-      }
-      case "datetime": {
-        let parsed = null;
-        if (typeof valor === "string") {
-          const partes = valor.trim().replace(/\s+/, " ").split(" ");
-          if (partes.length === 2) {
-            const [data, hora] = partes;
-            if (data.includes("/")) {
-              const [dia, mes, ano] = data.split("/");
-              parsed = `${ano}-${mes.padStart(2, "0")}-${dia.padStart(
-                2,
-                "0"
-              )} ${hora}`;
-            } else if (data.includes("-")) {
-              parsed = `${data} ${hora}`;
-            }
-          }
-        }
-        novaLinha[col] = parsed || null;
-        break;
-      }
-      case "time":
-        if (typeof valor === "string") {
-          novaLinha[col] = valor.match(/^\d{1,3}:\d{2}(:\d{2})?$/)
-            ? valor
-            : null;
-        } else if (typeof valor === "number") {
-          novaLinha[col] = valor; // já está em minutos, mantem
-        } else {
-          novaLinha[col] = null;
-        }
-        break;
-      default:
-        novaLinha[col] = valor || null;
-    }
-  }
-  return novaLinha;
-}
-
-
-----------------------------
-package.json --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\package.json
-{
-  "name": "database_monitoring",
-  "version": "1.0.0",
-  "main": "index.js",
-  "type": "module",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon src/server.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Luskahz/Database_monitoring.git"
-  },
-  "keywords": [
-    "monitoramento",
-    "bancoDeDados",
-    "Database",
-    "monitoring",
-    "agent_database"
-  ],
-  "author": "Lucas Alves",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Luskahz/Database_monitoring/issues"
-  },
-  "homepage": "https://github.com/Luskahz/Database_monitoring#readme",
-  "description": "",
-  "dependencies": {
-    "chokidar": "^4.0.3",
-    "cli-progress": "^3.12.0",
-    "express": "^5.1.0",
-    "iconv-lite": "^0.6.3",
-    "mysql2": "^3.14.1",
-    "p-limit": "^6.2.0",
-    "papaparse": "^5.5.3"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.10"
-  }
-}
-
-----------------------------
-db.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\config\db.js
-// models/database.js
-import mysql from "mysql2/promise";
-
-const schema = "diretorio";
-
-const connection = await mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "Diretorio",
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
-
-export { connection as default, schema };
-
-----------------------------
-dumb.sql --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\config\dumb.sql
-CREATE DATABASE IF NOT EXISTS diretorio;
-
-USE diretorio;
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_11_40` (
-    mapa INT not null,
-    veiculo INT,
-    placa VARCHAR(20),
-    dt_entrega DATE,
-    entregas INT,
-    hora_emis TIME(0),
-    hora_carreg TIME(0),
-    hora_saida TIME(0),
-    hora_chegada TIME(0),
-    hora_p_fis TIME(0),
-    hora_p_fin TIME(0),
-    tempo_rota TIME(2),
-    tempo_p_fis TIME(2),
-    tempo_p_fin TIME(2),
-    tempo_interno TIME(2),
-    km_inicial INT,
-    km_final INT,
-    km_rodado INT
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `relatorio_separacao_wms` (
-    armazem INT,
-    mapa INT,
-    palete VARCHAR(25),
-    entrega DATE,
-    inicio_palete DATETIME,
-    fim_palete DATETIME,
-    execucao_palete_em_segundos INT,
-    usuario_finalizou_palete VARCHAR(25),
-    finalizado_cfe_indicacao VARCHAR(25),
-    endereco_destino VARCHAR(25),
-    rtls_hab VARCHAR(10),
-    rtls_endereco_destino VARCHAR(10),
-    rtls_itens_ok VARCHAR(10),
-    peso_do_palete_ok VARCHAR(10),
-    peso_palete_esperado INT,
-    peso_palete_real VARCHAR(25),
-    balanca VARCHAR(25),
-    codigo_do_item INT,
-    descricao_do_item VARCHAR(25),
-    tipo VARCHAR(25),
-    peso_esperado DECIMAL(10, 2),
-    peso_real DECIMAL(10, 2),
-    enderecos_sugeridos VARCHAR(25),
-    endereco_selecionado VARCHAR(25),
-    quantidade INT,
-    unidade_medida VARCHAR(20),
-    chapatex INT,
-    papelao INT,
-    sequencia INT,
-    usuario_separacao VARCHAR(25),
-    inicio_separacao_item DATETIME,
-    fim_separacao_item DATETIME,
-    esforco_segundos INT,
-    rtls_habilitado_item VARCHAR(10),
-    utilizou_rtls_item VARCHAR(10),
-    peso_ok_item VARCHAR(25),
-    item_conferido VARCHAR(10),
-    historico_de_registros VARCHAR(25),
-    palete_conferido VARCHAR(10),
-    sorteado_para_blitz VARCHAR(10),
-    regras_de_blitz_classificadas VARCHAR(25),
-    utilizou_percentual_minimo VARCHAR(25),
-    palete_iniciado_com_produto VARCHAR(10)
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_01_46_06` (
-    id_pedido bigint,
-    unb bigint,
-    cliente bigint,
-    razao_social VARCHAR(25),
-    data_criacao varchar(25),
-    hora_criacao time,
-    data_entrega date,
-    data_ultima_modificacao datetime,
-    data_exclusao_cancelamento datetime,
-    vendedor int,
-    condicao_pagamento int,
-    descricao_condicao_pagamento VARCHAR(25),
-    indicador_fora_de_rota VARCHAR(10),
-    status_exportacao_p VARCHAR(25),
-    etapa_pedido VARCHAR(25),
-    sem_estoque VARCHAR(25),
-    taxa_fora_rota decimal(10, 2),
-    codigo_pedido_promax varchar(25),
-    data_geracao_arquivo_p DATETIME,
-    status_critica VARCHAR(25),
-    tipo_solicitacao VARCHAR(25),
-    codigo_critica varchar(25),
-    criticas_magento varchar(25),
-    alcada_original VARCHAR(25),
-    alcada_rejeicao VARCHAR(25),
-    usuario_aprovador_1 VARCHAR(25),
-    usuario_aprovador_2 VARCHAR(25),
-    nota_fiscal VARCHAR(25),
-    status_nota_fiscal VARCHAR(25),
-    desconto_total DECIMAL(10, 2),
-    valor_total_pedido decimal(10, 2),
-    valor_total_nota_fiscal decimal(10, 2),
-    origem_pedido VARCHAR(25),
-    codigo_incremento_prazo varchar(25),
-    motivo_cancelamento VARCHAR(100),
-    taxa_adf_utilizada decimal(10, 2),
-    taxa_adf_escalonada decimal(10, 2),
-    valor_pedido_minimo decimal(10, 2),
-    indicador_entrega_alternativa VARCHAR(25),
-    importado_pelo_hercules VARCHAR(25)
-  );
 
 CREATE TABLE -- colunas data: 1
   IF NOT EXISTS `03_18_05` (
@@ -3887,7 +457,7 @@ CREATE TABLE -- colunas data: 1
     descricao_condicao_de_pagamento VARCHAR(25),
     quantidade INT,
     unid_venda VARCHAR(10)
-  );
+  ) ROW_FORMAT = DYNAMIC;
 
 CREATE TABLE -- colunas data: 1
   IF NOT EXISTS `03_02_24` (
@@ -4225,7 +795,7 @@ CREATE TABLE -- colunas data: 1
     bees_created_date VARCHAR(25),
     bees_last_reason_id_waiting_modulation VARCHAR(25),
     bees_last_reason_id_waiting_rescheduled VARCHAR(25)
-  );
+  ) ROW_FORMAT = DYNAMIC;
 
 CREATE TABLE -- colunas data: 1
   IF NOT EXISTS bees_deliver_dia_novo (
@@ -4276,56 +846,172 @@ CREATE TABLE -- colunas data: 1
     bees_created_date VARCHAR(25),
     bees_last_reason_id_waiting_modulation VARCHAR(25),
     bees_last_reason_id_waiting_rescheduled VARCHAR(25)
-  );
+  ) ROW_FORMAT = DYNAMIC;
 
 CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS bees_deliver_mes_novo ();
+  IF NOT EXISTS bees_deliver_mes_novo (
+    chegou_em datetime,
+    quantidade_de_assistentes int,
+    chave_mapa varchar(25),
+    cod_cliente int,
+    nome_cliente varchar(100),
+    id_motorista varchar(25),
+    hora_estimada_chegada datetime,
+    hora_estimada_partida datetime,
+    finalizada_em datetime,
+    ultimo_motivo_reagendamento varchar(25),
+    ultimo_motivo_tratamento_cme varchar(25),
+    ultimo_carimbo_de_data_no_caminho datetime,
+    ultimo_carimbo_de_data_remarcado datetime,
+    pedido_otimizado int,
+    pedido_original int,
+    latitude_prevista decimal(9, 6),
+    longitude_prevista decimal(9, 6),
+    latitude_real decimal(9, 6),
+    longitude_real decimal(9, 6),
+    dif_distancia_km decimal(10, 2),
+    status varchar(25),
+    valor_total_entregue decimal(10, 2),
+    vol_total_entregue varchar(50),
+    valor_total_recusado decimal(10, 2),
+    vol_total_recusado varchar(50),
+    valor_total decimal(10, 2),
+    peso_total_kg varchar(50),
+    tour_date date,
+    tour_display_id int,
+    tour_display_id_original int,
+    contagem_de_trip_display_id int,
+    trip_display_id int,
+    carimbo_de_data_final_da_viagem datetime,
+    carimbo_de_data_Inicio_da_viagem datetime,
+    placa varchar(10),
+    ordem_visita int,
+    sum_vol_hectolitro varchar(50),
+    vol_caixas varchar(50),
+    dentro_do_raio varchar(10),
+    dif_partida_chegada int,
+    dif_finalizado_chegada int,
+    aderência_ao_foxtrot varchar(10),
+    comentários_monitoramento varchar(200),
+    vehicle_external_id varchar(25),
+    cod_revenda varchar(25)
+  ) ROW_FORMAT = DYNAMIC;
 
 CREATE TABLE -- colunas data: 1
   IF NOT EXISTS bees_deliver_mes_antigo (
-    arrived_at,
-    assistants_quantity,
-    chave_Mapa,
-    cod_cliente,
-    driver_external_id,
-    estimated_time_arrival,
-    estimated_time_departure,
-    finished_at,
-    last_reason_rescheduled,
-    last_reason_waiting_modulation,
-    last_timestamp_on_the_way,
-    last_timestamp_rescheduled,
-    soma_de_optimized_order,
-    soma_de_original_order,
-    poc_external_id,
-    soma_de_poc_latitude,
-    soma_de_poc_longitude,
-    poc_name,
-    status,
-    total_delivered_value,
-    total_delivered_vol,
-    total_refused_value,
-    total_refused_vol,
-    total_value,
-    total_weight_kg,
-    tour_date,
-    tour_display_id,
-    tour_display_id_original,
-    contagem_de_tour_trip_ID,
-    soma_de_trip_display_id,
-    trip_end_timestamp,
-    trip_start_timestamp,
-    vehicle_license_plate,
-    visit_order,
-    volume_hectoliters_sum,
-    volume_packages,
-    within_radius,
-    diff_departure_arrival,
-    diff_finished_arrived,
-    foxtrot_adherence
+    arrived_at DATETIME,
+    assistants_quantity int,
+    chave_Mapa varchar(25),
+    cod_cliente int,
+    driver_external_id varchar(25),
+    estimated_time_arrival DATETIME,
+    estimated_time_departure datetime,
+    finished_at datetime,
+    last_reason_rescheduled datetime,
+    last_reason_waiting_modulation varchar(50),
+    last_timestamp_on_the_way varchar(50),
+    last_timestamp_rescheduled datetime,
+    soma_de_optimized_order DATETIME,
+    soma_de_original_order int,
+    poc_external_id int,
+    soma_de_poc_latitude decimal(9, 6),
+    soma_de_poc_longitude decimal(9, 6),
+    poc_name varchar(50),
+    status varchar(25),
+    total_delivered_value int,
+    total_delivered_vol varchar(50),
+    total_refused_value int,
+    total_refused_vol varchar(50),
+    total_value int,
+    total_weight_kg int,
+    tour_date date,
+    tour_display_id int,
+    tour_display_id_original int,
+    contagem_de_tour_trip_ID int,
+    soma_de_trip_display_id int,
+    trip_end_timestamp datetime,
+    trip_start_timestamp datetime,
+    vehicle_license_plate varchar(10),
+    visit_order int,
+    volume_hectoliters_sum int,
+    volume_packages int,
+    within_radius varchar(10),
+    diff_departure_arrival int,
+    diff_finished_arrived int,
+    foxtrot_adherence varchar(10)
+  ) ROW_FORMAT = DYNAMIC;
 
+CREATE TABLE
+  IF NOT EXISTS aderencia_tracking_mes (
+    classe varchar(25),
+    data date,
+    mapa int,
+    placa varchar(10),
+    cod_cliente int,
+    seq_real int,
+    seq_plan int,
+    inicio_rota DATETIME,
+    horario_matinal DATETIME,
+    saida_cdd datetime,
+    chegada_ao_pdv datetime,
+    tempo_prev_retorno time,
+    tempo_retorno time,
+    dist_prev_retorno decimal(10, 4),
+    dist_perc_retorno decimal(10, 3),
+    inicio_entrega DATETIME,
+    fim_entrega DATETIME,
+    fim_rota DATETIME,
+    entrada_cdd DATETIME,
+    caixas_carregadas DECIMAL(10, 2),
+    caixas_devolvidas decimal(10, 2),
+    repasse int,
+    tempo_de_entrega time,
+    tempo_descarga time,
+    tempo_espera time,
+    tempo_almoco time,
+    tempo_total_de_rota time,
+    disp_apont_cadastrado decimal(10, 3),
+    lat_entrega decimal(10, 7),
+    lon_entrega decimal(10, 7),
+    unidade_negocio int,
+    transportadora varchar(50),
+    lat_cliente_apontamento decimal(10, 7),
+    lon_cliente_apontamento decimal(10, 7),
+    lat_atual_cliente decimal(10, 7),
+    lon_atual_cliente decimal(10, 7),
+    distancia_prev decimal(10, 3),
+    tempo_deslocamento TIME,
+    vel_media_kmh int,
+    distancia_perc_apontamento decimal(10, 3),
+    aderencia_sequencia_entrega varchar(10),
+    aderencia_janela_entrega varchar(10),
+    pdv_lacrado varchar(10),
+    codigo_transportadora int,
+    hodometro_ao_sair_do_deposito int,
+    hodometro_ao_voltar_ao_deposito int,
+    acessou_raio_pdv varchar(10),
+    freteiro varchar(10),
+    segmento varchar(10),
+    avaliacao_do_pdv int,
+    observacao_da_avaliacao_do_pdv varchar(50),
+    hodometro_no_carregamento int,
+    aderente_foxtrot varchar(50),
+    horario_previsto_chegada datetime,
+    horario_previsto_saida DATETIME,
+    tempo_previsto TIME,
+    distancia_prevista decimal(10, 3),
+    ocorrencia varchar(25),
+    saida_do_raio datetime,
+    tempo_no_pdv time,
+    grupo_de_clientes varchar(25),
+    geo varchar(25),
+    frota varchar(25),
+    data_fim_entrega datetime,
+    partida_prevista_deposito datetime,
+    numero_roadshow varchar(25),
+    sequencia_sugerida int,
+    seq_real_click int
   );
-
 CREATE TABLE -- colunas data: 0 -- verificar
   IF NOT EXISTS `01_20_11` (
     grupo_de_perfil int,
@@ -4482,7 +1168,7 @@ import createdHandler from "./controller/Handlers/createdHandler.js";
 import deletedHandler from "./controller/Handlers/deletedHandler.js";
 import { addErro } from "./middleware/errorHandler.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const limit = pLimit(5);
+const limit = pLimit(12);
 
 export async function startMonitoring() {
   const monitorPath = path.resolve(
@@ -4492,7 +1178,7 @@ export async function startMonitoring() {
 
   const watcher = chokidar.watch(monitorPath, {
     persistent: true,
-    ignoreInitial: false,
+    ignoreInitial: true,
     usePolling: true,
     interval: 500,
     depth: 10,
@@ -4564,41 +1250,67 @@ app.listen(port, () => {
 });
 
 ----------------------------
-cacheHash_03_08_05.jsonl --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_03_08_05.jsonl
-{"tabela_destino":"03_08_05","nome_arquivo":"12.csv","ano":2025,"mes":"julho","dia":"12","coluna_data":"data","data_upload":"2025-07-31T20:33:56.677Z","hash_arquivo":"96c4997031ec2c808202e75df6e0d5bdfb3f3436a0e983b061d9445450be51b2","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\julho\\12.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_julho_12_12.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"12.csv","ano":2025,"mes":"maio","dia":"12","coluna_data":"data","data_upload":"2025-07-31T20:57:09.950Z","hash_arquivo":"5cc59967cd3e0c0826713c558aeae9e7ce9587a82f5d23031f0fc3b81f046286","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\12.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_12_12.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"13.csv","ano":2025,"mes":"maio","dia":"13","coluna_data":"data","data_upload":"2025-07-31T20:57:09.949Z","hash_arquivo":"9ac13046ede14a794c84478883ecd6876b25859e1ce6456977bd17137f5fd998","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\13.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_13_13.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"10.csv","ano":2025,"mes":"maio","dia":"10","coluna_data":"data","data_upload":"2025-07-31T20:57:09.953Z","hash_arquivo":"1bb4559a19d222cf38446dbbebae02466314d0df8a5d8f06306ef5072039ddac","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\10.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_10_10.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"14.csv","ano":2025,"mes":"maio","dia":"14","coluna_data":"data","data_upload":"2025-07-31T20:57:09.956Z","hash_arquivo":"4f4cd555405147ee03f9d9327a029b7dc1e0bfaf5f73edf33b6acfa6d2e3a2d9","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\14.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_14_14.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"1.csv","ano":2025,"mes":"maio","dia":"1","coluna_data":"data","data_upload":"2025-07-31T20:57:09.952Z","hash_arquivo":"8a3eb8ed245c39e334e620c287bd55feecbe717a4b1404b7f9981704e56f381c","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\1.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_1_1.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"16.csv","ano":2025,"mes":"maio","dia":"16","coluna_data":"data","data_upload":"2025-07-31T20:57:10.235Z","hash_arquivo":"c77346587590a9a4472829efcf598ff724fc537952baeaa4eb059497c0c19983","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\16.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_16_16.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"19.csv","ano":2025,"mes":"maio","dia":"19","coluna_data":"data","data_upload":"2025-07-31T20:57:10.307Z","hash_arquivo":"3567c7e534a7b622315bbf7b259fcb83a3aedb04494c998ffb9b03fe34da0b0a","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\19.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_19_19.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"17.csv","ano":2025,"mes":"maio","dia":"17","coluna_data":"data","data_upload":"2025-07-31T20:57:10.247Z","hash_arquivo":"a83dca54ee438fa127799dc96e794d427dabcee9e786b167bcf4eb2c5cb7b84c","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\17.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_17_17.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"15.csv","ano":2025,"mes":"maio","dia":"15","coluna_data":"data","data_upload":"2025-07-31T20:57:10.231Z","hash_arquivo":"e051000e2d17e3b098bb4cd9cb3829c994e85fe72a4ab06dd4ad84c7e2eaa15c","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\15.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_15_15.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"2.csv","ano":2025,"mes":"maio","dia":"2","coluna_data":"data","data_upload":"2025-07-31T20:57:10.316Z","hash_arquivo":"3b86900aa3b35a069299b3ebfb9aa1a7488dd533fe9a443ddb291295d14dba47","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\2.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_2_2.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"20.csv","ano":2025,"mes":"maio","dia":"20","coluna_data":"data","data_upload":"2025-07-31T20:57:10.470Z","hash_arquivo":"f88ce01396ba8e227e7d7dd8d0410d9ca884607a8b8cc3dfb64f595aa1bd9fdd","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\20.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_20_20.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"21.csv","ano":2025,"mes":"maio","dia":"21","coluna_data":"data","data_upload":"2025-07-31T20:57:10.495Z","hash_arquivo":"080df4b4729e88f231464293f40a970608b7ac4f4123ae66de8a5e8cca185a1c","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\21.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_21_21.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"22.csv","ano":2025,"mes":"maio","dia":"22","coluna_data":"data","data_upload":"2025-07-31T20:57:10.576Z","hash_arquivo":"c6bef30c2f4b28d8c2f7f4b59a6390ee1ad5b593a6b0e050de8ccc600358095b","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\22.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_22_22.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"26.csv","ano":2025,"mes":"maio","dia":"26","coluna_data":"data","data_upload":"2025-07-31T20:57:10.771Z","hash_arquivo":"bf821d79538840030d14bdfa0621f88d783cc4c55c75db222ac53b377c2cbda7","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\26.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_26_26.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"24.csv","ano":2025,"mes":"maio","dia":"24","coluna_data":"data","data_upload":"2025-07-31T20:57:10.706Z","hash_arquivo":"13aa4a098b7c56b3d33cceeca03c8eca7225d284c6759601a5d8765d7c4cf597","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\24.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_24_24.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"23.csv","ano":2025,"mes":"maio","dia":"23","coluna_data":"data","data_upload":"2025-07-31T20:57:10.651Z","hash_arquivo":"424b0a57b9b757be554a5f32730e85ff7ecdf6e1b2225a0712dad26bbb437d81","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\23.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_23_23.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"27.csv","ano":2025,"mes":"maio","dia":"27","coluna_data":"data","data_upload":"2025-07-31T20:57:10.860Z","hash_arquivo":"1cb85fc19ff84f2b411b4f7364b4e56a7c2208a4ef8013943034341f117ccd69","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\27.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_27_27.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"3.csv","ano":2025,"mes":"maio","dia":"3","coluna_data":"data","data_upload":"2025-07-31T20:57:11.006Z","hash_arquivo":"49f1e6e9dffb77dfeb55dcbca552877b271e0228651ed98419ddca586dd5da57","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\3.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_3_3.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"29.csv","ano":2025,"mes":"maio","dia":"29","coluna_data":"data","data_upload":"2025-07-31T20:57:10.996Z","hash_arquivo":"00c5ba9069587a97d6ac2801b60f8c0536ce43d1bd5992c42896325d7e682a14","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\29.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_29_29.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"30.csv","ano":2025,"mes":"maio","dia":"30","coluna_data":"data","data_upload":"2025-07-31T20:57:11.019Z","hash_arquivo":"bec26c0f530edda705bf1d1e84de7e3d75b54373a118027ef5c743a9586ba7a9","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\30.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_30_30.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"28.csv","ano":2025,"mes":"maio","dia":"28","coluna_data":"data","data_upload":"2025-07-31T20:57:10.931Z","hash_arquivo":"a53d08643f65c723000ebc699791104c173874e444976802ded365ed6710c6ac","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\28.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_28_28.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"5.csv","ano":2025,"mes":"maio","dia":"5","coluna_data":"data","data_upload":"2025-07-31T20:57:11.411Z","hash_arquivo":"95d6cd531e197ccd148dc3a2de726cf8855801a124dcc50f471deb6409ffb944","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\5.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_5_5.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"6.csv","ano":2025,"mes":"maio","dia":"6","coluna_data":"data","data_upload":"2025-07-31T20:57:11.417Z","hash_arquivo":"295b0239815dadd656aa9163ed54a78f22d694c7ce9c0b4eca802e8a97cc7f8f","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\6.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_6_6.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"31.csv","ano":2025,"mes":"maio","dia":"31","coluna_data":"data","data_upload":"2025-07-31T20:57:11.168Z","hash_arquivo":"db98217ca1743329c6cc0a09043c6611b42c995383079539cacb75ecfd00ba46","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\31.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_31_31.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"7.csv","ano":2025,"mes":"maio","dia":"7","coluna_data":"data","data_upload":"2025-07-31T20:57:11.433Z","hash_arquivo":"092fc184ccf246f11c106a125c003f577a280ec940eae100e8920b8d12275097","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\7.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_7_7.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"8.csv","ano":2025,"mes":"maio","dia":"8","coluna_data":"data","data_upload":"2025-07-31T20:57:11.627Z","hash_arquivo":"4d7b498f411b37d66a963859c9bea0df971a1e6af972691fecc415d6d6fecf85","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\8.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_8_8.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"9.csv","ano":2025,"mes":"maio","dia":"9","coluna_data":"data","data_upload":"2025-07-31T20:57:11.635Z","hash_arquivo":"2ca5c986efc806d772895ef7bca4c5cc8ba46289a4fa12a9b51f57eb06bae1f9","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\maio\\9.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_maio_9_9.csv"}
-{"tabela_destino":"03_08_05","nome_arquivo":"5.csv","ano":2025,"mes":"junho","dia":"5","coluna_data":"data","data_upload":"2025-07-31T20:57:45.356Z","hash_arquivo":"8267d8338f995adb9c3e85f8a0c8158d2662c1f47b57bfdb6848fa9dfcf970b2","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_08_05\\2025\\junho\\5.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_08_05_2025_junho_5_5.csv"}
+cacheHash_01_11.jsonl --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_01_11.jsonl
+{"tabela_destino":"01_11","nome_arquivo":"julho.csv","ano":2025,"mes":"julho","dia":null,"coluna_data":null,"data_upload":"2025-08-01T20:07:25.356Z","hash_arquivo":"b890beff9446e4fad9e27675c5a22d54135f2afed2bb568a21b187dc3c8baed2","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\cadastros\\01_11\\2025\\julho.csv","sucesso":true,"mensagem_erro":null,"identificador":"01_11_2025_julho_julho.csv"}
+
+----------------------------
+cacheHash_03_01_46_06.jsonl --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_03_01_46_06.jsonl
+{"tabela_destino":"03_01_46_06","nome_arquivo":"jul.csv","ano":2025,"mes":"jul","dia":null,"coluna_data":"data_entrega","data_upload":"2025-08-01T19:58:08.387Z","hash_arquivo":"b43fecaaf7ec65944967af9dc06ae7f27b72b5d88a18dd0d7c219de8cb44ce42","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_01_46_06\\2025\\jul.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_01_46_06_2025_jul_jul.csv"}
+{"tabela_destino":"03_01_46_06","nome_arquivo":"jan.csv","ano":2025,"mes":"jan","dia":null,"coluna_data":"data_entrega","data_upload":"2025-08-01T19:58:09.015Z","hash_arquivo":"bb02534354bb489034f6be2af133fd90d1358afc2ad9af6bc9d5b10ea2c0dd58","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_01_46_06\\2025\\jan.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_01_46_06_2025_jan_jan.csv"}
+{"tabela_destino":"03_01_46_06","nome_arquivo":"jun.csv","ano":2025,"mes":"jun","dia":null,"coluna_data":"data_entrega","data_upload":"2025-08-01T19:58:10.196Z","hash_arquivo":"3300876026458ca373d110c9617bfa516eff3c6580698e1da81f10e6c672b35a","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_01_46_06\\2025\\jun.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_01_46_06_2025_jun_jun.csv"}
+{"tabela_destino":"03_01_46_06","nome_arquivo":"mai.csv","ano":2025,"mes":"mai","dia":null,"coluna_data":"data_entrega","data_upload":"2025-08-01T19:58:09.907Z","hash_arquivo":"3173ff2721ac86ba3c79780066554026e294fb4f37faeddd7d8dde1e630d7874","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_01_46_06\\2025\\mai.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_01_46_06_2025_mai_mai.csv"}
+{"tabela_destino":"03_01_46_06","nome_arquivo":"abr.csv","ano":2025,"mes":"abr","dia":null,"coluna_data":"data_entrega","data_upload":"2025-08-01T19:58:10.207Z","hash_arquivo":"9dfbedd2770482a2e354d2ca5b5d6ef672858cb5ffd33a4a12bef352f7e94093","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_01_46_06\\2025\\abr.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_01_46_06_2025_abr_abr.csv"}
+{"tabela_destino":"03_01_46_06","nome_arquivo":"mar.csv","ano":2025,"mes":"mar","dia":null,"coluna_data":"data_entrega","data_upload":"2025-08-01T19:58:10.210Z","hash_arquivo":"3b60caa1db7a5e744d75aad86b8e6143b88cf71b09faca8d52d1e376dc99f55e","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_01_46_06\\2025\\mar.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_01_46_06_2025_mar_mar.csv"}
+{"tabela_destino":"03_01_46_06","nome_arquivo":"fev.csv","ano":2025,"mes":"fev","dia":null,"coluna_data":"data_entrega","data_upload":"2025-08-01T19:58:10.197Z","hash_arquivo":"813a633b69c7cf8335dfbf85cc8b8dba8e1dc41d42648170e425d0627ecba754","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_01_46_06\\2025\\fev.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_01_46_06_2025_fev_fev.csv"}
 
 ----------------------------
 cacheHash_03_11_40.jsonl --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_03_11_40.jsonl
 {"tabela_destino":"03_11_40","nome_arquivo":"julho.csv","ano":2025,"mes":"julho","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-07-31T19:11:36.684Z","hash_arquivo":"451c1a2482f994dfd63366d527c1f1aa86f7dd4fbec12db9739384610162b774","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\julho.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_julho_julho.csv"}
 {"tabela_destino":"03_11_40","nome_arquivo":"julho.csv","ano":2025,"mes":"julho","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-07-31T19:34:22.968Z","hash_arquivo":"451c1a2482f994dfd63366d527c1f1aa86f7dd4fbec12db9739384610162b774","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\julho.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_julho_julho.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"julho.csv","ano":2025,"mes":"julho","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T18:56:42.767Z","hash_arquivo":"451c1a2482f994dfd63366d527c1f1aa86f7dd4fbec12db9739384610162b774","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\julho.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_julho_julho.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"jul.csv","ano":2025,"mes":"jul","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:23:51.077Z","hash_arquivo":"48baeff229376bef9221682dafe0d386b0850c83e3f0076d7ab68182d4615d1f","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\jul.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_jul_jul.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"jun.csv","ano":2025,"mes":"jun","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:23:51.077Z","hash_arquivo":"ba28ee0f2d4962d4bd7df404e4ac6b2450011acca4fdcf1a590c655b3804b1f5","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\jun.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_jun_jun.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"abr.csv","ano":2025,"mes":"abr","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:23:51.093Z","hash_arquivo":"9a2a201cbeee447c047319f37aac1afe970adda259ad7f04b9cdf20015ffc1c6","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\abr.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_abr_abr.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"fev.csv","ano":2025,"mes":"fev","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:23:51.076Z","hash_arquivo":"938ef5e976762817474e5ec5b2a3de6c811ace650a994474d5d9b9ed564b9127","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\fev.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_fev_fev.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"jan.csv","ano":2025,"mes":"jan","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:23:51.077Z","hash_arquivo":"5c63267ff679e03c0d6b9dff7ff2db5d9df774095675664097b3f0d20163717e","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\jan.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_jan_jan.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"julho.csv","ano":2025,"mes":"julho","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:23:57.751Z","hash_arquivo":"451c1a2482f994dfd63366d527c1f1aa86f7dd4fbec12db9739384610162b774","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\julho.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_julho_julho.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"mai.csv","ano":2025,"mes":"mai","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:23:59.137Z","hash_arquivo":"09e5e829ae5bd0e422c69ff9059c8ee6bfa0ad4017b3748edcfd6a2fecfaf126","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\mai.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_mai_mai.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"ago.csv","ano":2024,"mes":"ago","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:13.763Z","hash_arquivo":"11ec057da5373097335c220ef2b30e4a97203c202918c5940d25150011fb9ed1","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\ago.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_ago_ago.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"jul.csv","ano":2024,"mes":"jul","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:13.757Z","hash_arquivo":"ab7fbffb20cff6c7bf8ac699c75f278d5485f4c7837496a4f7927f7042acbc94","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\jul.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_jul_jul.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"fev.csv","ano":2024,"mes":"fev","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:13.757Z","hash_arquivo":"c353b6035f44b807a0e37cd06326321c4093abcefc0e24c4d6fa86d1456f58cc","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\fev.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_fev_fev.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"dez.csv","ano":2024,"mes":"dez","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:13.758Z","hash_arquivo":"ba9741dad2f3331239fbd2a37495020446d7faacd4098a6d794bcc4bd74700ad","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\dez.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_dez_dez.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"jan.csv","ano":2024,"mes":"jan","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:13.757Z","hash_arquivo":"c39a261efbe17197dd938a44e011e36a35c942701574a44c3f7605406607ed39","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\jan.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_jan_jan.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"abr.csv","ano":2024,"mes":"abr","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:24.129Z","hash_arquivo":"0a875de736395512b7c75280cd5b8333389e45d691e1d1b074f2ca3c7ca42d79","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\abr.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_abr_abr.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"jun.csv","ano":2024,"mes":"jun","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:24.904Z","hash_arquivo":"d0b0023a51d841c7a9c2206adf5e4e0b5b06f0e11e031070d51113018101ff3d","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\jun.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_jun_jun.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"mai.csv","ano":2024,"mes":"mai","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:25.604Z","hash_arquivo":"f3f5da636b3e7952d70b557638f69052080e55fe82b02b69e01bd3bc8f36b936","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\mai.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_mai_mai.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"mar.csv","ano":2024,"mes":"mar","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:27.566Z","hash_arquivo":"9a74ba822dbb4de988b93d784330101162e8dac103f7f910b8e3cde7610ef5e9","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\mar.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_mar_mar.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"nov.csv","ano":2024,"mes":"nov","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:29.518Z","hash_arquivo":"192818f5414b8107a4564040818ddd57fbd3ed54b71389722e364f240e575669","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\nov.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_nov_nov.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"set.csv","ano":2024,"mes":"set","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:36.936Z","hash_arquivo":"e8f60159ab8537cee42ed737b82ee14c1c2891d9b9bb7aa8e52a246341e41109","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\set.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_set_set.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"out.csv","ano":2024,"mes":"out","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:35.961Z","hash_arquivo":"f36dddaa375f220ca00f9238f5d9355061baacd044a1951368f96a3e25621aa6","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\out.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_out_out.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"mai.csv","ano":2023,"mes":"mai","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:40:40.605Z","hash_arquivo":"7408a07b93c5406ad0bc6602554e6cc47053c01b5c2e0f249a887074e3ffa5a7","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\mai.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_mai_mai.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"fev.csv","ano":2023,"mes":"fev","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:40:40.619Z","hash_arquivo":"1a27a7527d03c72046f9988fea941520516006ccfd68ca2fa5fb2e9d71fb7852","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\fev.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_fev_fev.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"mar.csv","ano":2023,"mes":"mar","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:40:40.604Z","hash_arquivo":"6b5df3216746f7db14d75218ccc78c27c1f80e4f38a274bd3224de4705b597b0","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\mar.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_mar_mar.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"abr.csv","ano":2023,"mes":"abr","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:40:40.613Z","hash_arquivo":"7b802ee62b3f041e1f4ec74ac5c8fbba74a962376d0cde4710624d5eb32a0937","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\abr.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_abr_abr.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"jan.csv","ano":2023,"mes":"jan","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:40:40.626Z","hash_arquivo":"db88e01a997152e5847e4c7170ec0848cd3073eb81a493ce4e4bb61e97b3bcba","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\jan.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_jan_jan.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"jun.csv","ano":2023,"mes":"jun","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:41:25.166Z","hash_arquivo":"0359558c0e4b63de2c7c6c3307d318dc12334901f9c1f562bf3a6bc850a7647c","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\jun.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_jun_jun.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"jul.csv","ano":2023,"mes":"jul","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:41:25.166Z","hash_arquivo":"baec3ffd4aad9f8d2e41bc211e0d6a5ca9ad33deff36cb992af3589479aa617e","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\jul.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_jul_jul.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"ago.csv","ano":2023,"mes":"ago","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:41:25.166Z","hash_arquivo":"8a5b1c8b079f84a225aa001668ae287831657772128468983272b745db538820","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\ago.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_ago_ago.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"out.csv","ano":2023,"mes":"out","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:41:25.167Z","hash_arquivo":"000bf874a2b16c1e0cf44c252f33df07a57618f56fdbf498db969ffc98c91614","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\out.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_out_out.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"set.csv","ano":2023,"mes":"set","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:41:25.170Z","hash_arquivo":"b26ab974a9d33be16e8ca22ad9143a07cbd081f55613bfa514b1b5572439b5e6","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\set.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_set_set.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"nov.csv","ano":2023,"mes":"nov","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:41:25.166Z","hash_arquivo":"6115eec9a36b9cd29e555f63fc09aff8df862fbf00732aec8e721bde8f5c1dc3","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\nov.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_nov_nov.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"dez.csv","ano":2023,"mes":"dez","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:41:25.166Z","hash_arquivo":"83eb67537efb8240389b0b329edec35da04e3d4a7f3048df360a07b2f1173a90","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\dez.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_dez_dez.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"mai.csv","ano":2022,"mes":"mai","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.603Z","hash_arquivo":"01448e761fdd03d45dfcb934492ae5b1016bba202ae8ad64e4f5bb3e5f87de3f","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\mai.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_mai_mai.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"jun.csv","ano":2022,"mes":"jun","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.603Z","hash_arquivo":"c91c295596e990482d7e83aa24d3f98c6f4cce66f955daf4c0838ffc23f5523e","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\jun.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_jun_jun.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"ago.csv","ano":2022,"mes":"ago","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.581Z","hash_arquivo":"4e01aabc3205f76d392e9f097813d26fd616f39ea156d53c90a79102bcb4f037","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\ago.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_ago_ago.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"abr.csv","ano":2022,"mes":"abr","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.611Z","hash_arquivo":"80a77fcb4a8aa355f36e837ea6dbc8904b23f413de4c257e6b531410c2184783","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\abr.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_abr_abr.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"set.csv","ano":2022,"mes":"set","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.611Z","hash_arquivo":"2c1ca16d0e8d6ffda1a554bfe0c9940a6c9249ed220e4565cbe9c7435d68d22f","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\set.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_set_set.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"fev.csv","ano":2022,"mes":"fev","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.603Z","hash_arquivo":"305e2b2d668e4b5b6a411847fc69f3e34f8f3d444ddca7cd90d39858968bf5b2","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\fev.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_fev_fev.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"jan.csv","ano":2022,"mes":"jan","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.603Z","hash_arquivo":"d95dd288f49fabba86f092e2162f8393290a1c0feec398aa49dec9ecd946080f","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\jan.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_jan_jan.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"jul.csv","ano":2022,"mes":"jul","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.603Z","hash_arquivo":"ae2606f6defa40ecb25a58dd7a37abad5221d0bef7938a864f505f2c65ef6a5a","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\jul.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_jul_jul.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"out.csv","ano":2022,"mes":"out","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.610Z","hash_arquivo":"4eb9ad8efa7ff669a20f931653528ea8629e8a9eaaf4e0ca52aa9a4a10952d10","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\out.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_out_out.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"mar.csv","ano":2022,"mes":"mar","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.611Z","hash_arquivo":"84410ee4e3d66b52629ff7cf5d9c130e4e0edaca8921b5ed4367759c5f353422","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\mar.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_mar_mar.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"nov.csv","ano":2022,"mes":"nov","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.611Z","hash_arquivo":"af1d816debad39e4ee52dcf6c452d0a5e5ecc9bc6a7b3e65415015ff45113948","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\nov.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_nov_nov.csv"}
+{"tabela_destino":"03_11_40","nome_arquivo":"dez.csv","ano":2022,"mes":"dez","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.602Z","hash_arquivo":"9c74ea590aef165e97b6dfdd792602e59a1288060d5405d0f546b7184914b2ac","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\dez.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_dez_dez.csv"}
 
 ----------------------------
 createDataController.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\controller\createDataController.js
@@ -4819,21 +1531,21 @@ export default async function fluxoValidatorController(metadados, logData) {
 
   if (hashJaExiste) {
     addInfo(
-      `[ARQUIVO DUPLICADO] O conteúdo de [${metadados.nome_arquivo}] já está presente na base.`, contexto
+      `[ARQUIVO DUPLICADO] O conteúdo de [${metadados.nome_arquivo}] já está presente na base, ${metadados.tabela}`, contexto
     );
-    console.log(`[🟠 DUPLICADO] [${metadados.nome_arquivo}] não sera inserido na tabela [${metadados.colunas_tabela}]`)
+    console.log(`[🟠 DUPLICADO] [${metadados.nome_arquivo}] não sera inserido na tabela [${metadados.tabela}]`)
     await updateLoggerController(metadados, contexto)
     return "ignorar";
   } else if (!logs || logs.length === 0) {
     addInfo(`[NOVO ARQUIVO] [${metadados.nome_arquivo}] será processado.`, contexto);
-    console.log(`[🟢 NOVO] [${metadados.nome_arquivo}] sera inserido na tabela [${metadados.colunas_tabela}]`)
+    console.log(`[🟢 NOVO] [${metadados.nome_arquivo}] sera inserido na tabela [${metadados.tabela}]`)
     await updateLoggerController(metadados, contexto)
     return "inserir";
   } else {
     addInfo(
       `[ARQUIVO MODIFICADO] [${metadados.nome_arquivo}] já existia, mas foi alterado. Reprocessando.`, contexto
     );
-    console.log(`[🟡 MODIFICADO] [${metadados.nome_arquivo}] sera inserido na tabela [${metadados.colunas_tabela}], validar logica de atualização para o tipo do arquivo`)
+    console.log(`[🟡 MODIFICADO] [${metadados.nome_arquivo}] sera inserido na tabela [${metadados.tabela}], validar logica de atualização para o tipo do arquivo`)
     await updateLoggerController(metadados, contexto)
     return "reprocessar";
   }
@@ -5229,7 +1941,6 @@ export default async function createdHandler(filePath) {
       getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
       contexto
     );
-    finalizarTodasAsBarras();
   }
 }
 
@@ -6680,29 +3391,51 @@ export function finalizarTodasAsBarras() {
 
 ----------------------------
 sanitizeValue.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\sanitizeValue.js
+import { addAviso } from "../middleware/errorHandler.js";
+
 export function sanitizeValue(value, tipoEsperado) {
-  if (value === "" || value === null || value === undefined) return null;
+  const isEmpty = value === "" || value ===null ||value === undefined;
+    
+  if (isEmpty) return null;
 
   switch (tipoEsperado) {
     case "int": {
       const clean = String(value).replace(/[^\d-]/g, "");
       const parsed = parseInt(clean, 10);
+      if (isNaN(parsed)) {
+        addAviso(
+          `dado int foi setado como null, validar valor: [${value}]`
+        );
+      }
+
       return isNaN(parsed) ? null : parsed;
     }
 
     case "decimal": {
-      let raw = String(value)
-        .trim()
-        .replace(/[^\d.,-]/g, "");
+      const valueStr = String(value).trim();
+      let raw = valueStr.replace(/[^\d.,-]/g, "");
 
-      if (raw.includes(",")) {
-        raw = raw.replace(/\./g, ""); // remove separador de milhar
-        raw = raw.replace(",", "."); // troca vírgula por ponto
+      // Padrão coordenada com milhar e decimal pt-BR → "-23.831.402"
+      const coordMatch = valueStr.match(/^(-?\d{1,2})\.(\d{3})\.(\d{3})$/);
+      if (coordMatch) {
+        return parseFloat(`${coordMatch[1]}.${coordMatch[2]}${coordMatch[3]}`);
+      }
+
+      if ((valueStr.match(/\./g) || []).length > 1) {
+        raw = valueStr.replace(/\./g, "").replace(",", ".");
+      } else if (valueStr.includes(",") && !valueStr.includes(".")) {
+        raw = valueStr.replace(",", ".");
       } else {
-        raw = raw;
+        raw = valueStr; // já está no padrão correto
       }
 
       const parsed = parseFloat(raw);
+      if (isNaN(parsed)) {
+        addAviso(
+          `dado decimal foi setado como null, validar valor: [${value}]`
+        );
+      }
+
       return isNaN(parsed) ? null : parsed;
     }
 
@@ -6715,21 +3448,26 @@ export function sanitizeValue(value, tipoEsperado) {
         const [_, d, m, y] = match;
         return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
       }
-      if ((match = str.match(/^(\d{4})-(\d{2})-(\d{2})$/))) {
+      else if ((match = str.match(/^(\d{4})-(\d{2})-(\d{2})$/))) {
         // YYYY-MM-DD
         return str;
       }
-      if ((match = str.match(/^(\d{2})(\d{2})(\d{4})$/))) {
+      else if ((match = str.match(/^(\d{2})(\d{2})(\d{4})$/))) {
         // DDMMYYYY
         const [_, d, m, y] = match;
         return `${y}-${m}-${d}`;
       }
-      if ((match = str.match(/^(\d{1})(\d{2})(\d{4})$/))) {
+      else if ((match = str.match(/^(\d{1})(\d{2})(\d{4})$/))) {
         // DMMYYYY
         const [_, d, m, y] = match;
         return `${y}-${m}-${d.padStart(2, "0")}`;
+      } else {
+        addAviso(`valor data setado como null, validar, valor: [${value}] `)
+        return null;
       }
-      return null;
+
+
+      
     }
     case "datetime": {
       const str = String(value).replace(/\s+/g, " ").trim();
@@ -6745,7 +3483,7 @@ export function sanitizeValue(value, tipoEsperado) {
       }
 
       // 1. DD/MM/YYYY HH:mm:ss
-      if (
+      else if (
         (match = str.match(
           /^(\d{2})\/(\d{2})\/(\d{4})[ T](\d{1,2}):(\d{2}):(\d{2})$/
         ))
@@ -6758,7 +3496,7 @@ export function sanitizeValue(value, tipoEsperado) {
       }
 
       // 2. YYYY-MM-DD HH:mm:ss
-      if (
+      else if (
         (match = str.match(
           /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/
         ))
@@ -6767,46 +3505,54 @@ export function sanitizeValue(value, tipoEsperado) {
       }
 
       // 3. DD/MM/YYYY
-      if ((match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/))) {
+      else if ((match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/))) {
         const [_, d, m, y] = match;
         return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")} 00:00:00`;
       }
 
       // 4. YYYY-MM-DD
-      if ((match = str.match(/^(\d{4})-(\d{2})-(\d{2})$/))) {
+      else if ((match = str.match(/^(\d{4})-(\d{2})-(\d{2})$/))) {
         return `${match[1]}-${match[2]}-${match[3]} 00:00:00`;
       }
 
       // 5. YYYYMMDDHHmmss
-      if ((match = str.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/))) {
+      else if ((match = str.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/))) {
         const [_, y, m, d, h, min, s] = match;
         return `${y}-${m}-${d} ${h}:${min}:${s}`;
       }
 
       // 6. DDMMYYYY HHmmss
-      if (
+      else if (
         (match = str.match(/^(\d{2})(\d{2})(\d{4}) (\d{2})(\d{2})(\d{2})$/))
       ) {
         const [_, d, m, y, h, min, s] = match;
         return `${y}-${m}-${d} ${h}:${min}:${s}`;
       }
 
-      if (
+      else if (
         (match = str.match(
           /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})\.(\d{3})(Z)?$/
         ))
       ) {
         const [_, y, m, d, h, min, s, ms] = match;
         return `${y}-${m}-${d} ${h}:${min}:${s}.${ms}`;
+      } else {
+        addAviso(`Valor datetime setado como null, validar, valor: [${value}]`)
+        return null;
+
       }
 
-      return null;
+      
     }
 
     case "time": {
       const str = String(value).trim();
       const match = str.match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/);
-      if (!match) return null;
+      if (!match){
+        addAviso(`Valor time setado como null validar, valor [${value}]`)
+        return null;
+
+      } 
 
       // Padroniza sempre como string HHH:MM:SS (mesmo se vier HHH:MM)
       const [_, h, m, s] = match.map((v) =>
