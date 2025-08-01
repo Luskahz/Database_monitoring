@@ -118,6 +118,5 @@ export default async function createdHandler(filePath) {
       getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
       contexto
     );
-    finalizarTodasAsBarras();
   }
 }

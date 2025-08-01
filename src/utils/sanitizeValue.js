@@ -1,10 +1,20 @@
+import { addAviso } from "../middleware/errorHandler.js";
+
 export function sanitizeValue(value, tipoEsperado) {
-  if (value === "" || value === null || value === undefined) return null;
+  const isEmpty = value === "" || value ===null ||value === undefined;
+    
+  if (isEmpty) return null;
 
   switch (tipoEsperado) {
     case "int": {
       const clean = String(value).replace(/[^\d-]/g, "");
       const parsed = parseInt(clean, 10);
+      if (isNaN(parsed)) {
+        addAviso(
+          `dado int foi setado como null, validar valor: [${value}]`
+        );
+      }
+
       return isNaN(parsed) ? null : parsed;
     }
 
@@ -27,6 +37,12 @@ export function sanitizeValue(value, tipoEsperado) {
       }
 
       const parsed = parseFloat(raw);
+      if (isNaN(parsed)) {
+        addAviso(
+          `dado decimal foi setado como null, validar valor: [${value}]`
+        );
+      }
+
       return isNaN(parsed) ? null : parsed;
     }
 
@@ -39,21 +55,26 @@ export function sanitizeValue(value, tipoEsperado) {
         const [_, d, m, y] = match;
         return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
       }
-      if ((match = str.match(/^(\d{4})-(\d{2})-(\d{2})$/))) {
+      else if ((match = str.match(/^(\d{4})-(\d{2})-(\d{2})$/))) {
         // YYYY-MM-DD
         return str;
       }
-      if ((match = str.match(/^(\d{2})(\d{2})(\d{4})$/))) {
+      else if ((match = str.match(/^(\d{2})(\d{2})(\d{4})$/))) {
         // DDMMYYYY
         const [_, d, m, y] = match;
         return `${y}-${m}-${d}`;
       }
-      if ((match = str.match(/^(\d{1})(\d{2})(\d{4})$/))) {
+      else if ((match = str.match(/^(\d{1})(\d{2})(\d{4})$/))) {
         // DMMYYYY
         const [_, d, m, y] = match;
         return `${y}-${m}-${d.padStart(2, "0")}`;
+      } else {
+        addAviso(`valor data setado como null, validar, valor: [${value}] `)
+        return null;
       }
-      return null;
+
+
+      
     }
     case "datetime": {
       const str = String(value).replace(/\s+/g, " ").trim();
@@ -69,7 +90,7 @@ export function sanitizeValue(value, tipoEsperado) {
       }
 
       // 1. DD/MM/YYYY HH:mm:ss
-      if (
+      else if (
         (match = str.match(
           /^(\d{2})\/(\d{2})\/(\d{4})[ T](\d{1,2}):(\d{2}):(\d{2})$/
         ))
@@ -82,7 +103,7 @@ export function sanitizeValue(value, tipoEsperado) {
       }
 
       // 2. YYYY-MM-DD HH:mm:ss
-      if (
+      else if (
         (match = str.match(
           /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/
         ))
@@ -91,46 +112,54 @@ export function sanitizeValue(value, tipoEsperado) {
       }
 
       // 3. DD/MM/YYYY
-      if ((match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/))) {
+      else if ((match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/))) {
         const [_, d, m, y] = match;
         return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")} 00:00:00`;
       }
 
       // 4. YYYY-MM-DD
-      if ((match = str.match(/^(\d{4})-(\d{2})-(\d{2})$/))) {
+      else if ((match = str.match(/^(\d{4})-(\d{2})-(\d{2})$/))) {
         return `${match[1]}-${match[2]}-${match[3]} 00:00:00`;
       }
 
       // 5. YYYYMMDDHHmmss
-      if ((match = str.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/))) {
+      else if ((match = str.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/))) {
         const [_, y, m, d, h, min, s] = match;
         return `${y}-${m}-${d} ${h}:${min}:${s}`;
       }
 
       // 6. DDMMYYYY HHmmss
-      if (
+      else if (
         (match = str.match(/^(\d{2})(\d{2})(\d{4}) (\d{2})(\d{2})(\d{2})$/))
       ) {
         const [_, d, m, y, h, min, s] = match;
         return `${y}-${m}-${d} ${h}:${min}:${s}`;
       }
 
-      if (
+      else if (
         (match = str.match(
           /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})\.(\d{3})(Z)?$/
         ))
       ) {
         const [_, y, m, d, h, min, s, ms] = match;
         return `${y}-${m}-${d} ${h}:${min}:${s}.${ms}`;
+      } else {
+        addAviso(`Valor datetime setado como null, validar, valor: [${value}]`)
+        return null;
+
       }
 
-      return null;
+      
     }
 
     case "time": {
       const str = String(value).trim();
       const match = str.match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/);
-      if (!match) return null;
+      if (!match){
+        addAviso(`Valor time setado como null validar, valor [${value}]`)
+        return null;
+
+      } 
 
       // Padroniza sempre como string HHH:MM:SS (mesmo se vier HHH:MM)
       const [_, h, m, s] = match.map((v) =>

@@ -9,7 +9,7 @@ import createdHandler from "./controller/Handlers/createdHandler.js";
 import deletedHandler from "./controller/Handlers/deletedHandler.js";
 import { addErro } from "./middleware/errorHandler.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const limit = pLimit(5);
+const limit = pLimit(12);
 
 export async function startMonitoring() {
   const monitorPath = path.resolve(
@@ -19,7 +19,7 @@ export async function startMonitoring() {
 
   const watcher = chokidar.watch(monitorPath, {
     persistent: true,
-    ignoreInitial: false,
+    ignoreInitial: true,
     usePolling: true,
     interval: 500,
     depth: 10,
