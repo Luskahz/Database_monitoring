@@ -2,77 +2,98 @@ CREATE DATABASE IF NOT EXISTS diretorio;
 
 USE diretorio;
 
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_11_40` (
-    mapa INT not null,
-    veiculo INT,
-    placa VARCHAR(20),
-    dt_entrega DATE,
-    entregas INT,
-    hora_emis TIME(0),
-    hora_carreg TIME(0),
-    hora_saida TIME(0),
-    hora_chegada TIME(0),
-    hora_p_fis TIME(0),
-    hora_p_fin TIME(0),
-    tempo_rota TIME(2),
-    tempo_p_fis TIME(2),
-    tempo_p_fin TIME(2),
-    tempo_interno TIME(2),
-    km_inicial INT,
-    km_final INT,
-    km_rodado INT,
-    primary key (mapa, dt_entrega)
+CREATE TABLE -- Cadastro / chave primaria definida
+  IF NOT EXISTS `01_20_11` (
+    grupo_de_perfil int,
+    cod_setor int,
+    descricao_setor VARCHAR(25),
+    codigo_cliente bigint,
+    razao_social VARCHAR(25),
+    bairro VARCHAR(25),
+    ordem VARCHAR(25),
+    status_do_cliente VARCHAR(10),
+    nome_fantasia VARCHAR(25),
+    frequencia_visita VARCHAR(25),
+    periodicidade VARCHAR(25),
+    proxima_visita varchar(25),
+    visita_original varchar(25),
+    inicio_visita varchar(25),
+    cnpj VARCHAR(25),
+    inscricao_estadual VARCHAR(25),
+    cod_estabelecimento bigint,
+    nome_estabelecimento VARCHAR(25),
+    cod_pagto int,
+    descricao_pagto VARCHAR(25),
+    serasa VARCHAR(10),
+    observacao VARCHAR(25),
+    contato VARCHAR(25),
+    cnpj_1 VARCHAR(25),
+    contato_1 VARCHAR(25),
+    cnpj_2 VARCHAR(25),
+    ordem_por_historico VARCHAR(25),
+    dias_entrega VARCHAR(25),
+    el_dorado VARCHAR(10),
+    endereco VARCHAR(25),
+    cidade VARCHAR(25),
+    cod_segmento int,
+    segmento VARCHAR(25),
+    primary key (codigo_cliente)
   );
 
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `relatorio_separacao_wms` (
-    armazem INT,
-    mapa INT,
-    palete VARCHAR(25),
-    entrega DATE,
-    inicio_palete DATETIME,
-    fim_palete DATETIME,
-    execucao_palete_em_segundos INT,
-    usuario_finalizou_palete VARCHAR(25),
-    finalizado_cfe_indicacao VARCHAR(25),
-    endereco_destino VARCHAR(25),
-    rtls_hab VARCHAR(10),
-    rtls_endereco_destino VARCHAR(10),
-    rtls_itens_ok VARCHAR(10),
-    peso_do_palete_ok VARCHAR(10),
-    peso_palete_esperado INT,
-    peso_palete_real VARCHAR(25),
-    balanca VARCHAR(25),
-    codigo_do_item INT,
-    descricao_do_item VARCHAR(25),
-    tipo VARCHAR(25),
-    peso_esperado DECIMAL(10, 2),
-    peso_real DECIMAL(10, 2),
-    enderecos_sugeridos VARCHAR(25),
-    endereco_selecionado VARCHAR(25),
-    quantidade INT,
-    unidade_medida VARCHAR(20),
-    chapatex INT,
-    papelao INT,
-    sequencia INT,
-    usuario_separacao VARCHAR(25),
-    inicio_separacao_item DATETIME,
-    fim_separacao_item DATETIME,
-    esforco_segundos INT,
-    rtls_habilitado_item VARCHAR(10),
-    utilizou_rtls_item VARCHAR(10),
-    peso_ok_item VARCHAR(25),
-    item_conferido VARCHAR(10),
-    historico_de_registros VARCHAR(25),
-    palete_conferido VARCHAR(10),
-    sorteado_para_blitz VARCHAR(10),
-    regras_de_blitz_classificadas VARCHAR(25),
-    utilizou_percentual_minimo VARCHAR(25),
-    palete_iniciado_com_produto VARCHAR(10)
+CREATE TABLE -- Cadastro / chave primaria definida 
+  IF NOT EXISTS `01_11` (
+    codigo bigint,
+    descricao VARCHAR(25),
+    pgv int,
+    empresa VARCHAR(10),
+    tipo_marca VARCHAR(25),
+    linha_marca int,
+    embalagem VARCHAR(25),
+    marca int,
+    vasilhame int,
+    garrrafeira int,
+    icms int,
+    tipo_roadshow VARCHAR(10),
+    peso_bruto_kg decimal(10, 2),
+    fator int,
+    fator_hecto float,
+    fator_hecto_comercial float,
+    ind_palmtop VARCHAR(10),
+    grupo int,
+    grupo_remuneracao int,
+    ean bigint,
+    tab_icms int,
+    caixas_pallet int,
+    nr_fator_conversao decimal(10, 2),
+    lastro VARCHAR(25),
+    fam_embalagem_siv int,
+    pauta_pis_litro int,
+    pauta_cofins_litro int,
+    caixas_pallet_1 int,
+    capacidade_1 int,
+    fat_ajust_1 float,
+    caixas_pallet_2 int,
+    capacidade_2 int,
+    fat_ajust_2 float,
+    caixas_pallet_3 int,
+    capacidade_3 int,
+    fat_ajust_3 float,
+    ordem_de_carga int,
+    estoque_minimo_puxada int,
+    codigo_produto_sap int,
+    vasilhame_ficticio VARCHAR(25),
+    ncm bigint,
+    apura_royalties VARCHAR(10),
+    tipo_produto_royalties int,
+    cest bigint,
+    ean_trib bigint,
+    codigo_unitario int,
+    descricao_unitaria VARCHAR(25),
+    subtipo int,
+    primary key (codigo)
   );
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal /  chave primaria definida
   IF NOT EXISTS `03_01_46_06` (
     id_pedido bigint,
     unb bigint,
@@ -113,177 +134,11 @@ CREATE TABLE -- colunas data: 1
     taxa_adf_escalonada decimal(10, 2),
     valor_pedido_minimo decimal(10, 2),
     indicador_entrega_alternativa VARCHAR(25),
-    importado_pelo_hercules VARCHAR(25)
+    importado_pelo_hercules VARCHAR(25),
+    primary key (id_pedido)
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_18_05` (
-    unb int,
-    descricao_unb VARCHAR(25),
-    codigo_cliente int,
-    nome_cliente VARCHAR(25),
-    solicitacao_reposicao int,
-    tipo_solicitacao VARCHAR(25),
-    data_solicitacao Varchar(25),
-    hora time,
-    status_solicitacao VARCHAR(25),
-    data_acao date,
-    usuario_acao VARCHAR(25),
-    mapa_reposicao bigint,
-    nota_fiscal_serie VARCHAR(25),
-    status_nf VARCHAR(10),
-    produto int,
-    descricao_produto VARCHAR(25),
-    quantidade int,
-    um VARCHAR(10),
-    valor_unitario decimal(10, 2),
-    valor decimal(10, 2),
-    pallet VARCHAR(25),
-    montagem_pallet VARCHAR(10),
-    justificativa VARCHAR(10),
-    mapa_origem int,
-    nf_origem VARCHAR(25),
-    produto_origem int,
-    descricao_produto_1 VARCHAR(25),
-    quantidade_origem int,
-    um_1 VARCHAR(10),
-    veiculo int,
-    placa VARCHAR(25),
-    transportadora int,
-    nome_transportadora VARCHAR(25),
-    motorista int,
-    nome_motorista VARCHAR(25),
-    ajudante int,
-    nome_ajudante_entrega VARCHAR(25),
-    ajudante_1 int,
-    nome_ajudante_entrega_1 VARCHAR(25),
-    conferente_solicitacao_reposicao VARCHAR(25),
-    nome_conferente_solicitacao_reposicao VARCHAR(25),
-    conferente_carregamento VARCHAR(25),
-    nome_conferente_carregamento VARCHAR(25),
-    ajudante_carregamento VARCHAR(25),
-    nome_ajudante_carregamento VARCHAR(25),
-    ajudante_carregamento_1 VARCHAR(25),
-    nome_ajudante_carregamento_1 VARCHAR(25),
-    ajudante_carregamento_2 VARCHAR(25),
-    nome_ajudante_carregamento_2 VARCHAR(25),
-    ajudante_carregamento_3 VARCHAR(25),
-    nome_ajudante_carregamento_3 VARCHAR(25),
-    ajudante_carregamento_4 VARCHAR(25),
-    nome_ajudante_carregamento_4 VARCHAR(25),
-    ajudante_carregamento_5 VARCHAR(25),
-    nome_ajudante_carregamento_5 VARCHAR(25),
-    origem_blitz_carreg VARCHAR(25),
-    nr_pedido_reposicao int,
-    unb_cliente int,
-    opcao_de_reposicao VARCHAR(25),
-    status_check_reposicao VARCHAR(25),
-    usuario_acao_check VARCHAR(25),
-    data_acao_check varchar(25),
-    sistema_origem VARCHAR(25),
-    observacao VARCHAR(25),
-    perfil_aprovacao_automatica VARCHAR(25),
-    data_revisao varchar(25),
-    usuario_revisao VARCHAR(25),
-    tipo_cliente VARCHAR(25),
-    setor_venda int,
-    unnamed_69 VARCHAR(25)
-  ) ROW_FORMAT = DYNAMIC;
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_11_29` (
-    data date,
-    mapa int,
-    placa VARCHAR(25),
-    regiao_entrega VARCHAR(25),
-    superv int,
-    nome_superv VARCHAR(25),
-    motorista int,
-    nome_motorista VARCHAR(25),
-    ajudante_1 VARCHAR(25),
-    nome_ajudante_1 int,
-    ajudante_2 VARCHAR(25),
-    nome_ajudante_2 int
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_08_05` (
-    data DATE,
-    transp int,
-    entrega VARCHAR(20),
-    carga_atual VARCHAR(20),
-    frota VARCHAR(20),
-    custo_spot DECIMAL(15, 2),
-    regiao int,
-    veiculo int,
-    placa VARCHAR(10),
-    mapa INT,
-    capac INT,
-    entregas INT,
-    cx_carreg DECIMAL(10, 2),
-    cx_entreg DECIMAL(10, 2),
-    ocup DECIMAL(6, 2),
-    cx_rota decimal(10, 2),
-    cx_as decimal(10, 2),
-    veic_bm DECIMAL(6, 2),
-    rshow int,
-    entr_vol VARCHAR(20),
-    hr_sai TIME,
-    hr_entr TIME,
-    km_sai INT,
-    km_entr INT,
-    km_prev DECIMAL(8, 2),
-    tempo_prev TIME,
-    vl_pto_mot DECIMAL(10, 6),
-    vl_pto_ajd DECIMAL(10, 6),
-    vl_eq_mot DECIMAL(10, 2),
-    vl_eq_ajd DECIMAL(10, 2),
-    cd_mot INT,
-    cd_aju1 INT,
-    cd_aju2 INT,
-    km_desloc INT,
-    km_laco INT,
-    tmpo_desloc TIME,
-    tmpo_laco TIME,
-    tmpo_interno TIME,
-    mot_nao_carr int,
-    cx_carr_com DECIMAL(10, 2),
-    capacidade_veiculo_kg DECIMAL(10, 2),
-    peso_carga_kg DECIMAL(10, 2),
-    classificacao_roadshow VARCHAR(20),
-    classificacao_roads VARCHAR(20)
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS base_rating (
-    data_avaliacao date,
-    avaliacao int,
-    classificacao VARCHAR(25),
-    cod_cdd bigint,
-    motorista VARCHAR(25),
-    cod_pdv int,
-    nome_pdv VARCHAR(25),
-    transportadora VARCHAR(25),
-    mapa int,
-    motivo VARCHAR(25),
-    comentario VARCHAR(25),
-    estado VARCHAR(25),
-    cidade VARCHAR(25)
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS jornada_laboral (
-    data date,
-    funcionario VARCHAR(25),
-    matricula int,
-    e time,
-    sa time,
-    ra time,
-    s time,
-    trabalhadas time
-  );
-
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal / tabela sem chave primaria, problema insolucionavel
   IF NOT EXISTS `03_01_47_01` (
     cod_puxada int,
     nome_filial VARCHAR(50),
@@ -358,7 +213,7 @@ CREATE TABLE -- colunas data: 1
     unid_venda VARCHAR(10)
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS `03_02_24` (
     mapa bigint,
     data date,
@@ -379,10 +234,11 @@ CREATE TABLE -- colunas data: 1
     desc_motivo VARCHAR(25),
     orig_pedido VARCHAR(25),
     usuario VARCHAR(25),
-    hora time
+    hora time,
+    primary key (nota)
   );
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal / falta definir a chave primaria!!!!
   IF NOT EXISTS `03_02_37_operacao_veiculo_mapa` (
     empresa int,
     filial int,
@@ -449,7 +305,7 @@ CREATE TABLE -- colunas data: 1
     nf_retorno_remessa_puxada_ag VARCHAR(25),
     nf_recolha_comodato VARCHAR(25),
     nf_troca_realizada VARCHAR(25),
-    taxa_de_entrega decimal(10,2),
+    taxa_de_entrega decimal(10, 2),
     origem_do_pedido VARCHAR(25),
     vl_desconto_algoritmo VARCHAR(25),
     meta_algoritmo VARCHAR(25),
@@ -457,7 +313,7 @@ CREATE TABLE -- colunas data: 1
     desc_disponivel_acao VARCHAR(25),
     vl_desconto_algoritmo_aut VARCHAR(25),
     codigo_acao_desconto_alg_fix VARCHAR(25),
-    valor_ttv_planejado decimal(10,2),
+    valor_ttv_planejado decimal(10, 2),
     valor_sugerido VARCHAR(25),
     cod_setor_atendimento VARCHAR(25),
     tipo_setor_atendimento VARCHAR(25),
@@ -481,7 +337,7 @@ CREATE TABLE -- colunas data: 1
     campo_extra VARCHAR(10)
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS `03_02_37_tipo_movto` (
     empresa int,
     filial int,
@@ -548,7 +404,7 @@ CREATE TABLE -- colunas data: 1
     nf_retorno_remessa_puxada_ag VARCHAR(25),
     nf_recolha_comodato VARCHAR(25),
     nf_troca_realizada VARCHAR(25),
-    taxa_de_entrega decimal(10,2),
+    taxa_de_entrega decimal(10, 2),
     origem_do_pedido VARCHAR(25),
     vl_desconto_algoritmo VARCHAR(25),
     meta_algoritmo VARCHAR(25),
@@ -568,10 +424,248 @@ CREATE TABLE -- colunas data: 1
     red_fecop_proprio VARCHAR(25),
     red_icms_st decimal(10, 2),
     red_fecop_st VARCHAR(25),
-    unnamed_2 varchar(25)
+    unnamed_2 varchar(25),
+    primary key (tipo_movto, nota, serie)
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal / chave primaria definida
+  IF NOT EXISTS `03_11_40` (
+    mapa INT,
+    veiculo INT,
+    placa VARCHAR(20),
+    dt_entrega DATE,
+    entregas INT,
+    hora_emis TIME(0),
+    hora_carreg TIME(0),
+    hora_saida TIME(0),
+    hora_chegada TIME(0),
+    hora_p_fis TIME(0),
+    hora_p_fin TIME(0),
+    tempo_rota TIME(2),
+    tempo_p_fis TIME(2),
+    tempo_p_fin TIME(2),
+    tempo_interno TIME(2),
+    km_inicial INT,
+    km_final INT,
+    km_rodado INT,
+    primary key (mapa)
+  );
+
+CREATE TABLE -- Mensal /
+  IF NOT EXISTS `relatorio_separacao_wms` (
+    armazem INT,
+    mapa INT,
+    palete VARCHAR(25),
+    entrega DATE,
+    inicio_palete DATETIME,
+    fim_palete DATETIME,
+    execucao_palete_em_segundos INT,
+    usuario_finalizou_palete VARCHAR(25),
+    finalizado_cfe_indicacao VARCHAR(25),
+    endereco_destino VARCHAR(25),
+    rtls_hab VARCHAR(10),
+    rtls_endereco_destino VARCHAR(10),
+    rtls_itens_ok VARCHAR(10),
+    peso_do_palete_ok VARCHAR(10),
+    peso_palete_esperado INT,
+    peso_palete_real VARCHAR(25),
+    balanca VARCHAR(25),
+    codigo_do_item INT,
+    descricao_do_item VARCHAR(25),
+    tipo VARCHAR(25),
+    peso_esperado DECIMAL(10, 2),
+    peso_real DECIMAL(10, 2),
+    enderecos_sugeridos VARCHAR(25),
+    endereco_selecionado VARCHAR(25),
+    quantidade INT,
+    unidade_medida VARCHAR(20),
+    chapatex INT,
+    papelao INT,
+    sequencia INT,
+    usuario_separacao VARCHAR(25),
+    inicio_separacao_item DATETIME,
+    fim_separacao_item DATETIME,
+    esforco_segundos INT,
+    rtls_habilitado_item VARCHAR(10),
+    utilizou_rtls_item VARCHAR(10),
+    peso_ok_item VARCHAR(25),
+    item_conferido VARCHAR(10),
+    historico_de_registros VARCHAR(25),
+    palete_conferido VARCHAR(10),
+    sorteado_para_blitz VARCHAR(10),
+    regras_de_blitz_classificadas VARCHAR(25),
+    utilizou_percentual_minimo VARCHAR(25),
+    palete_iniciado_com_produto VARCHAR(10)
+  );
+
+CREATE TABLE -- Mensal /
+  IF NOT EXISTS `03_18_05` (
+    unb int,
+    descricao_unb VARCHAR(25),
+    codigo_cliente int,
+    nome_cliente VARCHAR(25),
+    solicitacao_reposicao int,
+    tipo_solicitacao VARCHAR(25),
+    data_solicitacao Varchar(25),
+    hora time,
+    status_solicitacao VARCHAR(25),
+    data_acao date,
+    usuario_acao VARCHAR(25),
+    mapa_reposicao bigint,
+    nota_fiscal_serie VARCHAR(25),
+    status_nf VARCHAR(10),
+    produto int,
+    descricao_produto VARCHAR(25),
+    quantidade int,
+    um VARCHAR(10),
+    valor_unitario decimal(10, 2),
+    valor decimal(10, 2),
+    pallet VARCHAR(25),
+    montagem_pallet VARCHAR(10),
+    justificativa VARCHAR(10),
+    mapa_origem int,
+    nf_origem VARCHAR(25),
+    produto_origem int,
+    descricao_produto_1 VARCHAR(25),
+    quantidade_origem int,
+    um_1 VARCHAR(10),
+    veiculo int,
+    placa VARCHAR(25),
+    transportadora int,
+    nome_transportadora VARCHAR(25),
+    motorista int,
+    nome_motorista VARCHAR(25),
+    ajudante int,
+    nome_ajudante_entrega VARCHAR(25),
+    ajudante_1 int,
+    nome_ajudante_entrega_1 VARCHAR(25),
+    conferente_solicitacao_reposicao VARCHAR(25),
+    nome_conferente_solicitacao_reposicao VARCHAR(25),
+    conferente_carregamento VARCHAR(25),
+    nome_conferente_carregamento VARCHAR(25),
+    ajudante_carregamento VARCHAR(25),
+    nome_ajudante_carregamento VARCHAR(25),
+    ajudante_carregamento_1 VARCHAR(25),
+    nome_ajudante_carregamento_1 VARCHAR(25),
+    ajudante_carregamento_2 VARCHAR(25),
+    nome_ajudante_carregamento_2 VARCHAR(25),
+    ajudante_carregamento_3 VARCHAR(25),
+    nome_ajudante_carregamento_3 VARCHAR(25),
+    ajudante_carregamento_4 VARCHAR(25),
+    nome_ajudante_carregamento_4 VARCHAR(25),
+    ajudante_carregamento_5 VARCHAR(25),
+    nome_ajudante_carregamento_5 VARCHAR(25),
+    origem_blitz_carreg VARCHAR(25),
+    nr_pedido_reposicao int,
+    unb_cliente int,
+    opcao_de_reposicao VARCHAR(25),
+    status_check_reposicao VARCHAR(25),
+    usuario_acao_check VARCHAR(25),
+    data_acao_check varchar(25),
+    sistema_origem VARCHAR(25),
+    observacao VARCHAR(25),
+    perfil_aprovacao_automatica VARCHAR(25),
+    data_revisao varchar(25),
+    usuario_revisao VARCHAR(25),
+    tipo_cliente VARCHAR(25),
+    setor_venda int,
+    unnamed_69 VARCHAR(25)
+  ) ROW_FORMAT = DYNAMIC;
+
+CREATE TABLE -- Mensal /
+  IF NOT EXISTS `03_11_29` (
+    data date,
+    mapa int,
+    placa VARCHAR(25),
+    regiao_entrega VARCHAR(25),
+    superv int,
+    nome_superv VARCHAR(25),
+    motorista int,
+    nome_motorista VARCHAR(25),
+    ajudante_1 VARCHAR(25),
+    nome_ajudante_1 int,
+    ajudante_2 VARCHAR(25),
+    nome_ajudante_2 int
+  );
+
+CREATE TABLE -- Mensal /
+  IF NOT EXISTS `03_08_05` (
+    data DATE,
+    transp int,
+    entrega VARCHAR(20),
+    carga_atual VARCHAR(20),
+    frota VARCHAR(20),
+    custo_spot DECIMAL(15, 2),
+    regiao int,
+    veiculo int,
+    placa VARCHAR(10),
+    mapa INT,
+    capac INT,
+    entregas INT,
+    cx_carreg DECIMAL(10, 2),
+    cx_entreg DECIMAL(10, 2),
+    ocup DECIMAL(6, 2),
+    cx_rota decimal(10, 2),
+    cx_as decimal(10, 2),
+    veic_bm DECIMAL(6, 2),
+    rshow int,
+    entr_vol VARCHAR(20),
+    hr_sai TIME,
+    hr_entr TIME,
+    km_sai INT,
+    km_entr INT,
+    km_prev DECIMAL(8, 2),
+    tempo_prev TIME,
+    vl_pto_mot DECIMAL(10, 6),
+    vl_pto_ajd DECIMAL(10, 6),
+    vl_eq_mot DECIMAL(10, 2),
+    vl_eq_ajd DECIMAL(10, 2),
+    cd_mot INT,
+    cd_aju1 INT,
+    cd_aju2 INT,
+    km_desloc INT,
+    km_laco INT,
+    tmpo_desloc TIME,
+    tmpo_laco TIME,
+    tmpo_interno TIME,
+    mot_nao_carr int,
+    cx_carr_com DECIMAL(10, 2),
+    capacidade_veiculo_kg DECIMAL(10, 2),
+    peso_carga_kg DECIMAL(10, 2),
+    classificacao_roadshow VARCHAR(20),
+    classificacao_roads VARCHAR(20)
+  );
+
+CREATE TABLE -- Mensal /
+  IF NOT EXISTS base_rating (
+    data_avaliacao date,
+    avaliacao int,
+    classificacao VARCHAR(25),
+    cod_cdd bigint,
+    motorista VARCHAR(25),
+    cod_pdv int,
+    nome_pdv VARCHAR(25),
+    transportadora VARCHAR(25),
+    mapa int,
+    motivo VARCHAR(25),
+    comentario VARCHAR(25),
+    estado VARCHAR(25),
+    cidade VARCHAR(25)
+  );
+
+CREATE TABLE -- Mensal /
+  IF NOT EXISTS jornada_laboral (
+    data date,
+    funcionario VARCHAR(25),
+    matricula int,
+    e time,
+    sa time,
+    ra time,
+    s time,
+    trabalhadas time
+  );
+
+CREATE TABLE -- Mensal /
   IF NOT EXISTS `03_05_30_cliente` (
     cod_cliente int,
     descricao VARCHAR(25),
@@ -595,7 +689,7 @@ CREATE TABLE -- colunas data: 1
     d_size_total decimal(10, 2)
   );
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal /
   IF NOT EXISTS `03_05_30_cod_ajudante` (
     cod_ajudante int,
     descricao VARCHAR(25),
@@ -619,7 +713,7 @@ CREATE TABLE -- colunas data: 1
     d_size_total decimal(10, 2)
   );
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal /
   IF NOT EXISTS `03_05_30_cod_motorista` (
     cod_motorista int,
     descricao VARCHAR(25),
@@ -643,7 +737,7 @@ CREATE TABLE -- colunas data: 1
     d_size_total decimal(10, 2)
   );
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal /
   IF NOT EXISTS `03_05_30_mapa` (
     mapa int,
     data date,
@@ -666,7 +760,7 @@ CREATE TABLE -- colunas data: 1
     d_size_total decimal(10, 2)
   );
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal /
   IF NOT EXISTS bees_deliver_dia_antigo (
     tour_display_id bigint,
     tour_date date,
@@ -696,7 +790,7 @@ CREATE TABLE -- colunas data: 1
     bees_last_reason_id_waiting_rescheduled VARCHAR(25)
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal /
   IF NOT EXISTS bees_deliver_dia_novo (
     tour_display_id bigint,
     tour_date date,
@@ -747,7 +841,7 @@ CREATE TABLE -- colunas data: 1
     bees_last_reason_id_waiting_rescheduled VARCHAR(25)
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal /
   IF NOT EXISTS bees_deliver_mes_novo (
     chegou_em datetime,
     quantidade_de_assistentes int,
@@ -796,7 +890,7 @@ CREATE TABLE -- colunas data: 1
     cod_revenda varchar(25)
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal /
   IF NOT EXISTS bees_deliver_mes_antigo (
     arrived_at DATETIME,
     assistants_quantity int,
@@ -911,96 +1005,8 @@ CREATE TABLE
     sequencia_sugerida int,
     seq_real_click int
   );
-CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS `01_20_11` (
-    grupo_de_perfil int,
-    cod_setor int,
-    descricao_setor VARCHAR(25),
-    codigo_cliente bigint,
-    razao_social VARCHAR(25),
-    bairro VARCHAR(25),
-    ordem VARCHAR(25),
-    status_do_cliente VARCHAR(10),
-    nome_fantasia VARCHAR(25),
-    frequencia_visita VARCHAR(25),
-    periodicidade VARCHAR(25),
-    proxima_visita varchar(25),
-    visita_original varchar(25),
-    inicio_visita varchar(25),
-    cnpj VARCHAR(25),
-    inscricao_estadual VARCHAR(25),
-    cod_estabelecimento bigint,
-    nome_estabelecimento VARCHAR(25),
-    cod_pagto int,
-    descricao_pagto VARCHAR(25),
-    serasa VARCHAR(10),
-    observacao VARCHAR(25),
-    contato VARCHAR(25),
-    cnpj_1 VARCHAR(25),
-    contato_1 VARCHAR(25),
-    cnpj_2 VARCHAR(25),
-    ordem_por_historico VARCHAR(25),
-    dias_entrega VARCHAR(25),
-    el_dorado VARCHAR(10),
-    endereco VARCHAR(25),
-    cidade VARCHAR(25),
-    cod_segmento int,
-    segmento VARCHAR(25)
-  );
 
-CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS `01_11` (
-    codigo bigint,
-    descricao VARCHAR(25),
-    pgv int,
-    empresa VARCHAR(10),
-    tipo_marca VARCHAR(25),
-    linha_marca int,
-    embalagem VARCHAR(25),
-    marca int,
-    vasilhame int,
-    garrrafeira int,
-    icms int,
-    tipo_roadshow VARCHAR(10),
-    peso_bruto_kg decimal(10, 2),
-    fator int,
-    fator_hecto float,
-    fator_hecto_comercial float,
-    ind_palmtop VARCHAR(10),
-    grupo int,
-    grupo_remuneracao int,
-    ean bigint,
-    tab_icms int,
-    caixas_pallet int,
-    nr_fator_conversao decimal(10, 2),
-    lastro VARCHAR(25),
-    fam_embalagem_siv int,
-    pauta_pis_litro int,
-    pauta_cofins_litro int,
-    caixas_pallet_1 int,
-    capacidade_1 int,
-    fat_ajust_1 float,
-    caixas_pallet_2 int,
-    capacidade_2 int,
-    fat_ajust_2 float,
-    caixas_pallet_3 int,
-    capacidade_3 int,
-    fat_ajust_3 float,
-    ordem_de_carga int,
-    estoque_minimo_puxada int,
-    codigo_produto_sap int,
-    vasilhame_ficticio VARCHAR(25),
-    ncm bigint,
-    apura_royalties VARCHAR(10),
-    tipo_produto_royalties int,
-    cest bigint,
-    ean_trib bigint,
-    codigo_unitario int,
-    descricao_unitaria VARCHAR(25),
-    subtipo int
-  );
-
-CREATE TABLE -- colunas data: 0 -- verificar
+CREATE TABLE -- Cadastro / -- verificar
   IF NOT EXISTS veiculos (
     frota INT,
     placa VARCHAR(20),
@@ -1008,7 +1014,7 @@ CREATE TABLE -- colunas data: 0 -- verificar
     tipo VARCHAR(10)
   );
 
-CREATE TABLE -- colunas data: 0 -- verificar
+CREATE TABLE -- Cadastro / -- verificar
   IF NOT EXISTS motoristas (
     cod_filial VARCHAR(25),
     descricao_filial VARCHAR(25),
@@ -1027,7 +1033,7 @@ CREATE TABLE -- colunas data: 0 -- verificar
     cluster VARCHAR(25)
   );
 
-CREATE TABLE -- colunas data: 0 -- verificar
+CREATE TABLE -- Cadastro / -- verificar
   IF NOT EXISTS ajudante (
     cod INT,
     nome VARCHAR(100),
@@ -1035,10 +1041,10 @@ CREATE TABLE -- colunas data: 0 -- verificar
     status VARCHAR(25)
   );
 
-CREATE TABLE -- colunas data: 0 -- verificar
+CREATE TABLE -- Cadastro / -- verificar
   IF NOT EXISTS expurgos (mapa INT primary key);
 
--- log tabelas
+-- log
 CREATE TABLE
   IF NOT EXISTS log_ingestao (
     id INT AUTO_INCREMENT PRIMARY KEY,
