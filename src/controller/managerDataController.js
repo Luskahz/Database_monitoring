@@ -97,16 +97,16 @@ export async function manageInsertController(metadados) {
 
         const { result, linhaTipada: linhaInserida } =
           await insertRegisterinTable(metadados.tabela, linhaTipada);
-        // Log detalhado: original e tipada
-        //console.log(
-        //  `Linha ${i} inserida:\r\n`
-        //    +`\r\n`+
-        //    `Original: ${JSON.stringify(linhaOriginal)}\r\n`
-        //    +`\r\n`+
-        //    `Tipada:   ${JSON.stringify(linhaInserida)}\r\n`
-        //    +`\r\n`+
-        //    `----------------------------------------------`
-        //);
+        //Log detalhado: original e tipada
+        addInfo(
+          `Linha ${i} inserida:\r\n`
+            +`\r\n`+
+            `Original: ${JSON.stringify(linhaOriginal)}\r\n`
+            +`\r\n`+
+            `Tipada:   ${JSON.stringify(linhaInserida)}\r\n`
+            +`\r\n`+
+            `----------------------------------------------`
+        );
         sucesso++;
         atualizarBarra(barraId);
       } catch (e) {
