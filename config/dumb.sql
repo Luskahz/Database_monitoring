@@ -450,8 +450,7 @@ CREATE TABLE -- Mensal / chave primaria definida
     pedidos int,
     d_size_agend decimal(10, 2),
     d_size_total decimal(10, 2),
-
-    primary key(cod_cliente, mapa)
+    primary key (cod_cliente, mapa)
   );
 
 CREATE TABLE -- Mensal / chave primaria definida
@@ -525,10 +524,10 @@ CREATE TABLE -- Mensal / chave primaria definida
     pedidos int,
     d_size_agend decimal(10, 2),
     d_size_total decimal(10, 2),
-    primary key(mapa, data)
+    primary key (mapa, data)
   );
 
-CREATE TABLE -- Mensal /
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS `03_08_05` (
     data DATE,
     transp int,
@@ -574,24 +573,24 @@ CREATE TABLE -- Mensal /
     peso_carga_kg DECIMAL(10, 2),
     classificacao_roadshow VARCHAR(20),
     classificacao_roads VARCHAR(20),
-
-    primary key(mapa)
+    primary key (mapa)
   );
 
-CREATE TABLE -- Mensal /
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS `03_11_29` (
     data date,
     mapa int,
     placa VARCHAR(25),
     regiao_entrega VARCHAR(25),
-    superv int,
-    nome_superv VARCHAR(25),
+    superv_rota int,
+    nome_superv_rota VARCHAR(25),
     motorista int,
     nome_motorista VARCHAR(25),
     ajudante_1 VARCHAR(25),
     nome_ajudante_1 int,
     ajudante_2 VARCHAR(25),
-    nome_ajudante_2 int
+    nome_ajudante_2 int,
+    primary key (mapa)
   );
 
 CREATE TABLE -- Mensal / chave primaria definida
@@ -617,7 +616,7 @@ CREATE TABLE -- Mensal / chave primaria definida
     primary key (mapa)
   );
 
-CREATE TABLE -- Mensal /
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS `03_18_05` (
     unb int,
     descricao_unb VARCHAR(25),
@@ -635,8 +634,8 @@ CREATE TABLE -- Mensal /
     status_nf VARCHAR(10),
     produto int,
     descricao_produto VARCHAR(25),
-    quantidade int,
-    um VARCHAR(10),
+    quantidade decimal(10,4),
+    u_m VARCHAR(10),
     valor_unitario decimal(10, 2),
     valor decimal(10, 2),
     pallet VARCHAR(25),
@@ -647,7 +646,7 @@ CREATE TABLE -- Mensal /
     produto_origem int,
     descricao_produto_1 VARCHAR(25),
     quantidade_origem int,
-    um_1 VARCHAR(10),
+    u_m_1 VARCHAR(10),
     veiculo int,
     placa VARCHAR(25),
     transportadora int,
@@ -682,16 +681,17 @@ CREATE TABLE -- Mensal /
     usuario_acao_check VARCHAR(25),
     data_acao_check varchar(25),
     sistema_origem VARCHAR(25),
-    observacao VARCHAR(25),
+    observacao VARCHAR(100),
     perfil_aprovacao_automatica VARCHAR(25),
     data_revisao varchar(25),
     usuario_revisao VARCHAR(25),
     tipo_cliente VARCHAR(25),
     setor_venda int,
-    unnamed_69 VARCHAR(25)
+    unnamed_69 VARCHAR(25),
+    primary key(solicitacao_reposicao, produto)
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS aderencia_tracking_mes (
     classe varchar(25),
     data date,
@@ -731,7 +731,7 @@ CREATE TABLE
     lon_atual_cliente decimal(10, 7),
     distancia_prev decimal(10, 3),
     tempo_deslocamento TIME,
-    vel_media_kmh int,
+    vel_media_km_h int,
     distancia_perc_apontamento decimal(10, 3),
     aderencia_sequencia_entrega varchar(10),
     aderencia_janela_entrega varchar(10),
@@ -760,32 +760,39 @@ CREATE TABLE
     partida_prevista_deposito datetime,
     numero_roadshow varchar(25),
     sequencia_sugerida int,
-    seq_real_click int
+    seq_real_click int,
+
+    primary key(mapa, cod_cliente, sequencia_sugerida)
   );
 
-CREATE TABLE -- Cadastro / -- verificar
+CREATE TABLE -- Cadastro / chave primaria definida
   IF NOT EXISTS ajudante (
-    cod INT,
-    nome VARCHAR(100),
+    codigo INT,
+    nome_ajudante VARCHAR(100),
     cpf VARCHAR(20),
-    status VARCHAR(25)
+    supervisor_rota int,
+    status VARCHAR(25),
+
+    primary key(codigo)
   );
 
-CREATE TABLE -- Mensal /
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS base_rating (
-    data_avaliacao date,
+    data_da_avaliacao date,
     avaliacao int,
     classificacao VARCHAR(25),
     cod_cdd bigint,
     motorista VARCHAR(25),
     cod_pdv int,
     nome_pdv VARCHAR(25),
-    transportadora VARCHAR(25),
+    transportadora VARCHAR(25), 
     mapa int,
     motivo VARCHAR(25),
     comentario VARCHAR(25),
     estado VARCHAR(25),
-    cidade VARCHAR(25)
+    cidade VARCHAR(25),
+
+    primary key(data_da_avaliacao, avaliacao, cod_pdv)
   );
 
 CREATE TABLE -- Mensal /
@@ -962,7 +969,7 @@ CREATE TABLE -- Mensal /
     cod_revenda varchar(25)
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE -- Cadastro / -- verificar
+CREATE TABLE -- Cadastro / chave primaria definida
   IF NOT EXISTS expurgos (mapa INT primary key);
 
 CREATE TABLE -- Mensal /

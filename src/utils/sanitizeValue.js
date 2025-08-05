@@ -67,6 +67,20 @@ export function sanitizeValue(value, tipoEsperado) {
         // DMMYYYY
         const [_, d, m, y] = match;
         return `${y}-${m}-${d.padStart(2, "0")}`;
+      } else if (
+        // 1. DD/MM/YYYY HH:mm or HH:mm:ss → extrai só data
+        (match = str.match(
+          /^(\d{2})\/(\d{2})\/(\d{4})[ T](\d{2}):\d{2}(:\d{2})?$/
+        ))
+      ) {
+        const [_, d, m, y] = match;
+        return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+      } else if (
+        // 2. YYYY-MM-DD HH:mm(:ss) → extrai só data
+        (match = str.match(/^(\d{4})-(\d{2})-(\d{2})[ T]\d{2}:\d{2}(:\d{2})?$/))
+      ) {
+        const [_, y, m, d] = match;
+        return `${y}-${m}-${d}`;
       } else {
         addAviso(`valor data setado como null, validar, valor: [${value}] `);
         return null;
