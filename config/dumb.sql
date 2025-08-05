@@ -238,7 +238,7 @@ CREATE TABLE -- Mensal / chave primaria definida
     primary key (nota)
   );
 
-CREATE TABLE -- Mensal / falta definir a chave primaria!!!!
+CREATE TABLE -- Mensal / tabela sem chave primaria, problema insolucionavel
   IF NOT EXISTS `03_02_37_operacao_veiculo_mapa` (
     empresa int,
     filial int,
@@ -429,6 +429,172 @@ CREATE TABLE -- Mensal / chave primaria definida
   ) ROW_FORMAT = DYNAMIC;
 
 CREATE TABLE -- Mensal / chave primaria definida
+  IF NOT EXISTS `03_05_30_cliente` (
+    cod_cliente int,
+    descricao VARCHAR(25),
+    data date,
+    mapa int,
+    veiculo int,
+    placa VARCHAR(25),
+    motorista int,
+    cod_produto INT,
+    descricao_1 VARCHAR(25),
+    cod_cliente_1 int,
+    descricao_2 VARCHAR(25),
+    peso int,
+    perc_ocup int,
+    volume decimal(10, 4),
+    perc_ocup_1 int,
+    vol_agendado VARCHAR(25),
+    entregas int,
+    pedidos int,
+    d_size_agend decimal(10, 2),
+    d_size_total decimal(10, 2),
+
+    primary key(cod_cliente, mapa)
+  );
+
+CREATE TABLE -- Mensal / chave primaria definida
+  IF NOT EXISTS `03_05_30_cod_ajudante` (
+    cod_ajudante int,
+    descricao VARCHAR(25),
+    data date,
+    mapa int,
+    veiculo int,
+    placa VARCHAR(25),
+    motorista int,
+    cod_produto INT,
+    descricao_1 VARCHAR(25),
+    cod_cliente int,
+    descricao_2 VARCHAR(25),
+    peso int,
+    perc_ocup int,
+    volume decimal(10, 4),
+    perc_ocup_1 int,
+    vol_agendado VARCHAR(25),
+    entregas int,
+    pedidos int,
+    d_size_agend decimal(10, 2),
+    d_size_total decimal(10, 2),
+    primary key (cod_ajudante, data, mapa)
+  );
+
+CREATE TABLE -- Mensal / chave primaria definida
+  IF NOT EXISTS `03_05_30_cod_motorista` (
+    cod_motorista int,
+    descricao VARCHAR(25),
+    data date,
+    mapa int,
+    veiculo int,
+    placa VARCHAR(25),
+    motorista int,
+    cod_produto int,
+    descricao_1 VARCHAR(25),
+    cod_cliente int,
+    descricao_2 VARCHAR(25),
+    peso int,
+    perc_ocup int,
+    volume decimal(10, 4),
+    perc_ocup_1 int,
+    vol_agendado VARCHAR(25),
+    entregas int,
+    pedidos int,
+    d_size_agend decimal(10, 2),
+    d_size_total decimal(10, 2),
+    primary key (cod_ajudante, data, mapa)
+  );
+
+CREATE TABLE -- Mensal / chave primaria definida
+  IF NOT EXISTS `03_05_30_mapa` (
+    mapa int,
+    data date,
+    mapa_1 int,
+    veiculo int,
+    placa VARCHAR(25),
+    motorista int,
+    cod_produto INT,
+    descricao VARCHAR(25),
+    cod_cliente int,
+    descricao_1 VARCHAR(25),
+    peso int,
+    perc_ocup int,
+    volume decimal(10, 4),
+    perc_ocup_1 int,
+    vol_agendado VARCHAR(25),
+    entregas int,
+    pedidos int,
+    d_size_agend decimal(10, 2),
+    d_size_total decimal(10, 2),
+    primary key(mapa, data)
+  );
+
+CREATE TABLE -- Mensal /
+  IF NOT EXISTS `03_08_05` (
+    data DATE,
+    transp int,
+    entrega VARCHAR(20),
+    carga_atual VARCHAR(20),
+    frota VARCHAR(20),
+    custo_spot DECIMAL(15, 2),
+    regiao int,
+    veiculo int,
+    placa VARCHAR(10),
+    mapa INT,
+    capac INT,
+    entregas INT,
+    cx_carreg DECIMAL(10, 2),
+    cx_entreg DECIMAL(10, 2),
+    ocup DECIMAL(6, 2),
+    cx_rota decimal(10, 2),
+    cx_as decimal(10, 2),
+    veic_bm DECIMAL(6, 2),
+    rshow int,
+    entr_vol VARCHAR(20),
+    hr_sai TIME,
+    hr_entr TIME,
+    km_sai INT,
+    km_entr INT,
+    km_prev DECIMAL(8, 2),
+    tempo_prev TIME,
+    vl_pto_mot DECIMAL(10, 6),
+    vl_pto_ajd DECIMAL(10, 6),
+    vl_eq_mot DECIMAL(10, 2),
+    vl_eq_ajd DECIMAL(10, 2),
+    cd_mot INT,
+    cd_aju1 INT,
+    cd_aju2 INT,
+    km_desloc INT,
+    km_laco INT,
+    tmpo_desloc TIME,
+    tmpo_laco TIME,
+    tmpo_interno TIME,
+    mot_nao_carr int,
+    cx_carr_com DECIMAL(10, 2),
+    capacidade_veiculo_kg DECIMAL(10, 2),
+    peso_carga_kg DECIMAL(10, 2),
+    classificacao_roadshow VARCHAR(20),
+    classificacao_roads VARCHAR(20),
+
+    primary key(mapa)
+  );
+
+CREATE TABLE -- Mensal /
+  IF NOT EXISTS `03_11_29` (
+    data date,
+    mapa int,
+    placa VARCHAR(25),
+    regiao_entrega VARCHAR(25),
+    superv int,
+    nome_superv VARCHAR(25),
+    motorista int,
+    nome_motorista VARCHAR(25),
+    ajudante_1 VARCHAR(25),
+    nome_ajudante_1 int,
+    ajudante_2 VARCHAR(25),
+    nome_ajudante_2 int
+  );
+
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS `03_11_40` (
     mapa INT,
     veiculo INT,
@@ -449,53 +615,6 @@ CREATE TABLE -- Mensal / chave primaria definida
     km_final INT,
     km_rodado INT,
     primary key (mapa)
-  );
-
-CREATE TABLE -- Mensal /
-  IF NOT EXISTS `relatorio_separacao_wms` (
-    armazem INT,
-    mapa INT,
-    palete VARCHAR(25),
-    entrega DATE,
-    inicio_palete DATETIME,
-    fim_palete DATETIME,
-    execucao_palete_em_segundos INT,
-    usuario_finalizou_palete VARCHAR(25),
-    finalizado_cfe_indicacao VARCHAR(25),
-    endereco_destino VARCHAR(25),
-    rtls_hab VARCHAR(10),
-    rtls_endereco_destino VARCHAR(10),
-    rtls_itens_ok VARCHAR(10),
-    peso_do_palete_ok VARCHAR(10),
-    peso_palete_esperado INT,
-    peso_palete_real VARCHAR(25),
-    balanca VARCHAR(25),
-    codigo_do_item INT,
-    descricao_do_item VARCHAR(25),
-    tipo VARCHAR(25),
-    peso_esperado DECIMAL(10, 2),
-    peso_real DECIMAL(10, 2),
-    enderecos_sugeridos VARCHAR(25),
-    endereco_selecionado VARCHAR(25),
-    quantidade INT,
-    unidade_medida VARCHAR(20),
-    chapatex INT,
-    papelao INT,
-    sequencia INT,
-    usuario_separacao VARCHAR(25),
-    inicio_separacao_item DATETIME,
-    fim_separacao_item DATETIME,
-    esforco_segundos INT,
-    rtls_habilitado_item VARCHAR(10),
-    utilizou_rtls_item VARCHAR(10),
-    peso_ok_item VARCHAR(25),
-    item_conferido VARCHAR(10),
-    historico_de_registros VARCHAR(25),
-    palete_conferido VARCHAR(10),
-    sorteado_para_blitz VARCHAR(10),
-    regras_de_blitz_classificadas VARCHAR(25),
-    utilizou_percentual_minimo VARCHAR(25),
-    palete_iniciado_com_produto VARCHAR(10)
   );
 
 CREATE TABLE -- Mensal /
@@ -572,68 +691,84 @@ CREATE TABLE -- Mensal /
     unnamed_69 VARCHAR(25)
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE -- Mensal /
-  IF NOT EXISTS `03_11_29` (
+CREATE TABLE
+  IF NOT EXISTS aderencia_tracking_mes (
+    classe varchar(25),
     data date,
     mapa int,
-    placa VARCHAR(25),
-    regiao_entrega VARCHAR(25),
-    superv int,
-    nome_superv VARCHAR(25),
-    motorista int,
-    nome_motorista VARCHAR(25),
-    ajudante_1 VARCHAR(25),
-    nome_ajudante_1 int,
-    ajudante_2 VARCHAR(25),
-    nome_ajudante_2 int
+    placa varchar(10),
+    cod_cliente int,
+    seq_real int,
+    seq_plan int,
+    inicio_rota DATETIME,
+    horario_matinal DATETIME,
+    saida_cdd datetime,
+    chegada_ao_pdv datetime,
+    tempo_prev_retorno time,
+    tempo_retorno time,
+    dist_prev_retorno decimal(10, 4),
+    dist_perc_retorno decimal(10, 3),
+    inicio_entrega DATETIME,
+    fim_entrega DATETIME,
+    fim_rota DATETIME,
+    entrada_cdd DATETIME,
+    caixas_carregadas DECIMAL(10, 2),
+    caixas_devolvidas decimal(10, 2),
+    repasse int,
+    tempo_de_entrega time,
+    tempo_descarga time,
+    tempo_espera time,
+    tempo_almoco time,
+    tempo_total_de_rota time,
+    disp_apont_cadastrado decimal(10, 3),
+    lat_entrega decimal(10, 7),
+    lon_entrega decimal(10, 7),
+    unidade_negocio int,
+    transportadora varchar(50),
+    lat_cliente_apontamento decimal(10, 7),
+    lon_cliente_apontamento decimal(10, 7),
+    lat_atual_cliente decimal(10, 7),
+    lon_atual_cliente decimal(10, 7),
+    distancia_prev decimal(10, 3),
+    tempo_deslocamento TIME,
+    vel_media_kmh int,
+    distancia_perc_apontamento decimal(10, 3),
+    aderencia_sequencia_entrega varchar(10),
+    aderencia_janela_entrega varchar(10),
+    pdv_lacrado varchar(10),
+    codigo_transportadora int,
+    hodometro_ao_sair_do_deposito int,
+    hodometro_ao_voltar_ao_deposito int,
+    acessou_raio_pdv varchar(10),
+    freteiro varchar(10),
+    segmento varchar(10),
+    avaliacao_do_pdv int,
+    observacao_da_avaliacao_do_pdv varchar(50),
+    hodometro_no_carregamento int,
+    aderente_foxtrot varchar(50),
+    horario_previsto_chegada datetime,
+    horario_previsto_saida DATETIME,
+    tempo_previsto TIME,
+    distancia_prevista decimal(10, 3),
+    ocorrencia varchar(25),
+    saida_do_raio datetime,
+    tempo_no_pdv time,
+    grupo_de_clientes varchar(25),
+    geo varchar(25),
+    frota varchar(25),
+    data_fim_entrega datetime,
+    partida_prevista_deposito datetime,
+    numero_roadshow varchar(25),
+    sequencia_sugerida int,
+    seq_real_click int
   );
 
-CREATE TABLE -- Mensal /
-  IF NOT EXISTS `03_08_05` (
-    data DATE,
-    transp int,
-    entrega VARCHAR(20),
-    carga_atual VARCHAR(20),
-    frota VARCHAR(20),
-    custo_spot DECIMAL(15, 2),
-    regiao int,
-    veiculo int,
-    placa VARCHAR(10),
-    mapa INT,
-    capac INT,
-    entregas INT,
-    cx_carreg DECIMAL(10, 2),
-    cx_entreg DECIMAL(10, 2),
-    ocup DECIMAL(6, 2),
-    cx_rota decimal(10, 2),
-    cx_as decimal(10, 2),
-    veic_bm DECIMAL(6, 2),
-    rshow int,
-    entr_vol VARCHAR(20),
-    hr_sai TIME,
-    hr_entr TIME,
-    km_sai INT,
-    km_entr INT,
-    km_prev DECIMAL(8, 2),
-    tempo_prev TIME,
-    vl_pto_mot DECIMAL(10, 6),
-    vl_pto_ajd DECIMAL(10, 6),
-    vl_eq_mot DECIMAL(10, 2),
-    vl_eq_ajd DECIMAL(10, 2),
-    cd_mot INT,
-    cd_aju1 INT,
-    cd_aju2 INT,
-    km_desloc INT,
-    km_laco INT,
-    tmpo_desloc TIME,
-    tmpo_laco TIME,
-    tmpo_interno TIME,
-    mot_nao_carr int,
-    cx_carr_com DECIMAL(10, 2),
-    capacidade_veiculo_kg DECIMAL(10, 2),
-    peso_carga_kg DECIMAL(10, 2),
-    classificacao_roadshow VARCHAR(20),
-    classificacao_roads VARCHAR(20)
+CREATE TABLE -- Cadastro / -- verificar
+  IF NOT EXISTS ajudante (
+    cod INT,
+    nome VARCHAR(100),
+    cpf VARCHAR(20),
+    status VARCHAR(25)
   );
 
 CREATE TABLE -- Mensal /
@@ -651,113 +786,6 @@ CREATE TABLE -- Mensal /
     comentario VARCHAR(25),
     estado VARCHAR(25),
     cidade VARCHAR(25)
-  );
-
-CREATE TABLE -- Mensal /
-  IF NOT EXISTS jornada_laboral (
-    data date,
-    funcionario VARCHAR(25),
-    matricula int,
-    e time,
-    sa time,
-    ra time,
-    s time,
-    trabalhadas time
-  );
-
-CREATE TABLE -- Mensal /
-  IF NOT EXISTS `03_05_30_cliente` (
-    cod_cliente int,
-    descricao VARCHAR(25),
-    data date,
-    mapa int,
-    veiculo int,
-    placa VARCHAR(25),
-    motorista int,
-    cod_produto INT,
-    descricao_1 VARCHAR(25),
-    cod_cliente_1 int,
-    descricao_2 VARCHAR(25),
-    peso int,
-    perc_ocup int,
-    volume decimal(10, 4),
-    perc_ocup_1 int,
-    vol_agendado VARCHAR(25),
-    entregas int,
-    pedidos int,
-    d_size_agend decimal(10, 2),
-    d_size_total decimal(10, 2)
-  );
-
-CREATE TABLE -- Mensal /
-  IF NOT EXISTS `03_05_30_cod_ajudante` (
-    cod_ajudante int,
-    descricao VARCHAR(25),
-    data date,
-    mapa int,
-    veiculo int,
-    placa VARCHAR(25),
-    motorista int,
-    cod_produto INT,
-    descricao_1 VARCHAR(25),
-    cod_cliente int,
-    descricao_2 VARCHAR(25),
-    peso int,
-    perc_ocup int,
-    volume decimal(10, 4),
-    perc_ocup_1 int,
-    vol_agendado VARCHAR(25),
-    entregas int,
-    pedidos int,
-    d_size_agend decimal(10, 2),
-    d_size_total decimal(10, 2)
-  );
-
-CREATE TABLE -- Mensal /
-  IF NOT EXISTS `03_05_30_cod_motorista` (
-    cod_motorista int,
-    descricao VARCHAR(25),
-    data date,
-    mapa int,
-    veiculo int,
-    placa VARCHAR(25),
-    motorista int,
-    cod_produto int,
-    descricao_1 VARCHAR(25),
-    cod_cliente int,
-    descricao_2 VARCHAR(25),
-    peso int,
-    perc_ocup int,
-    volume decimal(10, 4),
-    perc_ocup_1 int,
-    vol_agendado VARCHAR(25),
-    entregas int,
-    pedidos int,
-    d_size_agend decimal(10, 2),
-    d_size_total decimal(10, 2)
-  );
-
-CREATE TABLE -- Mensal /
-  IF NOT EXISTS `03_05_30_mapa` (
-    mapa int,
-    data date,
-    mapa_1 int,
-    veiculo int,
-    placa VARCHAR(25),
-    motorista int,
-    cod_produto INT,
-    descricao VARCHAR(25),
-    cod_cliente int,
-    descricao_1 VARCHAR(25),
-    peso int,
-    perc_ocup int,
-    volume decimal(10, 4),
-    perc_ocup_1 int,
-    vol_agendado VARCHAR(25),
-    entregas int,
-    pedidos int,
-    d_size_agend decimal(10, 2),
-    d_size_total decimal(10, 2)
   );
 
 CREATE TABLE -- Mensal /
@@ -842,6 +870,50 @@ CREATE TABLE -- Mensal /
   ) ROW_FORMAT = DYNAMIC;
 
 CREATE TABLE -- Mensal /
+  IF NOT EXISTS bees_deliver_mes_antigo (
+    arrived_at DATETIME,
+    assistants_quantity int,
+    chave_Mapa varchar(25),
+    cod_cliente int,
+    driver_external_id varchar(25),
+    estimated_time_arrival DATETIME,
+    estimated_time_departure datetime,
+    finished_at datetime,
+    last_reason_rescheduled datetime,
+    last_reason_waiting_modulation varchar(50),
+    last_timestamp_on_the_way varchar(50),
+    last_timestamp_rescheduled datetime,
+    soma_de_optimized_order DATETIME,
+    soma_de_original_order int,
+    poc_external_id int,
+    soma_de_poc_latitude decimal(9, 6),
+    soma_de_poc_longitude decimal(9, 6),
+    poc_name varchar(50),
+    status varchar(25),
+    total_delivered_value int,
+    total_delivered_vol varchar(50),
+    total_refused_value int,
+    total_refused_vol varchar(50),
+    total_value int,
+    total_weight_kg int,
+    tour_date date,
+    tour_display_id int,
+    tour_display_id_original int,
+    contagem_de_tour_trip_ID int,
+    soma_de_trip_display_id int,
+    trip_end_timestamp datetime,
+    trip_start_timestamp datetime,
+    vehicle_license_plate varchar(10),
+    visit_order int,
+    volume_hectoliters_sum int,
+    volume_packages int,
+    within_radius varchar(10),
+    diff_departure_arrival int,
+    diff_finished_arrived int,
+    foxtrot_adherence varchar(10)
+  ) ROW_FORMAT = DYNAMIC;
+
+CREATE TABLE -- Mensal /
   IF NOT EXISTS bees_deliver_mes_novo (
     chegou_em datetime,
     quantidade_de_assistentes int,
@@ -890,128 +962,19 @@ CREATE TABLE -- Mensal /
     cod_revenda varchar(25)
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE -- Mensal /
-  IF NOT EXISTS bees_deliver_mes_antigo (
-    arrived_at DATETIME,
-    assistants_quantity int,
-    chave_Mapa varchar(25),
-    cod_cliente int,
-    driver_external_id varchar(25),
-    estimated_time_arrival DATETIME,
-    estimated_time_departure datetime,
-    finished_at datetime,
-    last_reason_rescheduled datetime,
-    last_reason_waiting_modulation varchar(50),
-    last_timestamp_on_the_way varchar(50),
-    last_timestamp_rescheduled datetime,
-    soma_de_optimized_order DATETIME,
-    soma_de_original_order int,
-    poc_external_id int,
-    soma_de_poc_latitude decimal(9, 6),
-    soma_de_poc_longitude decimal(9, 6),
-    poc_name varchar(50),
-    status varchar(25),
-    total_delivered_value int,
-    total_delivered_vol varchar(50),
-    total_refused_value int,
-    total_refused_vol varchar(50),
-    total_value int,
-    total_weight_kg int,
-    tour_date date,
-    tour_display_id int,
-    tour_display_id_original int,
-    contagem_de_tour_trip_ID int,
-    soma_de_trip_display_id int,
-    trip_end_timestamp datetime,
-    trip_start_timestamp datetime,
-    vehicle_license_plate varchar(10),
-    visit_order int,
-    volume_hectoliters_sum int,
-    volume_packages int,
-    within_radius varchar(10),
-    diff_departure_arrival int,
-    diff_finished_arrived int,
-    foxtrot_adherence varchar(10)
-  ) ROW_FORMAT = DYNAMIC;
-
-CREATE TABLE
-  IF NOT EXISTS aderencia_tracking_mes (
-    classe varchar(25),
-    data date,
-    mapa int,
-    placa varchar(10),
-    cod_cliente int,
-    seq_real int,
-    seq_plan int,
-    inicio_rota DATETIME,
-    horario_matinal DATETIME,
-    saida_cdd datetime,
-    chegada_ao_pdv datetime,
-    tempo_prev_retorno time,
-    tempo_retorno time,
-    dist_prev_retorno decimal(10, 4),
-    dist_perc_retorno decimal(10, 3),
-    inicio_entrega DATETIME,
-    fim_entrega DATETIME,
-    fim_rota DATETIME,
-    entrada_cdd DATETIME,
-    caixas_carregadas DECIMAL(10, 2),
-    caixas_devolvidas decimal(10, 2),
-    repasse int,
-    tempo_de_entrega time,
-    tempo_descarga time,
-    tempo_espera time,
-    tempo_almoco time,
-    tempo_total_de_rota time,
-    disp_apont_cadastrado decimal(10, 3),
-    lat_entrega decimal(10, 7),
-    lon_entrega decimal(10, 7),
-    unidade_negocio int,
-    transportadora varchar(50),
-    lat_cliente_apontamento decimal(10, 7),
-    lon_cliente_apontamento decimal(10, 7),
-    lat_atual_cliente decimal(10, 7),
-    lon_atual_cliente decimal(10, 7),
-    distancia_prev decimal(10, 3),
-    tempo_deslocamento TIME,
-    vel_media_kmh int,
-    distancia_perc_apontamento decimal(10, 3),
-    aderencia_sequencia_entrega varchar(10),
-    aderencia_janela_entrega varchar(10),
-    pdv_lacrado varchar(10),
-    codigo_transportadora int,
-    hodometro_ao_sair_do_deposito int,
-    hodometro_ao_voltar_ao_deposito int,
-    acessou_raio_pdv varchar(10),
-    freteiro varchar(10),
-    segmento varchar(10),
-    avaliacao_do_pdv int,
-    observacao_da_avaliacao_do_pdv varchar(50),
-    hodometro_no_carregamento int,
-    aderente_foxtrot varchar(50),
-    horario_previsto_chegada datetime,
-    horario_previsto_saida DATETIME,
-    tempo_previsto TIME,
-    distancia_prevista decimal(10, 3),
-    ocorrencia varchar(25),
-    saida_do_raio datetime,
-    tempo_no_pdv time,
-    grupo_de_clientes varchar(25),
-    geo varchar(25),
-    frota varchar(25),
-    data_fim_entrega datetime,
-    partida_prevista_deposito datetime,
-    numero_roadshow varchar(25),
-    sequencia_sugerida int,
-    seq_real_click int
-  );
-
 CREATE TABLE -- Cadastro / -- verificar
-  IF NOT EXISTS veiculos (
-    frota INT,
-    placa VARCHAR(20),
-    modelo VARCHAR(25),
-    tipo VARCHAR(10)
+  IF NOT EXISTS expurgos (mapa INT primary key);
+
+CREATE TABLE -- Mensal /
+  IF NOT EXISTS jornada_laboral (
+    data date,
+    funcionario VARCHAR(25),
+    matricula int,
+    e time,
+    sa time,
+    ra time,
+    s time,
+    trabalhadas time
   );
 
 CREATE TABLE -- Cadastro / -- verificar
@@ -1033,16 +996,60 @@ CREATE TABLE -- Cadastro / -- verificar
     cluster VARCHAR(25)
   );
 
-CREATE TABLE -- Cadastro / -- verificar
-  IF NOT EXISTS ajudante (
-    cod INT,
-    nome VARCHAR(100),
-    cpf VARCHAR(20),
-    status VARCHAR(25)
+CREATE TABLE -- Mensal /
+  IF NOT EXISTS `relatorio_separacao_wms` (
+    armazem INT,
+    mapa INT,
+    palete VARCHAR(25),
+    entrega DATE,
+    inicio_palete DATETIME,
+    fim_palete DATETIME,
+    execucao_palete_em_segundos INT,
+    usuario_finalizou_palete VARCHAR(25),
+    finalizado_cfe_indicacao VARCHAR(25),
+    endereco_destino VARCHAR(25),
+    rtls_hab VARCHAR(10),
+    rtls_endereco_destino VARCHAR(10),
+    rtls_itens_ok VARCHAR(10),
+    peso_do_palete_ok VARCHAR(10),
+    peso_palete_esperado INT,
+    peso_palete_real VARCHAR(25),
+    balanca VARCHAR(25),
+    codigo_do_item INT,
+    descricao_do_item VARCHAR(25),
+    tipo VARCHAR(25),
+    peso_esperado DECIMAL(10, 2),
+    peso_real DECIMAL(10, 2),
+    enderecos_sugeridos VARCHAR(25),
+    endereco_selecionado VARCHAR(25),
+    quantidade INT,
+    unidade_medida VARCHAR(20),
+    chapatex INT,
+    papelao INT,
+    sequencia INT,
+    usuario_separacao VARCHAR(25),
+    inicio_separacao_item DATETIME,
+    fim_separacao_item DATETIME,
+    esforco_segundos INT,
+    rtls_habilitado_item VARCHAR(10),
+    utilizou_rtls_item VARCHAR(10),
+    peso_ok_item VARCHAR(25),
+    item_conferido VARCHAR(10),
+    historico_de_registros VARCHAR(25),
+    palete_conferido VARCHAR(10),
+    sorteado_para_blitz VARCHAR(10),
+    regras_de_blitz_classificadas VARCHAR(25),
+    utilizou_percentual_minimo VARCHAR(25),
+    palete_iniciado_com_produto VARCHAR(10)
   );
 
 CREATE TABLE -- Cadastro / -- verificar
-  IF NOT EXISTS expurgos (mapa INT primary key);
+  IF NOT EXISTS veiculos (
+    frota INT,
+    placa VARCHAR(20),
+    modelo VARCHAR(25),
+    tipo VARCHAR(10)
+  );
 
 -- log
 CREATE TABLE
