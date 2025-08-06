@@ -634,7 +634,7 @@ CREATE TABLE -- Mensal / chave primaria definida
     status_nf VARCHAR(10),
     produto int,
     descricao_produto VARCHAR(25),
-    quantidade decimal(10,4),
+    quantidade decimal(10, 4),
     u_m VARCHAR(10),
     valor_unitario decimal(10, 2),
     valor decimal(10, 2),
@@ -688,7 +688,7 @@ CREATE TABLE -- Mensal / chave primaria definida
     tipo_cliente VARCHAR(25),
     setor_venda int,
     unnamed_69 VARCHAR(25),
-    primary key(solicitacao_reposicao, produto)
+    primary key (solicitacao_reposicao, produto)
   ) ROW_FORMAT = DYNAMIC;
 
 CREATE TABLE -- Mensal / chave primaria definida
@@ -761,8 +761,7 @@ CREATE TABLE -- Mensal / chave primaria definida
     numero_roadshow varchar(25),
     sequencia_sugerida int,
     seq_real_click int,
-
-    primary key(mapa, cod_cliente, sequencia_sugerida)
+    primary key (mapa, cod_cliente, sequencia_sugerida)
   );
 
 CREATE TABLE -- Cadastro / chave primaria definida
@@ -772,8 +771,7 @@ CREATE TABLE -- Cadastro / chave primaria definida
     cpf VARCHAR(20),
     supervisor_rota int,
     status VARCHAR(25),
-
-    primary key(codigo)
+    primary key (codigo)
   );
 
 CREATE TABLE -- Mensal / chave primaria definida
@@ -785,48 +783,17 @@ CREATE TABLE -- Mensal / chave primaria definida
     motorista VARCHAR(25),
     cod_pdv int,
     nome_pdv VARCHAR(25),
-    transportadora VARCHAR(25), 
+    transportadora VARCHAR(25),
     mapa int,
     motivo VARCHAR(25),
     comentario VARCHAR(25),
     estado VARCHAR(25),
     cidade VARCHAR(25),
-
-    primary key(data_da_avaliacao, avaliacao, cod_pdv)
+    primary key (data_da_avaliacao, avaliacao, cod_pdv)
   );
 
-CREATE TABLE -- Mensal /
-  IF NOT EXISTS bees_deliver_dia_antigo (
-    tour_display_id bigint,
-    tour_date date,
-    distribution_center_id int,
-    driver_name VARCHAR(25),
-    poc_external_id int,
-    status VARCHAR(25),
-    trip_start_timestamp datetime (3),
-    trip_end_timestamp datetime (3),
-    visit_order int,
-    within_radius VARCHAR(25),
-    actual_delivery_time int,
-    arrived_at VARCHAR(25),
-    finished_at VARCHAR(25),
-    last_reason_waiting_modulation VARCHAR(25),
-    last_reason_rescheduled VARCHAR(25),
-    total_delivered_vol VARCHAR(25),
-    total_refused_vol VARCHAR(25),
-    foxtrot_adherence VARCHAR(25),
-    estimated_delivery_time int,
-    volume_hectoliters_sum VARCHAR(25),
-    bees_poc_id bigint,
-    bees_tour_id VARCHAR(25),
-    bees_trip_id VARCHAR(25),
-    bees_created_date VARCHAR(25),
-    bees_last_reason_id_waiting_modulation VARCHAR(25),
-    bees_last_reason_id_waiting_rescheduled VARCHAR(25)
-  ) ROW_FORMAT = DYNAMIC;
-
-CREATE TABLE -- Mensal /
-  IF NOT EXISTS bees_deliver_dia_novo (
+CREATE TABLE -- Mensal / chave primaria definida
+  IF NOT EXISTS bees_deliver_dia (
     tour_display_id bigint,
     tour_date date,
     distribution_center_id int,
@@ -871,26 +838,27 @@ CREATE TABLE -- Mensal /
     bees_poc_id bigint,
     bees_tour_id VARCHAR(25),
     bees_trip_id VARCHAR(25),
-    bees_created_date VARCHAR(25),
+    bees_created_date DATETIME (3),
     bees_last_reason_id_waiting_modulation VARCHAR(25),
-    bees_last_reason_id_waiting_rescheduled VARCHAR(25)
+    bees_last_reason_id_waiting_rescheduled VARCHAR(25),
+    primary key (tour_date, poc_external_id)
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE -- Mensal /
+CREATE TABLE -- Mensal / UNIQUE KEY Definida
   IF NOT EXISTS bees_deliver_mes_antigo (
     arrived_at DATETIME,
     assistants_quantity int,
-    chave_Mapa varchar(25),
+    chave_mapa varchar(25),
     cod_cliente int,
     driver_external_id varchar(25),
     estimated_time_arrival DATETIME,
     estimated_time_departure datetime,
     finished_at datetime,
-    last_reason_rescheduled datetime,
+    last_reason_rescheduled varchar(50),
     last_reason_waiting_modulation varchar(50),
     last_timestamp_on_the_way varchar(50),
     last_timestamp_rescheduled datetime,
-    soma_de_optimized_order DATETIME,
+    soma_de_optimized_order int,
     soma_de_original_order int,
     poc_external_id int,
     soma_de_poc_latitude decimal(9, 6),
@@ -906,7 +874,7 @@ CREATE TABLE -- Mensal /
     tour_date date,
     tour_display_id int,
     tour_display_id_original int,
-    contagem_de_tour_trip_ID int,
+    contagem_de_tour_trip_id int,
     soma_de_trip_display_id int,
     trip_end_timestamp datetime,
     trip_start_timestamp datetime,
@@ -917,7 +885,11 @@ CREATE TABLE -- Mensal /
     within_radius varchar(10),
     diff_departure_arrival int,
     diff_finished_arrived int,
-    foxtrot_adherence varchar(10)
+    foxtrot_adherence varchar(10) UNIQUE KEY bees_deliver_mes_antigo_trip_unique (
+      tour_display_id,
+      poc_external_id,
+      trip_start_timestamp
+    )
   ) ROW_FORMAT = DYNAMIC;
 
 CREATE TABLE -- Mensal /
@@ -972,7 +944,7 @@ CREATE TABLE -- Mensal /
 CREATE TABLE -- Cadastro / chave primaria definida
   IF NOT EXISTS expurgos (mapa INT primary key);
 
-CREATE TABLE -- Mensal /
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS jornada_laboral (
     data date,
     funcionario VARCHAR(25),
@@ -981,26 +953,28 @@ CREATE TABLE -- Mensal /
     sa time,
     ra time,
     s time,
-    trabalhadas time
+    trabalhadas time,
+    primary key(data, matricula)
   );
 
 CREATE TABLE -- Cadastro / -- verificar
   IF NOT EXISTS motoristas (
-    cod_filial VARCHAR(25),
+    cod_filial int,
     descricao_filial VARCHAR(25),
-    cod_motorista VARCHAR(25),
+    cod_motorista int,
     nome_motorista VARCHAR(25),
     status VARCHAR(25),
-    cod_supervisor_rota VARCHAR(25),
+    cod_supervisor_rota int,
     cpf VARCHAR(25),
-    data_admissao VARCHAR(25),
+    data_admissao varchar(25),
     data_inativacao VARCHAR(25),
-    j_alternativa VARCHAR(25),
-    descricao_j_alternativa VARCHAR(25),
-    rota_gradativa VARCHAR(25),
+    j_alternativa int,
+    descricao_j_alternativa varchar(25),
+    rota_gradativa VARCHAR(10),
     celular_corporativo VARCHAR(25),
-    cod_cluster VARCHAR(25),
-    cluster VARCHAR(25)
+    cod_cluster int,
+    cluster VARCHAR(25),
+    primary key (cod_motorista)
   );
 
 CREATE TABLE -- Mensal /

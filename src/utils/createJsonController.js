@@ -53,17 +53,6 @@ function limparCamposExtras(data) {
   });
 }
 
-function filtrarLinhasValidas(data) {
-  return data.filter((linha) => {
-    const extras =
-      Array.isArray(linha.__parsed_extra) && linha.__parsed_extra.length > 0;
-    const preenchidos = Object.values(linha).filter(
-      (v) => typeof v === "string" && v.trim() !== ""
-    ).length;
-    return preenchidos >= 3 && !extras;
-  });
-}
-
 function normalizarCabecalhosEValores(linha, contexto) {
   const novaLinha = {};
   const nomesUsados = {};
@@ -108,20 +97,22 @@ export default async function createJsonController(filePath) {
   const data = iconv.decode(buffer, "latin1");
   const firstLine = data.split(/\r?\n/)[0];
 
-  if (!(firstLine.includes(",") || firstLine.includes(";"))) {
+  const linhas = data.split(/\r\n|\n|\r/);
+  if (linhas.length < 2) {
     throw new Error(
-      `[Json]  Arquivo ignorado: ${filePath} - Não é um CSV válido`
+      `[Json] Arquivo ignorado: ${filePath} - Não há dados após o header`
     );
   }
-
   const delimiter = firstLine.includes(";") ? ";" : ",";
   const parsed = Papa.parse(data, {
     header: true,
     delimiter,
     skipEmptyLines: true,
     transformHeader: (h) => {
-      const header = h?.trim?.() ?? "";
-      return header === "" ? "unnamed" : normalizar(header);
+      if (!h) return "unnamed";
+      let header = normalizar(h);
+      header = header.replace(/[^\x20-\x7E]/g, "");
+      return header === "" ? "unnamed" : header;
     },
     transform: (value) => value.trim(),
   });
@@ -130,9 +121,8 @@ export default async function createJsonController(filePath) {
   logarErrosDoParse(parsed.errors, contexto);
 
   const linhasCorrigidas = limparCamposExtras(parsed.data);
-  const linhasValidas = filtrarLinhasValidas(linhasCorrigidas);
 
-  if (linhasValidas.length === 0) {
+  if (linhasCorrigidas.length === 0) {
     addAviso(
       `[Json] - Nenhuma linha válida encontrada no arquivo ${filePath}.`,
       contexto
@@ -148,12 +138,12 @@ export default async function createJsonController(filePath) {
     );
   }
 
-  const dataSanitized = linhasValidas
+  const dataSanitized = linhasCorrigidas
     .map((linha) => normalizarCabecalhosEValores(linha, contexto))
     .map((linha) => sanitizeRow(linha, tiposEsperados));
 
   addInfo(
-    `[Json] - ${linhasValidas.length} linhas válidas extraídas de ${filePath}`,
+    `[Json] - ${linhasCorrigidas.length} linhas válidas extraídas de ${filePath}`,
     contexto
   );
   return dataSanitized;

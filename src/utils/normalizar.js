@@ -1,7 +1,9 @@
 export default function normalizar(nome) {
   return nome
-    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
     .normalize("NFD")
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .replace(/^\uFEFF/, "")
+    .replace(/[^\x20-\x7E]/g, "")
     .replace(/[\u0300-\u036f]/g, "") // remove acentos
     .replace(/%/g, "perc") // % → perc
     .replace(/\s*\.\s*/g, "_") // ponto entre palavras → _
