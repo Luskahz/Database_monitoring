@@ -94,7 +94,15 @@ export default async function createJsonController(filePath) {
     throw new Error(`[Json] - erro ao ler o arquivo, erro: ${e.message}`);
   }
 
-  const data = iconv.decode(buffer, "latin1");
+  let data;
+  try {
+    data = iconv.decode(buffer, "utf8");
+    if ((data.match(/\uFFFD/g) || []).length > 3) {
+      data = iconv.decode(buffer, "latin1");
+    }
+  } catch {
+    data = iconv.decode(buffer, "latin1");
+  }
   const firstLine = data.split(/\r?\n/)[0];
 
   const linhas = data.split(/\r\n|\n|\r/);

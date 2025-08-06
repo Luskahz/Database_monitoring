@@ -81,6 +81,13 @@ export function sanitizeValue(value, tipoEsperado) {
       ) {
         const [_, y, m, d] = match;
         return `${y}-${m}-${d}`;
+      } else if (
+        (match = str.match(
+          /^(\d{2})\/(\d{2})\/(\d{4})\s*-\s*(\d{2}):(\d{2}):(\d{2})$/
+        ))
+      ) {
+        const [_, d, m, y] = match;
+        return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
       } else {
         addAviso(`valor data setado como null, validar, valor: [${value}] `);
         return null;
@@ -137,6 +144,13 @@ export function sanitizeValue(value, tipoEsperado) {
         (match = str.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/))
       ) {
         const [_, y, m, d, h, min, s] = match;
+        return `${y}-${m}-${d} ${h}:${min}:${s}`;
+      } else if (
+        (match = str.match(
+          /^(\d{2})\/(\d{2})\/(\d{4})\s*-\s*(\d{2}):(\d{2}):(\d{2})$/
+        ))
+      ) {
+        const [_, d, m, y, h, min, s] = match;
         return `${y}-${m}-${d} ${h}:${min}:${s}`;
       }
 

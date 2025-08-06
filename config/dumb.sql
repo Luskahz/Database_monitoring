@@ -138,8 +138,9 @@ CREATE TABLE -- Mensal /  chave primaria definida
     primary key (id_pedido)
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE -- Mensal / tabela sem chave primaria, problema insolucionavel
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS `03_01_47_01` (
+    id_linha int AUTO_INCREMENT primary key,
     cod_puxada int,
     nome_filial VARCHAR(50),
     geografia VARCHAR(50),
@@ -210,7 +211,14 @@ CREATE TABLE -- Mensal / tabela sem chave primaria, problema insolucionavel
     codigo_condicao_de_pagamento int,
     descricao_condicao_de_pagamento VARCHAR(25),
     quantidade INT,
-    unid_venda VARCHAR(10)
+    unid_venda VARCHAR(10),
+    unique key uk_tabela_03_01_47_01 (
+      id_linha,
+      pedido,
+      cod_prod,
+      volume_entrega,
+      quantidade
+    )
   ) ROW_FORMAT = DYNAMIC;
 
 CREATE TABLE -- Mensal / chave primaria definida
@@ -238,8 +246,9 @@ CREATE TABLE -- Mensal / chave primaria definida
     primary key (nota)
   );
 
-CREATE TABLE -- Mensal / tabela sem chave primaria, problema insolucionavel
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS `03_02_37_operacao_veiculo_mapa` (
+    id_linha int AUTO_INCREMENT primary key,
     empresa int,
     filial int,
     operacao int,
@@ -334,7 +343,16 @@ CREATE TABLE -- Mensal / tabela sem chave primaria, problema insolucionavel
     red_icms_st VARCHAR(25),
     red_fecop_st VARCHAR(25),
     cod_situacao_tributaria VARCHAR(25),
-    campo_extra VARCHAR(10)
+    campo_extra VARCHAR(10),
+    unique key uk_operacao_veiculo_mapa (
+      id_linha,
+      mapa,
+      nota,
+      serie,
+      produto,
+      qtde,
+      desconto
+    )
   ) ROW_FORMAT = DYNAMIC;
 
 CREATE TABLE -- Mensal / chave primaria definida
@@ -500,7 +518,7 @@ CREATE TABLE -- Mensal / chave primaria definida
     pedidos int,
     d_size_agend decimal(10, 2),
     d_size_total decimal(10, 2),
-    primary key (cod_ajudante, data, mapa)
+    primary key (cod_motorista, data, mapa)
   );
 
 CREATE TABLE -- Mensal / chave primaria definida
@@ -885,7 +903,8 @@ CREATE TABLE -- Mensal / UNIQUE KEY Definida
     within_radius varchar(10),
     diff_departure_arrival int,
     diff_finished_arrived int,
-    foxtrot_adherence varchar(10) UNIQUE KEY bees_deliver_mes_antigo_trip_unique (
+    foxtrot_adherence varchar(10),
+    UNIQUE KEY bees_deliver_mes_antigo_trip_unique (
       tour_display_id,
       poc_external_id,
       trip_start_timestamp
@@ -954,10 +973,10 @@ CREATE TABLE -- Mensal / chave primaria definida
     ra time,
     s time,
     trabalhadas time,
-    primary key(data, matricula)
+    primary key (data, matricula)
   );
 
-CREATE TABLE -- Cadastro / -- verificar
+CREATE TABLE -- Cadastro / chave primaria definida
   IF NOT EXISTS motoristas (
     cod_filial int,
     descricao_filial VARCHAR(25),
@@ -977,59 +996,73 @@ CREATE TABLE -- Cadastro / -- verificar
     primary key (cod_motorista)
   );
 
-CREATE TABLE -- Mensal /
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS `relatorio_separacao_wms` (
-    armazem INT,
-    mapa INT,
+    codigo_do_armazem int,
+    mapa int,
     palete VARCHAR(25),
-    entrega DATE,
-    inicio_palete DATETIME,
-    fim_palete DATETIME,
-    execucao_palete_em_segundos INT,
-    usuario_finalizou_palete VARCHAR(25),
-    finalizado_cfe_indicacao VARCHAR(25),
-    endereco_destino VARCHAR(25),
-    rtls_hab VARCHAR(10),
-    rtls_endereco_destino VARCHAR(10),
-    rtls_itens_ok VARCHAR(10),
-    peso_do_palete_ok VARCHAR(10),
-    peso_palete_esperado INT,
-    peso_palete_real VARCHAR(25),
-    balanca VARCHAR(25),
-    codigo_do_item INT,
-    descricao_do_item VARCHAR(25),
-    tipo VARCHAR(25),
-    peso_esperado DECIMAL(10, 2),
-    peso_real DECIMAL(10, 2),
-    enderecos_sugeridos VARCHAR(25),
-    endereco_selecionado VARCHAR(25),
-    quantidade INT,
-    unidade_medida VARCHAR(20),
-    chapatex INT,
-    papelao INT,
-    sequencia INT,
-    usuario_separacao VARCHAR(25),
-    inicio_separacao_item DATETIME,
-    fim_separacao_item DATETIME,
-    esforco_segundos INT,
-    rtls_habilitado_item VARCHAR(10),
-    utilizou_rtls_item VARCHAR(10),
-    peso_ok_item VARCHAR(25),
-    item_conferido VARCHAR(10),
-    historico_de_registros VARCHAR(25),
-    palete_conferido VARCHAR(10),
-    sorteado_para_blitz VARCHAR(10),
-    regras_de_blitz_classificadas VARCHAR(25),
-    utilizou_percentual_minimo VARCHAR(25),
-    palete_iniciado_com_produto VARCHAR(10)
+    data_de_entrega date,
+    inicio_palete int,
+    fim_palete datetime,
+    esforco int,
+    usuario_finalizou_palete varchar(25),
+    finalizado_cfe_indicacao_tc varchar(25),
+    endereco_destino varchar(25),
+    peso_do_palete_ok varchar(10),
+    peso_palete_esperado varchar(25),
+    peso_palete_real varchar(25),
+    balanca varchar(25),
+    codigo_do_item int,
+    descricao_do_item varchar(60),
+    tipo varchar(25),
+    peso_item_esperado decimal(10, 2),
+    peso_item_real varchar(25),
+    enderecos_sugeridos varchar(25),
+    endereco_selecionado varchar(25),
+    quantidade int,
+    unidade_de_medida varchar(25),
+    chapatex varchar(25),
+    papelao varchar(25),
+    sequencia int,
+    usuario_separacao varchar(25),
+    inicio_separacao_item datetime,
+    fim_separacao_item datetime,
+    esforco_item int,
+    peso_do_item_ok varchar(25),
+    item_conferido varchar(10),
+    ultima_ocorrencia varchar(25),
+    palete_conferido varchar(25),
+    palete_iniciou_com_produto varchar(25),
+    sorteado_para_blitz varchar(25),
+    regras_de_blitz_classificadas varchar(50),
+    utilizou_percentual_minimo varchar(25),
+    status_do_palete varchar(25),
+    conferencia_obrigatoria varchar(25),
+    identificacao_da_caixa varchar(25),
+    peso_dos_ativos varchar(25),
+    unique key relatorio_separacao_wms_unique_key (
+      mapa,
+      codigo_do_item,
+      sequencia,
+      quantidade,
+      usuario_finalizou_palete,
+      identificacao_da_caixa,
+      esforco_item
+    )
   );
 
-CREATE TABLE -- Cadastro / -- verificar
+CREATE TABLE -- Cadastro / chave primaria definida
   IF NOT EXISTS veiculos (
     frota INT,
-    placa VARCHAR(20),
-    modelo VARCHAR(25),
-    tipo VARCHAR(10)
+    operacao varchar(25),
+    tipo_de_bem varchar(25),
+    carroceria varchar(25),
+    marca_bau varchar(25),
+    fabricante varchar(25),
+    marca_mod varchar(25),
+    ano_fabric int,
+    placa varchar(10),
+    primary key (frota, operacao)
   );
 
 -- log
