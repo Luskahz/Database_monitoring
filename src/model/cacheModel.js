@@ -168,10 +168,10 @@ export async function insertHashInCache(logData) {
       throw new Error("[hash in cache] Erro ao serializar logData");
 
     await fs.appendFile(cachePath, jsonString + "\n", "utf8");
-    addInfo("[model cache] Objeto salvo no cache com sucesso!", lockFilePath);
+    addInfo(`[FINALIZADO] Objeto salvo no cache com sucesso! processo de inserção do ${mes} - ${dia} na tabela ${tabela_destino} finalizado!`, lockFilePath);
   } catch (e) {
     throw new Error(
-      `erro gerado ao inserir o hash no cache, erro: ${e.message}`
+      `Erro gerado ao inserir o hash no cache, erro: ${e.message}`
     );
   } finally {
     await releaseLock(lockFilePath);
@@ -269,7 +269,7 @@ export async function deleteRegisterFromCache(destino) {
 
     if (!encontrado) {
       throw new Error(
-        `[cache] Registro '${identificadorAlvo}' não encontrado no cache.`
+        `[cache] Registro '${identificadorAlvo}' não encontrado no cache [Script finalizado].`
       );
     }
     try {
@@ -281,7 +281,7 @@ export async function deleteRegisterFromCache(destino) {
     }
 
     addInfo(
-      `[cache JSONL] Registro '${identificadorAlvo}' removido com sucesso.`, lockFilePath
+      `[cache JSONL] Registro '${identificadorAlvo}' removido com sucesso processo de remoção finalizado!.`, lockFilePath
     );
     return true;
   } catch (e) {

@@ -7,6 +7,7 @@ import fs from "fs/promises";
 import iconv from "iconv-lite";
 import Papa from "papaparse";
 import chardet from "chardet";
+import { updateLoggerController } from "../middleware/logger.js";
 
 function detectarColunasDuplicadas(headers, contexto) {
   const set = new Set();
@@ -84,82 +85,93 @@ function normalizarCabecalhosEValores(linha, contexto) {
 // =================== Função principal ===================
 
 export default async function createJsonController(filePath) {
-  const contexto = filePath;
-  const destino = destinoByFilePath(filePath);
-  const tabelaName = destino.tabela_destino;
-
-  let buffer;
   try {
-    buffer = await fs.readFile(filePath);
-  } catch (e) {
-    throw new Error(`[Json] - erro ao ler o arquivo, erro: ${e.message}`);
-  }
+    const contexto = filePath;
+    const destino = destinoByFilePath(filePath);
+    const tabelaName = destino.tabela_destino;
 
-  let data;
-  const detectedEncoding = chardet.detect(buffer);
+    let buffer;
+    try {
+      buffer = await fs.readFile(filePath);
+    } catch (e) {
+      throw new Error(`[Json] - erro ao ler o arquivo, erro: ${e.message}`);
+    }
+    let data;
+    const detectedEncoding = chardet.detect(buffer);
 
-  if (detectedEncoding === "ISO-8859-1") {
-    data = iconv.decode(buffer, "latin1");
-  } else if (detectedEncoding === "UTF-8") {
-    data = iconv.decode(buffer, "utf8");
-  } else {
-    throw new Error(
+    try {
+      if (detectedEncoding === "UTF-8") {
+        data = iconv.decode(buffer, "utf8");
+      } else if (
+        detectedEncoding === "ISO-8859-1" ||
+        detectedEncoding === "ISO-8859-2"
+      ) {
+        data = iconv.decode(buffer, "latin1"); // Latin-1 cobre ISO-8859-1 e ISO-8859-2
+      } else {
+        
+        addAviso(
+          `Codificação ${detectedEncoding} não suportada, utilizando UTF-8 como padrão.`
+        );
+        data = iconv.decode(buffer, "utf8");
+      }
+    } catch (e) {
+      throw new Error(`[Json] - Erro ao decodificar o arquivo: ${e.message}`);
+    }
+
+    const firstLine = data.split(/\r?\n/)[0];
+
+    const linhas = data.split(/\r\n|\n|\r/);
+    if (linhas.length < 2) {
+      throw new Error(
+        `[Json] Arquivo ignorado: ${filePath} - Não há dados após o header`
+      );
+    }
+
+    const delimiter = firstLine.includes(";") ? ";" : ",";
+    const parsed = Papa.parse(data, {
+      header: true,
+      delimiter,
+      skipEmptyLines: true,
+      transformHeader: (h) => {
+        if (!h) return "unnamed";
+        let header = normalizar(h);
+        header = header.replace(/[\u0000-\u001F\u007F]/g, "");
+        return header === "" ? "unnamed" : header;
+      },
+      transform: (value) => value.trim(),
+    });
+  
+    detectarColunasDuplicadas(parsed.meta?.fields, contexto);
+    logarErrosDoParse(parsed.errors, contexto);
+
+    const linhasCorrigidas = limparCamposExtras(parsed.data);
+
+    if (linhasCorrigidas.length === 0) {
       addAviso(
-        detectedEncoding
-      )`Codificação não detectada corretamente, ou não suportada. Codificação detectada: ${detectedEncoding}`
-    );
-  }
+        `[Json] - Nenhuma linha válida encontrada no arquivo ${filePath}.`,
+        contexto
+      );
+    }
 
-  const firstLine = data.split(/\r?\n/)[0];
+    let tiposEsperados;
+    try {
+      tiposEsperados = await getTiposFromTable(tabelaName);
+    } catch (e) {
+      throw new Error(
+        `[Json] - erro ao gerar os tipos esperados, [erro: ${e.message}]`
+      );
+    }
 
-  const linhas = data.split(/\r\n|\n|\r/);
-  if (linhas.length < 2) {
-    throw new Error(
-      `[Json] Arquivo ignorado: ${filePath} - Não há dados após o header`
-    );
-  }
-  const delimiter = firstLine.includes(";") ? ";" : ",";
-  const parsed = Papa.parse(data, {
-    header: true,
-    delimiter,
-    skipEmptyLines: true,
-    transformHeader: (h) => {
-      if (!h) return "unnamed";
-      let header = normalizar(h);
-      header = header.replace(/[\u0000-\u001F\u007F]/g, "");
-      return header === "" ? "unnamed" : header;
-    },
-    transform: (value) => value.trim(),
-  });
+    const dataSanitized = linhasCorrigidas
+      .map((linha) => normalizarCabecalhosEValores(linha, contexto))
+      .map((linha) => sanitizeRow(linha, tiposEsperados));
 
-  detectarColunasDuplicadas(parsed.meta?.fields, contexto);
-  logarErrosDoParse(parsed.errors, contexto);
-
-  const linhasCorrigidas = limparCamposExtras(parsed.data);
-
-  if (linhasCorrigidas.length === 0) {
-    addAviso(
-      `[Json] - Nenhuma linha válida encontrada no arquivo ${filePath}.`,
+    addInfo(
+      `[Json] - ${linhasCorrigidas.length} linhas válidas extraídas de ${filePath}`,
       contexto
     );
-  }
-
-  let tiposEsperados;
-  try {
-    tiposEsperados = await getTiposFromTable(tabelaName);
+    return dataSanitized;
   } catch (e) {
-    throw new Error(
-      `[Json] - erro ao gerar os tipos esperados, [erro: ${e.message}]`
-    );
+    throw e;
   }
-
-  const dataSanitized = linhasCorrigidas
-    .map((linha) => normalizarCabecalhosEValores(linha, contexto))
-    .map((linha) => sanitizeRow(linha, tiposEsperados));
-
-  addInfo(
-    `[Json] - ${linhasCorrigidas.length} linhas válidas extraídas de ${filePath}`,
-    contexto
-  );
-  return dataSanitized;
 }

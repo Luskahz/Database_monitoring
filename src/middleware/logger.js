@@ -3,7 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { getAllErrors, clearAllErrors, addErro } from "./errorHandler.js";
 import colunsValidator from "../utils/colunsValidator.js";
-//import { safeLog } from "../utils/progressBar.js";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function TextoLogger(dadosLogger, contexto = "__global") {
@@ -27,9 +27,7 @@ function TextoLogger(dadosLogger, contexto = "__global") {
 
   const blocoMensagens =
     blocos.length > 0 ? blocos.join("\n\n") : "✅ Sem mensagens loggadas...";
-
   const acao = dadosLogger.acao?.toLowerCase?.() ?? "created";
-
   const titulo =
     acao === "deleted"
       ? `==== LOG DELETED ${dadosLogger.nome_arquivo} - ${dataHora} ====`
@@ -103,7 +101,6 @@ export async function createLoggerController(filePath) {
   try {
     // Garante que a pasta 'loggers' exista
     await fs.mkdir(path.dirname(logPath), { recursive: true });
-
     await fs.writeFile(logPath, "Processo iniciado....", "utf8");
   } catch (e) {
     console.log(
@@ -117,7 +114,6 @@ export async function updateLoggerController(
   contexto = "__global"
 ) {
   let filePath, dadosParaLog;
-
   if (typeof dadosLogger === "string") {
     filePath = dadosLogger;
     dadosParaLog = {
@@ -139,8 +135,8 @@ export async function updateLoggerController(
   const { name } = path.parse(filePath);
   const dir = path.dirname(filePath);
   const logPath = await getLoggerFileName(dir, name);
-
   const texto = TextoLogger(dadosParaLog, contexto);
+  
   try {
     await fs.writeFile(logPath, texto, "utf8");
   } catch (e) {

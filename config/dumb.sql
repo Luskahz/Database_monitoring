@@ -248,7 +248,6 @@ CREATE TABLE -- Mensal / chave primaria definida
 
 CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS `03_02_37_operacao_veiculo_mapa` (
-    id_linha int AUTO_INCREMENT primary key,
     empresa int,
     filial int,
     operacao int,
@@ -344,6 +343,8 @@ CREATE TABLE -- Mensal / chave primaria definida
     red_fecop_st VARCHAR(25),
     cod_situacao_tributaria VARCHAR(25),
     campo_extra VARCHAR(10),
+    id_linha int AUTO_INCREMENT,
+    primary key (id_linha),
     unique key uk_operacao_veiculo_mapa (
       id_linha,
       mapa,

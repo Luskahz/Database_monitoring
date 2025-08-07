@@ -9,9 +9,11 @@ export default async function createDataController(filePath, action) {
   const contexto = filePath
   let dataJson;
   try {
+      
     dataJson = await createJsonController(filePath);
     if (!dataJson || dataJson.length === 0) {
       addAviso("CSV vazio, validar se está válido", contexto);
+     
       return null 
     } else if (Object.keys(dataJson[0]).length === 0) {
       addAviso("CSV possui registros, mas sem colunas detectadas.", contexto);

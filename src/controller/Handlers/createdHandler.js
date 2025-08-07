@@ -27,6 +27,7 @@ export default async function createdHandler(filePath) {
     // ------------criando logger -----------------
     clearAllErrors(contexto);
     await createLoggerController(filePath);
+
     //---------- criando os docs, e validando o fluxo de insersão -----------
 
     let resultado;
@@ -40,6 +41,7 @@ export default async function createdHandler(filePath) {
       );
       return;
     } finally {
+      
       await updateLoggerController(
         getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
         contexto

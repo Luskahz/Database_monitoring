@@ -16,10 +16,10 @@ import { deleteLogByHash } from "../../model/logModel.js";
 import { destinoByFilePath } from "../createDataController.js";
 import { managerDeleterController } from "../managerDataController.js";
 
-export default async function deletedHandler(filePath) {
+export default async function deletedHandler(filePath, acao) {
   const contexto = filePath;
   clearAllErrors(contexto);
-  let logData;
+  let logData = {};
   try {
     const destino = destinoByFilePath(filePath);
     try {
@@ -43,6 +43,10 @@ export default async function deletedHandler(filePath) {
         contexto
       );
     }
+    if (acao) {
+      logData.acao = acao;
+    }
+
     let resultado;
     try {
       addAviso("logica de exclusão dos dados iniciada...", contexto);
