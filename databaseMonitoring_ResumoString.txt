@@ -45,7 +45,7 @@ package.json --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\package.json
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon src/server.js"
+    "dev": "node --max-old-space-size=8192 node_modules/nodemon/bin/nodemon.js src/server.js"
   },
   "repository": {
     "type": "git",
@@ -104,76 +104,98 @@ CREATE DATABASE IF NOT EXISTS diretorio;
 
 USE diretorio;
 
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_11_40` (
-    mapa INT not null,
-    veiculo INT,
-    placa VARCHAR(20),
-    dt_entrega DATE,
-    entregas INT,
-    hora_emis TIME(0),
-    hora_carreg TIME(0),
-    hora_saida TIME(0),
-    hora_chegada TIME(0),
-    hora_p_fis TIME(0),
-    hora_p_fin TIME(0),
-    tempo_rota TIME(2),
-    tempo_p_fis TIME(2),
-    tempo_p_fin TIME(2),
-    tempo_interno TIME(2),
-    km_inicial INT,
-    km_final INT,
-    km_rodado INT
+CREATE TABLE -- Cadastro / chave primaria definida
+  IF NOT EXISTS `01_20_11` (
+    grupo_de_perfil int,
+    cod_setor int,
+    descricao_setor VARCHAR(25),
+    codigo_cliente bigint,
+    razao_social VARCHAR(25),
+    bairro VARCHAR(25),
+    ordem VARCHAR(25),
+    status_do_cliente VARCHAR(10),
+    nome_fantasia VARCHAR(25),
+    frequencia_visita VARCHAR(25),
+    periodicidade VARCHAR(25),
+    proxima_visita varchar(25),
+    visita_original varchar(25),
+    inicio_visita varchar(25),
+    cnpj VARCHAR(25),
+    inscricao_estadual VARCHAR(25),
+    cod_estabelecimento bigint,
+    nome_estabelecimento VARCHAR(25),
+    cod_pagto int,
+    descricao_pagto VARCHAR(25),
+    serasa VARCHAR(10),
+    observacao VARCHAR(25),
+    contato VARCHAR(25),
+    cnpj_1 VARCHAR(25),
+    contato_1 VARCHAR(25),
+    cnpj_2 VARCHAR(25),
+    ordem_por_historico VARCHAR(25),
+    dias_entrega VARCHAR(25),
+    el_dorado VARCHAR(10),
+    endereco VARCHAR(25),
+    cidade VARCHAR(25),
+    cod_segmento int,
+    segmento VARCHAR(25),
+    primary key (codigo_cliente)
   );
 
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `relatorio_separacao_wms` (
-    armazem INT,
-    mapa INT,
-    palete VARCHAR(25),
-    entrega DATE,
-    inicio_palete DATETIME,
-    fim_palete DATETIME,
-    execucao_palete_em_segundos INT,
-    usuario_finalizou_palete VARCHAR(25),
-    finalizado_cfe_indicacao VARCHAR(25),
-    endereco_destino VARCHAR(25),
-    rtls_hab VARCHAR(10),
-    rtls_endereco_destino VARCHAR(10),
-    rtls_itens_ok VARCHAR(10),
-    peso_do_palete_ok VARCHAR(10),
-    peso_palete_esperado INT,
-    peso_palete_real VARCHAR(25),
-    balanca VARCHAR(25),
-    codigo_do_item INT,
-    descricao_do_item VARCHAR(25),
-    tipo VARCHAR(25),
-    peso_esperado DECIMAL(10, 2),
-    peso_real DECIMAL(10, 2),
-    enderecos_sugeridos VARCHAR(25),
-    endereco_selecionado VARCHAR(25),
-    quantidade INT,
-    unidade_medida VARCHAR(20),
-    chapatex INT,
-    papelao INT,
-    sequencia INT,
-    usuario_separacao VARCHAR(25),
-    inicio_separacao_item DATETIME,
-    fim_separacao_item DATETIME,
-    esforco_segundos INT,
-    rtls_habilitado_item VARCHAR(10),
-    utilizou_rtls_item VARCHAR(10),
-    peso_ok_item VARCHAR(25),
-    item_conferido VARCHAR(10),
-    historico_de_registros VARCHAR(25),
-    palete_conferido VARCHAR(10),
-    sorteado_para_blitz VARCHAR(10),
-    regras_de_blitz_classificadas VARCHAR(25),
-    utilizou_percentual_minimo VARCHAR(25),
-    palete_iniciado_com_produto VARCHAR(10)
+CREATE TABLE -- Cadastro / chave primaria definida 
+  IF NOT EXISTS `01_11` (
+    codigo bigint,
+    descricao VARCHAR(25),
+    pgv int,
+    empresa VARCHAR(10),
+    tipo_marca VARCHAR(25),
+    linha_marca int,
+    embalagem VARCHAR(25),
+    marca int,
+    vasilhame int,
+    garrrafeira int,
+    icms int,
+    tipo_roadshow VARCHAR(10),
+    peso_bruto_kg decimal(10, 2),
+    fator int,
+    fator_hecto float,
+    fator_hecto_comercial float,
+    ind_palmtop VARCHAR(10),
+    grupo int,
+    grupo_remuneracao int,
+    ean bigint,
+    tab_icms int,
+    caixas_pallet int,
+    nr_fator_conversao decimal(10, 2),
+    lastro VARCHAR(25),
+    fam_embalagem_siv int,
+    pauta_pis_litro int,
+    pauta_cofins_litro int,
+    caixas_pallet_1 int,
+    capacidade_1 int,
+    fat_ajust_1 float,
+    caixas_pallet_2 int,
+    capacidade_2 int,
+    fat_ajust_2 float,
+    caixas_pallet_3 int,
+    capacidade_3 int,
+    fat_ajust_3 float,
+    ordem_de_carga int,
+    estoque_minimo_puxada int,
+    codigo_produto_sap int,
+    vasilhame_ficticio VARCHAR(25),
+    ncm bigint,
+    apura_royalties VARCHAR(10),
+    tipo_produto_royalties int,
+    cest bigint,
+    ean_trib bigint,
+    codigo_unitario int,
+    descricao_unitaria VARCHAR(25),
+    subtipo int,
+    primary key (codigo)
   );
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal /  chave primaria definida
   IF NOT EXISTS `03_01_46_06` (
     id_pedido bigint,
     unb bigint,
@@ -214,178 +236,13 @@ CREATE TABLE -- colunas data: 1
     taxa_adf_escalonada decimal(10, 2),
     valor_pedido_minimo decimal(10, 2),
     indicador_entrega_alternativa VARCHAR(25),
-    importado_pelo_hercules VARCHAR(25)
+    importado_pelo_hercules VARCHAR(25),
+    primary key (id_pedido)
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_18_05` (
-    unb int,
-    descricao_unb VARCHAR(25),
-    codigo_cliente int,
-    nome_cliente VARCHAR(25),
-    solicitacao_reposicao int,
-    tipo_solicitacao VARCHAR(25),
-    data_solicitacao Varchar(25),
-    hora time,
-    status_solicitacao VARCHAR(25),
-    data_acao date,
-    usuario_acao VARCHAR(25),
-    mapa_reposicao bigint,
-    nota_fiscal_serie VARCHAR(25),
-    status_nf VARCHAR(10),
-    produto int,
-    descricao_produto VARCHAR(25),
-    quantidade int,
-    um VARCHAR(10),
-    valor_unitario decimal(10, 2),
-    valor decimal(10, 2),
-    pallet VARCHAR(25),
-    montagem_pallet VARCHAR(10),
-    justificativa VARCHAR(10),
-    mapa_origem int,
-    nf_origem VARCHAR(25),
-    produto_origem int,
-    descricao_produto_1 VARCHAR(25),
-    quantidade_origem int,
-    um_1 VARCHAR(10),
-    veiculo int,
-    placa VARCHAR(25),
-    transportadora int,
-    nome_transportadora VARCHAR(25),
-    motorista int,
-    nome_motorista VARCHAR(25),
-    ajudante int,
-    nome_ajudante_entrega VARCHAR(25),
-    ajudante_1 int,
-    nome_ajudante_entrega_1 VARCHAR(25),
-    conferente_solicitacao_reposicao VARCHAR(25),
-    nome_conferente_solicitacao_reposicao VARCHAR(25),
-    conferente_carregamento VARCHAR(25),
-    nome_conferente_carregamento VARCHAR(25),
-    ajudante_carregamento VARCHAR(25),
-    nome_ajudante_carregamento VARCHAR(25),
-    ajudante_carregamento_1 VARCHAR(25),
-    nome_ajudante_carregamento_1 VARCHAR(25),
-    ajudante_carregamento_2 VARCHAR(25),
-    nome_ajudante_carregamento_2 VARCHAR(25),
-    ajudante_carregamento_3 VARCHAR(25),
-    nome_ajudante_carregamento_3 VARCHAR(25),
-    ajudante_carregamento_4 VARCHAR(25),
-    nome_ajudante_carregamento_4 VARCHAR(25),
-    ajudante_carregamento_5 VARCHAR(25),
-    nome_ajudante_carregamento_5 VARCHAR(25),
-    origem_blitz_carreg VARCHAR(25),
-    nr_pedido_reposicao int,
-    unb_cliente int,
-    opcao_de_reposicao VARCHAR(25),
-    status_check_reposicao VARCHAR(25),
-    usuario_acao_check VARCHAR(25),
-    data_acao_check varchar(25),
-    sistema_origem VARCHAR(25),
-    observacao VARCHAR(25),
-    perfil_aprovacao_automatica VARCHAR(25),
-    data_revisao varchar(25),
-    usuario_revisao VARCHAR(25),
-    tipo_cliente VARCHAR(25),
-    setor_venda int,
-    unnamed_69 VARCHAR(25)
-  ) ROW_FORMAT = DYNAMIC;
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_11_29` (
-    data date,
-    mapa int,
-    placa VARCHAR(25),
-    regiao_entrega VARCHAR(25),
-    superv int,
-    nome_superv VARCHAR(25),
-    motorista int,
-    nome_motorista VARCHAR(25),
-    ajudante_1 VARCHAR(25),
-    nome_ajudante_1 int,
-    ajudante_2 VARCHAR(25),
-    nome_ajudante_2 int
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS `03_08_05` (
-    data DATE,
-    transp int,
-    entrega VARCHAR(20),
-    carga_atual VARCHAR(20),
-    frota VARCHAR(20),
-    custo_spot DECIMAL(15, 2),
-    regiao int,
-    veiculo int,
-    placa VARCHAR(10),
-    mapa INT,
-    capac INT,
-    entregas INT,
-    cx_carreg DECIMAL(10, 2),
-    cx_entreg DECIMAL(10, 2),
-    ocup DECIMAL(6, 2),
-    cx_rota decimal(10, 2),
-    cx_as decimal(10, 2),
-    veic_bm DECIMAL(6, 2),
-    rshow int,
-    entr_vol VARCHAR(20),
-    hr_sai TIME,
-    hr_entr TIME,
-    km_sai INT,
-    km_entr INT,
-    km_prev DECIMAL(8, 2),
-    tempo_prev TIME,
-    vl_pto_mot DECIMAL(10, 6),
-    vl_pto_ajd DECIMAL(10, 6),
-    vl_eq_mot DECIMAL(10, 2),
-    vl_eq_ajd DECIMAL(10, 2),
-    cd_mot INT,
-    cd_aju1 INT,
-    cd_aju2 INT,
-    km_desloc INT,
-    km_laco INT,
-    tmpo_desloc TIME,
-    tmpo_laco TIME,
-    tmpo_interno TIME,
-    mot_nao_carr int,
-    cx_carr_com DECIMAL(10, 2),
-    capacidade_veiculo_kg DECIMAL(10, 2),
-    peso_carga_kg DECIMAL(10, 2),
-    classificacao_roadshow VARCHAR(20),
-    classificacao_roads VARCHAR(20)
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS base_rating (
-    data_avaliacao date,
-    avaliacao int,
-    classificacao VARCHAR(25),
-    cod_cdd bigint,
-    motorista VARCHAR(25),
-    cod_pdv int,
-    nome_pdv VARCHAR(25),
-    transportadora VARCHAR(25),
-    mapa int,
-    motivo VARCHAR(25),
-    comentario VARCHAR(25),
-    estado VARCHAR(25),
-    cidade VARCHAR(25)
-  );
-
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS jornada_laboral (
-    data date,
-    funcionario VARCHAR(25),
-    matricula int,
-    e time,
-    sa time,
-    ra time,
-    s time,
-    trabalhadas time
-  );
-
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS `03_01_47_01` (
+    id_linha int AUTO_INCREMENT primary key,
     cod_puxada int,
     nome_filial VARCHAR(50),
     geografia VARCHAR(50),
@@ -437,8 +294,8 @@ CREATE TABLE -- colunas data: 1
     situacao VARCHAR(20),
     prioridade_road VARCHAR(20),
     prioridade_venda VARCHAR(20),
-    hora_envio_roadshow DATETIME,
-    hora_retorno_roadshow DATETIME,
+    hora_envio_road_show DATETIME,
+    hora_retorno_road_show DATETIME,
     pedido_origem VARCHAR(50),
     cod_filial_origem VARCHAR(20),
     nome_filial_origem VARCHAR(50),
@@ -453,13 +310,20 @@ CREATE TABLE -- colunas data: 1
     cliente_ponto_de_apoio VARCHAR(25),
     data_hora_envio_road_magali DATETIME,
     data_hora_retorno_road_magali DATETIME,
-    codigo_condicao_de_pagamento VARCHAR(20),
+    codigo_condicao_de_pagamento int,
     descricao_condicao_de_pagamento VARCHAR(25),
     quantidade INT,
-    unid_venda VARCHAR(10)
+    unid_venda VARCHAR(10),
+    unique key uk_tabela_03_01_47_01 (
+      id_linha,
+      pedido,
+      cod_prod,
+      volume_entrega,
+      quantidade
+    )
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS `03_02_24` (
     mapa bigint,
     data date,
@@ -480,11 +344,13 @@ CREATE TABLE -- colunas data: 1
     desc_motivo VARCHAR(25),
     orig_pedido VARCHAR(25),
     usuario VARCHAR(25),
-    hora time
+    hora time,
+    primary key (nota)
   );
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS `03_02_37_operacao_veiculo_mapa` (
+    id_linha int AUTO_INCREMENT primary key,
     empresa int,
     filial int,
     operacao int,
@@ -529,28 +395,28 @@ CREATE TABLE -- colunas data: 1
     descricao_motivo VARCHAR(25),
     data_contingencia VARCHAR(25),
     hora_contingencia VARCHAR(25),
-    nr_protocolo bigint,
-    chave_de_acesso_nf_e VARCHAR(25),
+    nr_protocolo varchar(50),
+    chave_de_acesso_nf_e VARCHAR(100),
     indicador_nf_e VARCHAR(10),
     hora_envio time,
     hora_retorno time,
     indicador_de_caneta VARCHAR(10),
     indicador_fora_rota_entrega VARCHAR(10),
     id_mensageria VARCHAR(10),
-    status_sefaz_hb_nfex int,
-    data_retorno_hb_nfex varchar(25),
-    hora_retorno_hb_nfex time,
-    data_envio_2v VARCHAR(25),
+    status_sefaz_hb_nfe_x int,
+    data_retorno_hb_nfe_x varchar(25),
+    hora_retorno_hb_nfe_x time,
+    data_envio_2_v VARCHAR(25),
     estoque_atualizado VARCHAR(10),
     dt_emissao_fiscal varchar(25),
     nota_fiscal_exportada_para_promax_central VARCHAR(25),
-    prazo VARCHAR(25),
+    prazo int,
     nf_retorno_vasilhame VARCHAR(25),
     nf_venda_ag_produto_material VARCHAR(25),
     nf_retorno_remessa_puxada_ag VARCHAR(25),
     nf_recolha_comodato VARCHAR(25),
     nf_troca_realizada VARCHAR(25),
-    taxa_de_entrega VARCHAR(25),
+    taxa_de_entrega decimal(10, 2),
     origem_do_pedido VARCHAR(25),
     vl_desconto_algoritmo VARCHAR(25),
     meta_algoritmo VARCHAR(25),
@@ -558,31 +424,40 @@ CREATE TABLE -- colunas data: 1
     desc_disponivel_acao VARCHAR(25),
     vl_desconto_algoritmo_aut VARCHAR(25),
     codigo_acao_desconto_alg_fix VARCHAR(25),
-    valor_ttv_planejado VARCHAR(25),
+    valor_ttv_planejado decimal(10, 2),
     valor_sugerido VARCHAR(25),
     cod_setor_atendimento VARCHAR(25),
     tipo_setor_atendimento VARCHAR(25),
     setor int,
     codigo_da_escalonada_do_pedido VARCHAR(25),
     tipo_escalonada_do_pedido VARCHAR(25),
-    faixa_da_escalonada_do_pedido VARCHAR(25),
+    faixa_da_escalonada_do_pedido int,
     indicador_de_preco_pontual VARCHAR(25),
     indicador_de_preco_cheio VARCHAR(25),
     ttv_da_escalonada_do_pedido VARCHAR(25),
     indicador_de_unidade VARCHAR(25),
     data_captura_pedido VARCHAR(25),
-    nf_regerada VARCHAR(25),
-    serie_nf_regerada VARCHAR(25),
+    nf_regerada int,
+    serie_nf_regerada int,
     indicador_cancelamento VARCHAR(25),
     red_icms_proprio VARCHAR(25),
     red_fecop_proprio VARCHAR(25),
     red_icms_st VARCHAR(25),
     red_fecop_st VARCHAR(25),
     cod_situacao_tributaria VARCHAR(25),
-    campo_extra VARCHAR(10)
+    campo_extra VARCHAR(10),
+    unique key uk_operacao_veiculo_mapa (
+      id_linha,
+      mapa,
+      nota,
+      serie,
+      produto,
+      qtde,
+      desconto
+    )
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS `03_02_37_tipo_movto` (
     empresa int,
     filial int,
@@ -620,8 +495,8 @@ CREATE TABLE -- colunas data: 1
     trib_pis_aliquota VARCHAR(25),
     trib_cofins_pauta VARCHAR(25),
     trib_cofins_aliquota VARCHAR(25),
-    nf_referencia VARCHAR(25),
-    serie_nf_referencia VARCHAR(25),
+    nf_referencia int,
+    serie_nf_referencia int,
     data_nf_referencia VARCHAR(25),
     status_nf_e VARCHAR(25),
     motivo_rejeicao_denegacao VARCHAR(25),
@@ -636,10 +511,10 @@ CREATE TABLE -- colunas data: 1
     indicador_de_caneta VARCHAR(25),
     indicador_fora_rota_entrega VARCHAR(25),
     id_mensageria VARCHAR(25),
-    status_sefaz_hb_nfex VARCHAR(25),
-    data_retorno_hb_nfex VARCHAR(25),
-    hora_retorno_hb_nfex VARCHAR(25),
-    data_envio_2v VARCHAR(25),
+    status_sefaz_hb_nfe_x VARCHAR(25),
+    data_retorno_hb_nfe_x VARCHAR(25),
+    hora_retorno_hb_nfe_x VARCHAR(25),
+    data_envio_2_v VARCHAR(25),
     estoque_atualizado VARCHAR(25),
     dt_emissao_fiscal VARCHAR(25),
     nota_fiscal_exportada_para_promax_central VARCHAR(25),
@@ -649,7 +524,7 @@ CREATE TABLE -- colunas data: 1
     nf_retorno_remessa_puxada_ag VARCHAR(25),
     nf_recolha_comodato VARCHAR(25),
     nf_troca_realizada VARCHAR(25),
-    taxa_de_entrega VARCHAR(25),
+    taxa_de_entrega decimal(10, 2),
     origem_do_pedido VARCHAR(25),
     vl_desconto_algoritmo VARCHAR(25),
     meta_algoritmo VARCHAR(25),
@@ -669,10 +544,11 @@ CREATE TABLE -- colunas data: 1
     red_fecop_proprio VARCHAR(25),
     red_icms_st decimal(10, 2),
     red_fecop_st VARCHAR(25),
-    unnamed_2 varchar(25)
+    unnamed_2 varchar(25),
+    primary key (tipo_movto, nota, serie)
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS `03_05_30_cliente` (
     cod_cliente int,
     descricao VARCHAR(25),
@@ -693,10 +569,11 @@ CREATE TABLE -- colunas data: 1
     entregas int,
     pedidos int,
     d_size_agend decimal(10, 2),
-    d_size_total decimal(10, 2)
+    d_size_total decimal(10, 2),
+    primary key (cod_cliente, mapa)
   );
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS `03_05_30_cod_ajudante` (
     cod_ajudante int,
     descricao VARCHAR(25),
@@ -717,10 +594,11 @@ CREATE TABLE -- colunas data: 1
     entregas int,
     pedidos int,
     d_size_agend decimal(10, 2),
-    d_size_total decimal(10, 2)
+    d_size_total decimal(10, 2),
+    primary key (cod_ajudante, data, mapa)
   );
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS `03_05_30_cod_motorista` (
     cod_motorista int,
     descricao VARCHAR(25),
@@ -741,10 +619,11 @@ CREATE TABLE -- colunas data: 1
     entregas int,
     pedidos int,
     d_size_agend decimal(10, 2),
-    d_size_total decimal(10, 2)
+    d_size_total decimal(10, 2),
+    primary key (cod_motorista, data, mapa)
   );
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS `03_05_30_mapa` (
     mapa int,
     data date,
@@ -764,41 +643,277 @@ CREATE TABLE -- colunas data: 1
     entregas int,
     pedidos int,
     d_size_agend decimal(10, 2),
-    d_size_total decimal(10, 2)
+    d_size_total decimal(10, 2),
+    primary key (mapa, data)
   );
 
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS bees_deliver_dia_antigo (
-    tour_display_id bigint,
-    tour_date date,
-    distribution_center_id int,
-    driver_name VARCHAR(25),
-    poc_external_id int,
-    status VARCHAR(25),
-    trip_start_timestamp datetime (3),
-    trip_end_timestamp datetime (3),
-    visit_order int,
-    within_radius VARCHAR(25),
-    actual_delivery_time int,
-    arrived_at VARCHAR(25),
-    finished_at VARCHAR(25),
-    last_reason_waiting_modulation VARCHAR(25),
-    last_reason_rescheduled VARCHAR(25),
-    total_delivered_vol VARCHAR(25),
-    total_refused_vol VARCHAR(25),
-    foxtrot_adherence VARCHAR(25),
-    estimated_delivery_time int,
-    volume_hectoliters_sum VARCHAR(25),
-    bees_poc_id bigint,
-    bees_tour_id VARCHAR(25),
-    bees_trip_id VARCHAR(25),
-    bees_created_date VARCHAR(25),
-    bees_last_reason_id_waiting_modulation VARCHAR(25),
-    bees_last_reason_id_waiting_rescheduled VARCHAR(25)
+CREATE TABLE -- Mensal / chave primaria definida
+  IF NOT EXISTS `03_08_05` (
+    data DATE,
+    transp int,
+    entrega VARCHAR(20),
+    carga_atual VARCHAR(20),
+    frota VARCHAR(20),
+    custo_spot DECIMAL(15, 2),
+    regiao int,
+    veiculo int,
+    placa VARCHAR(10),
+    mapa INT,
+    capac INT,
+    entregas INT,
+    cx_carreg DECIMAL(10, 2),
+    cx_entreg DECIMAL(10, 2),
+    ocup DECIMAL(6, 2),
+    cx_rota decimal(10, 2),
+    cx_as decimal(10, 2),
+    veic_bm DECIMAL(6, 2),
+    rshow int,
+    entr_vol VARCHAR(20),
+    hr_sai TIME,
+    hr_entr TIME,
+    km_sai INT,
+    km_entr INT,
+    km_prev DECIMAL(8, 2),
+    tempo_prev TIME,
+    vl_pto_mot DECIMAL(10, 6),
+    vl_pto_ajd DECIMAL(10, 6),
+    vl_eq_mot DECIMAL(10, 2),
+    vl_eq_ajd DECIMAL(10, 2),
+    cd_mot INT,
+    cd_aju1 INT,
+    cd_aju2 INT,
+    km_desloc INT,
+    km_laco INT,
+    tmpo_desloc TIME,
+    tmpo_laco TIME,
+    tmpo_interno TIME,
+    mot_nao_carr int,
+    cx_carr_com DECIMAL(10, 2),
+    capacidade_veiculo_kg DECIMAL(10, 2),
+    peso_carga_kg DECIMAL(10, 2),
+    classificacao_roadshow VARCHAR(20),
+    classificacao_roads VARCHAR(20),
+    primary key (mapa)
+  );
+
+CREATE TABLE -- Mensal / chave primaria definida
+  IF NOT EXISTS `03_11_29` (
+    data date,
+    mapa int,
+    placa VARCHAR(25),
+    regiao_entrega VARCHAR(25),
+    superv_rota int,
+    nome_superv_rota VARCHAR(25),
+    motorista int,
+    nome_motorista VARCHAR(25),
+    ajudante_1 VARCHAR(25),
+    nome_ajudante_1 int,
+    ajudante_2 VARCHAR(25),
+    nome_ajudante_2 int,
+    primary key (mapa)
+  );
+
+CREATE TABLE -- Mensal / chave primaria definida
+  IF NOT EXISTS `03_11_40` (
+    mapa INT,
+    veiculo INT,
+    placa VARCHAR(20),
+    dt_entrega DATE,
+    entregas INT,
+    hora_emis TIME(0),
+    hora_carreg TIME(0),
+    hora_saida TIME(0),
+    hora_chegada TIME(0),
+    hora_p_fis TIME(0),
+    hora_p_fin TIME(0),
+    tempo_rota TIME(2),
+    tempo_p_fis TIME(2),
+    tempo_p_fin TIME(2),
+    tempo_interno TIME(2),
+    km_inicial INT,
+    km_final INT,
+    km_rodado INT,
+    primary key (mapa)
+  );
+
+CREATE TABLE -- Mensal / chave primaria definida
+  IF NOT EXISTS `03_18_05` (
+    unb int,
+    descricao_unb VARCHAR(25),
+    codigo_cliente int,
+    nome_cliente VARCHAR(25),
+    solicitacao_reposicao int,
+    tipo_solicitacao VARCHAR(25),
+    data_solicitacao Varchar(25),
+    hora time,
+    status_solicitacao VARCHAR(25),
+    data_acao date,
+    usuario_acao VARCHAR(25),
+    mapa_reposicao bigint,
+    nota_fiscal_serie VARCHAR(25),
+    status_nf VARCHAR(10),
+    produto int,
+    descricao_produto VARCHAR(25),
+    quantidade decimal(10, 4),
+    u_m VARCHAR(10),
+    valor_unitario decimal(10, 2),
+    valor decimal(10, 2),
+    pallet VARCHAR(25),
+    montagem_pallet VARCHAR(10),
+    justificativa VARCHAR(10),
+    mapa_origem int,
+    nf_origem VARCHAR(25),
+    produto_origem int,
+    descricao_produto_1 VARCHAR(25),
+    quantidade_origem int,
+    u_m_1 VARCHAR(10),
+    veiculo int,
+    placa VARCHAR(25),
+    transportadora int,
+    nome_transportadora VARCHAR(25),
+    motorista int,
+    nome_motorista VARCHAR(25),
+    ajudante int,
+    nome_ajudante_entrega VARCHAR(25),
+    ajudante_1 int,
+    nome_ajudante_entrega_1 VARCHAR(25),
+    conferente_solicitacao_reposicao VARCHAR(25),
+    nome_conferente_solicitacao_reposicao VARCHAR(25),
+    conferente_carregamento VARCHAR(25),
+    nome_conferente_carregamento VARCHAR(25),
+    ajudante_carregamento VARCHAR(25),
+    nome_ajudante_carregamento VARCHAR(25),
+    ajudante_carregamento_1 VARCHAR(25),
+    nome_ajudante_carregamento_1 VARCHAR(25),
+    ajudante_carregamento_2 VARCHAR(25),
+    nome_ajudante_carregamento_2 VARCHAR(25),
+    ajudante_carregamento_3 VARCHAR(25),
+    nome_ajudante_carregamento_3 VARCHAR(25),
+    ajudante_carregamento_4 VARCHAR(25),
+    nome_ajudante_carregamento_4 VARCHAR(25),
+    ajudante_carregamento_5 VARCHAR(25),
+    nome_ajudante_carregamento_5 VARCHAR(25),
+    origem_blitz_carreg VARCHAR(25),
+    nr_pedido_reposicao int,
+    unb_cliente int,
+    opcao_de_reposicao VARCHAR(25),
+    status_check_reposicao VARCHAR(25),
+    usuario_acao_check VARCHAR(25),
+    data_acao_check varchar(25),
+    sistema_origem VARCHAR(25),
+    observacao VARCHAR(100),
+    perfil_aprovacao_automatica VARCHAR(25),
+    data_revisao varchar(25),
+    usuario_revisao VARCHAR(25),
+    tipo_cliente VARCHAR(25),
+    setor_venda int,
+    unnamed_69 VARCHAR(25),
+    primary key (solicitacao_reposicao, produto)
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS bees_deliver_dia_novo (
+CREATE TABLE -- Mensal / chave primaria definida
+  IF NOT EXISTS aderencia_tracking_mes (
+    classe varchar(25),
+    data date,
+    mapa int,
+    placa varchar(10),
+    cod_cliente int,
+    seq_real int,
+    seq_plan int,
+    inicio_rota DATETIME,
+    horario_matinal DATETIME,
+    saida_cdd datetime,
+    chegada_ao_pdv datetime,
+    tempo_prev_retorno time,
+    tempo_retorno time,
+    dist_prev_retorno decimal(10, 4),
+    dist_perc_retorno decimal(10, 3),
+    inicio_entrega DATETIME,
+    fim_entrega DATETIME,
+    fim_rota DATETIME,
+    entrada_cdd DATETIME,
+    caixas_carregadas DECIMAL(10, 2),
+    caixas_devolvidas decimal(10, 2),
+    repasse int,
+    tempo_de_entrega time,
+    tempo_descarga time,
+    tempo_espera time,
+    tempo_almoco time,
+    tempo_total_de_rota time,
+    disp_apont_cadastrado decimal(10, 3),
+    lat_entrega decimal(10, 7),
+    lon_entrega decimal(10, 7),
+    unidade_negocio int,
+    transportadora varchar(50),
+    lat_cliente_apontamento decimal(10, 7),
+    lon_cliente_apontamento decimal(10, 7),
+    lat_atual_cliente decimal(10, 7),
+    lon_atual_cliente decimal(10, 7),
+    distancia_prev decimal(10, 3),
+    tempo_deslocamento TIME,
+    vel_media_km_h int,
+    distancia_perc_apontamento decimal(10, 3),
+    aderencia_sequencia_entrega varchar(10),
+    aderencia_janela_entrega varchar(10),
+    pdv_lacrado varchar(10),
+    codigo_transportadora int,
+    hodometro_ao_sair_do_deposito int,
+    hodometro_ao_voltar_ao_deposito int,
+    acessou_raio_pdv varchar(10),
+    freteiro varchar(10),
+    segmento varchar(10),
+    avaliacao_do_pdv int,
+    observacao_da_avaliacao_do_pdv varchar(50),
+    hodometro_no_carregamento int,
+    aderente_foxtrot varchar(50),
+    horario_previsto_chegada datetime,
+    horario_previsto_saida DATETIME,
+    tempo_previsto TIME,
+    distancia_prevista decimal(10, 3),
+    ocorrencia varchar(25),
+    saida_do_raio datetime,
+    tempo_no_pdv time,
+    grupo_de_clientes varchar(25),
+    geo varchar(25),
+    frota varchar(25),
+    data_fim_entrega datetime,
+    partida_prevista_deposito datetime,
+    numero_roadshow varchar(25),
+    sequencia_sugerida int,
+    seq_real_click int,
+    primary key (mapa, cod_cliente, sequencia_sugerida)
+  );
+
+CREATE TABLE -- Cadastro / chave primaria definida
+  IF NOT EXISTS ajudante (
+    codigo INT,
+    nome_ajudante VARCHAR(100),
+    cpf VARCHAR(20),
+    supervisor_rota int,
+    status VARCHAR(25),
+    primary key (codigo)
+  );
+
+CREATE TABLE -- Mensal / chave primaria definida
+  IF NOT EXISTS base_rating (
+    data_da_avaliacao date,
+    avaliacao int,
+    classificacao VARCHAR(25),
+    cod_cdd bigint,
+    motorista VARCHAR(25),
+    cod_pdv int,
+    nome_pdv VARCHAR(25),
+    transportadora VARCHAR(25),
+    mapa int,
+    motivo VARCHAR(25),
+    comentario VARCHAR(25),
+    estado VARCHAR(25),
+    cidade VARCHAR(25),
+    primary key (data_da_avaliacao, avaliacao, cod_pdv)
+  );
+
+CREATE TABLE -- Mensal / chave primaria definida
+  IF NOT EXISTS bees_deliver_dia (
     tour_display_id bigint,
     tour_date date,
     distribution_center_id int,
@@ -843,12 +958,62 @@ CREATE TABLE -- colunas data: 1
     bees_poc_id bigint,
     bees_tour_id VARCHAR(25),
     bees_trip_id VARCHAR(25),
-    bees_created_date VARCHAR(25),
+    bees_created_date DATETIME (3),
     bees_last_reason_id_waiting_modulation VARCHAR(25),
-    bees_last_reason_id_waiting_rescheduled VARCHAR(25)
+    bees_last_reason_id_waiting_rescheduled VARCHAR(25),
+    primary key (tour_date, poc_external_id)
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE -- colunas data: 1
+CREATE TABLE -- Mensal / UNIQUE KEY Definida
+  IF NOT EXISTS bees_deliver_mes_antigo (
+    arrived_at DATETIME,
+    assistants_quantity int,
+    chave_mapa varchar(25),
+    cod_cliente int,
+    driver_external_id varchar(25),
+    estimated_time_arrival DATETIME,
+    estimated_time_departure datetime,
+    finished_at datetime,
+    last_reason_rescheduled varchar(50),
+    last_reason_waiting_modulation varchar(50),
+    last_timestamp_on_the_way varchar(50),
+    last_timestamp_rescheduled datetime,
+    soma_de_optimized_order int,
+    soma_de_original_order int,
+    poc_external_id int,
+    soma_de_poc_latitude decimal(9, 6),
+    soma_de_poc_longitude decimal(9, 6),
+    poc_name varchar(50),
+    status varchar(25),
+    total_delivered_value int,
+    total_delivered_vol varchar(50),
+    total_refused_value int,
+    total_refused_vol varchar(50),
+    total_value int,
+    total_weight_kg int,
+    tour_date date,
+    tour_display_id int,
+    tour_display_id_original int,
+    contagem_de_tour_trip_id int,
+    soma_de_trip_display_id int,
+    trip_end_timestamp datetime,
+    trip_start_timestamp datetime,
+    vehicle_license_plate varchar(10),
+    visit_order int,
+    volume_hectoliters_sum int,
+    volume_packages int,
+    within_radius varchar(10),
+    diff_departure_arrival int,
+    diff_finished_arrived int,
+    foxtrot_adherence varchar(10),
+    UNIQUE KEY bees_deliver_mes_antigo_trip_unique (
+      tour_display_id,
+      poc_external_id,
+      trip_start_timestamp
+    )
+  ) ROW_FORMAT = DYNAMIC;
+
+CREATE TABLE -- Mensal /
   IF NOT EXISTS bees_deliver_mes_novo (
     chegou_em datetime,
     quantidade_de_assistentes int,
@@ -897,249 +1062,112 @@ CREATE TABLE -- colunas data: 1
     cod_revenda varchar(25)
   ) ROW_FORMAT = DYNAMIC;
 
-CREATE TABLE -- colunas data: 1
-  IF NOT EXISTS bees_deliver_mes_antigo (
-    arrived_at DATETIME,
-    assistants_quantity int,
-    chave_Mapa varchar(25),
-    cod_cliente int,
-    driver_external_id varchar(25),
-    estimated_time_arrival DATETIME,
-    estimated_time_departure datetime,
-    finished_at datetime,
-    last_reason_rescheduled datetime,
-    last_reason_waiting_modulation varchar(50),
-    last_timestamp_on_the_way varchar(50),
-    last_timestamp_rescheduled datetime,
-    soma_de_optimized_order DATETIME,
-    soma_de_original_order int,
-    poc_external_id int,
-    soma_de_poc_latitude decimal(9, 6),
-    soma_de_poc_longitude decimal(9, 6),
-    poc_name varchar(50),
-    status varchar(25),
-    total_delivered_value int,
-    total_delivered_vol varchar(50),
-    total_refused_value int,
-    total_refused_vol varchar(50),
-    total_value int,
-    total_weight_kg int,
-    tour_date date,
-    tour_display_id int,
-    tour_display_id_original int,
-    contagem_de_tour_trip_ID int,
-    soma_de_trip_display_id int,
-    trip_end_timestamp datetime,
-    trip_start_timestamp datetime,
-    vehicle_license_plate varchar(10),
-    visit_order int,
-    volume_hectoliters_sum int,
-    volume_packages int,
-    within_radius varchar(10),
-    diff_departure_arrival int,
-    diff_finished_arrived int,
-    foxtrot_adherence varchar(10)
-  ) ROW_FORMAT = DYNAMIC;
-
-CREATE TABLE
-  IF NOT EXISTS aderencia_tracking_mes (
-    classe varchar(25),
-    data date,
-    mapa int,
-    placa varchar(10),
-    cod_cliente int,
-    seq_real int,
-    seq_plan int,
-    inicio_rota DATETIME,
-    horario_matinal DATETIME,
-    saida_cdd datetime,
-    chegada_ao_pdv datetime,
-    tempo_prev_retorno time,
-    tempo_retorno time,
-    dist_prev_retorno decimal(10, 4),
-    dist_perc_retorno decimal(10, 3),
-    inicio_entrega DATETIME,
-    fim_entrega DATETIME,
-    fim_rota DATETIME,
-    entrada_cdd DATETIME,
-    caixas_carregadas DECIMAL(10, 2),
-    caixas_devolvidas decimal(10, 2),
-    repasse int,
-    tempo_de_entrega time,
-    tempo_descarga time,
-    tempo_espera time,
-    tempo_almoco time,
-    tempo_total_de_rota time,
-    disp_apont_cadastrado decimal(10, 3),
-    lat_entrega decimal(10, 7),
-    lon_entrega decimal(10, 7),
-    unidade_negocio int,
-    transportadora varchar(50),
-    lat_cliente_apontamento decimal(10, 7),
-    lon_cliente_apontamento decimal(10, 7),
-    lat_atual_cliente decimal(10, 7),
-    lon_atual_cliente decimal(10, 7),
-    distancia_prev decimal(10, 3),
-    tempo_deslocamento TIME,
-    vel_media_kmh int,
-    distancia_perc_apontamento decimal(10, 3),
-    aderencia_sequencia_entrega varchar(10),
-    aderencia_janela_entrega varchar(10),
-    pdv_lacrado varchar(10),
-    codigo_transportadora int,
-    hodometro_ao_sair_do_deposito int,
-    hodometro_ao_voltar_ao_deposito int,
-    acessou_raio_pdv varchar(10),
-    freteiro varchar(10),
-    segmento varchar(10),
-    avaliacao_do_pdv int,
-    observacao_da_avaliacao_do_pdv varchar(50),
-    hodometro_no_carregamento int,
-    aderente_foxtrot varchar(50),
-    horario_previsto_chegada datetime,
-    horario_previsto_saida DATETIME,
-    tempo_previsto TIME,
-    distancia_prevista decimal(10, 3),
-    ocorrencia varchar(25),
-    saida_do_raio datetime,
-    tempo_no_pdv time,
-    grupo_de_clientes varchar(25),
-    geo varchar(25),
-    frota varchar(25),
-    data_fim_entrega datetime,
-    partida_prevista_deposito datetime,
-    numero_roadshow varchar(25),
-    sequencia_sugerida int,
-    seq_real_click int
-  );
-CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS `01_20_11` (
-    grupo_de_perfil int,
-    cod_setor int,
-    descricao_setor VARCHAR(25),
-    codigo_cliente bigint,
-    razao_social VARCHAR(25),
-    bairro VARCHAR(25),
-    ordem VARCHAR(25),
-    status_do_cliente VARCHAR(10),
-    nome_fantasia VARCHAR(25),
-    frequencia_visita VARCHAR(25),
-    periodicidade VARCHAR(25),
-    proxima_visita varchar(25),
-    visita_original varchar(25),
-    inicio_visita varchar(25),
-    cnpj VARCHAR(25),
-    inscricao_estadual VARCHAR(25),
-    cod_estabelecimento bigint,
-    nome_estabelecimento VARCHAR(25),
-    cod_pagto int,
-    descricao_pagto VARCHAR(25),
-    serasa VARCHAR(10),
-    observacao VARCHAR(25),
-    contato VARCHAR(25),
-    cnpj_1 VARCHAR(25),
-    contato_1 VARCHAR(25),
-    cnpj_2 VARCHAR(25),
-    ordem_por_historico VARCHAR(25),
-    dias_entrega VARCHAR(25),
-    el_dorado VARCHAR(10),
-    endereco VARCHAR(25),
-    cidade VARCHAR(25),
-    cod_segmento int,
-    segmento VARCHAR(25)
-  );
-
-CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS `01_11` (
-    codigo bigint,
-    descricao VARCHAR(25),
-    pgv int,
-    empresa VARCHAR(10),
-    tipo_marca VARCHAR(25),
-    linha_marca int,
-    embalagem VARCHAR(25),
-    marca int,
-    vasilhame int,
-    garrrafeira int,
-    icms int,
-    tipo_roadshow VARCHAR(10),
-    peso_bruto_kg decimal(10, 2),
-    fator int,
-    fator_hecto float,
-    fator_hecto_comercial float,
-    ind_palmtop VARCHAR(10),
-    grupo int,
-    grupo_remuneracao int,
-    ean bigint,
-    tab_icms int,
-    caixas_pallet int,
-    nr_fator_conversao decimal(10, 2),
-    lastro VARCHAR(25),
-    fam_embalagem_siv int,
-    pauta_pis_litro int,
-    pauta_cofins_litro int,
-    caixas_pallet_1 int,
-    capacidade_1 int,
-    fat_ajust_1 float,
-    caixas_pallet_2 int,
-    capacidade_2 int,
-    fat_ajust_2 float,
-    caixas_pallet_3 int,
-    capacidade_3 int,
-    fat_ajust_3 float,
-    ordem_de_carga int,
-    estoque_minimo_puxada int,
-    codigo_produto_sap int,
-    vasilhame_ficticio VARCHAR(25),
-    ncm bigint,
-    apura_royalties VARCHAR(10),
-    tipo_produto_royalties int,
-    cest bigint,
-    ean_trib bigint,
-    codigo_unitario int,
-    descricao_unitaria VARCHAR(25),
-    subtipo int
-  );
-
-CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS veiculos (
-    frota INT,
-    placa VARCHAR(20),
-    modelo VARCHAR(25),
-    tipo VARCHAR(10)
-  );
-
-CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS motoristas (
-    cod_filial VARCHAR(25),
-    descricao_filial VARCHAR(25),
-    cod_motorista VARCHAR(25),
-    nome_motorista VARCHAR(25),
-    status VARCHAR(25),
-    cod_supervisor_rota VARCHAR(25),
-    cpf VARCHAR(25),
-    data_admissao VARCHAR(25),
-    data_inativacao VARCHAR(25),
-    j_alternativa VARCHAR(25),
-    descricao_j_alternativa VARCHAR(25),
-    rota_gradativa VARCHAR(25),
-    celular_corporativo VARCHAR(25),
-    cod_cluster VARCHAR(25),
-    cluster VARCHAR(25)
-  );
-
-CREATE TABLE -- colunas data: 0 -- verificar
-  IF NOT EXISTS ajudante (
-    cod INT,
-    nome VARCHAR(100),
-    cpf VARCHAR(20),
-    status VARCHAR(25)
-  );
-
-CREATE TABLE -- colunas data: 0 -- verificar
+CREATE TABLE -- Cadastro / chave primaria definida
   IF NOT EXISTS expurgos (mapa INT primary key);
 
--- log tabelas
+CREATE TABLE -- Mensal / chave primaria definida
+  IF NOT EXISTS jornada_laboral (
+    data date,
+    funcionario VARCHAR(25),
+    matricula int,
+    e time,
+    sa time,
+    ra time,
+    s time,
+    trabalhadas time,
+    primary key (data, matricula)
+  );
+
+CREATE TABLE -- Cadastro / chave primaria definida
+  IF NOT EXISTS motoristas (
+    cod_filial int,
+    descricao_filial VARCHAR(25),
+    cod_motorista int,
+    nome_motorista VARCHAR(25),
+    status VARCHAR(25),
+    cod_supervisor_rota int,
+    cpf VARCHAR(25),
+    data_admissao varchar(25),
+    data_inativacao VARCHAR(25),
+    j_alternativa int,
+    descricao_j_alternativa varchar(25),
+    rota_gradativa VARCHAR(10),
+    celular_corporativo VARCHAR(25),
+    cod_cluster int,
+    cluster VARCHAR(25),
+    primary key (cod_motorista)
+  );
+
+CREATE TABLE -- Mensal / chave primaria definida
+  IF NOT EXISTS `relatorio_separacao_wms` (
+    codigo_do_armazem int,
+    mapa int,
+    palete VARCHAR(25),
+    data_de_entrega date,
+    inicio_palete int,
+    fim_palete datetime,
+    esforco int,
+    usuario_finalizou_palete varchar(25),
+    finalizado_cfe_indicacao_tc varchar(25),
+    endereco_destino varchar(25),
+    peso_do_palete_ok varchar(10),
+    peso_palete_esperado varchar(25),
+    peso_palete_real varchar(25),
+    balanca varchar(25),
+    codigo_do_item int,
+    descricao_do_item varchar(60),
+    tipo varchar(25),
+    peso_item_esperado decimal(10, 2),
+    peso_item_real varchar(25),
+    enderecos_sugeridos varchar(25),
+    endereco_selecionado varchar(25),
+    quantidade int,
+    unidade_de_medida varchar(25),
+    chapatex varchar(25),
+    papelao varchar(25),
+    sequencia int,
+    usuario_separacao varchar(25),
+    inicio_separacao_item datetime,
+    fim_separacao_item datetime,
+    esforco_item int,
+    peso_do_item_ok varchar(25),
+    item_conferido varchar(10),
+    ultima_ocorrencia varchar(25),
+    palete_conferido varchar(25),
+    palete_iniciou_com_produto varchar(25),
+    sorteado_para_blitz varchar(25),
+    regras_de_blitz_classificadas varchar(50),
+    utilizou_percentual_minimo varchar(25),
+    status_do_palete varchar(25),
+    conferencia_obrigatoria varchar(25),
+    identificacao_da_caixa varchar(25),
+    peso_dos_ativos varchar(25),
+    unique key relatorio_separacao_wms_unique_key (
+      mapa,
+      codigo_do_item,
+      sequencia,
+      quantidade,
+      usuario_finalizou_palete,
+      identificacao_da_caixa,
+      esforco_item
+    )
+  );
+
+CREATE TABLE -- Cadastro / chave primaria definida
+  IF NOT EXISTS veiculos (
+    frota INT,
+    operacao varchar(25),
+    tipo_de_bem varchar(25),
+    carroceria varchar(25),
+    marca_bau varchar(25),
+    fabricante varchar(25),
+    marca_mod varchar(25),
+    ano_fabric int,
+    placa varchar(10),
+    primary key (frota, operacao)
+  );
+
+-- log
 CREATE TABLE
   IF NOT EXISTS log_ingestao (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1250,67 +1278,7 @@ app.listen(port, () => {
 });
 
 ----------------------------
-cacheHash_01_11.jsonl --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_01_11.jsonl
-{"tabela_destino":"01_11","nome_arquivo":"julho.csv","ano":2025,"mes":"julho","dia":null,"coluna_data":null,"data_upload":"2025-08-01T20:07:25.356Z","hash_arquivo":"b890beff9446e4fad9e27675c5a22d54135f2afed2bb568a21b187dc3c8baed2","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\cadastros\\01_11\\2025\\julho.csv","sucesso":true,"mensagem_erro":null,"identificador":"01_11_2025_julho_julho.csv"}
-
-----------------------------
-cacheHash_03_01_46_06.jsonl --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_03_01_46_06.jsonl
-{"tabela_destino":"03_01_46_06","nome_arquivo":"jul.csv","ano":2025,"mes":"jul","dia":null,"coluna_data":"data_entrega","data_upload":"2025-08-01T19:58:08.387Z","hash_arquivo":"b43fecaaf7ec65944967af9dc06ae7f27b72b5d88a18dd0d7c219de8cb44ce42","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_01_46_06\\2025\\jul.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_01_46_06_2025_jul_jul.csv"}
-{"tabela_destino":"03_01_46_06","nome_arquivo":"jan.csv","ano":2025,"mes":"jan","dia":null,"coluna_data":"data_entrega","data_upload":"2025-08-01T19:58:09.015Z","hash_arquivo":"bb02534354bb489034f6be2af133fd90d1358afc2ad9af6bc9d5b10ea2c0dd58","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_01_46_06\\2025\\jan.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_01_46_06_2025_jan_jan.csv"}
-{"tabela_destino":"03_01_46_06","nome_arquivo":"jun.csv","ano":2025,"mes":"jun","dia":null,"coluna_data":"data_entrega","data_upload":"2025-08-01T19:58:10.196Z","hash_arquivo":"3300876026458ca373d110c9617bfa516eff3c6580698e1da81f10e6c672b35a","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_01_46_06\\2025\\jun.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_01_46_06_2025_jun_jun.csv"}
-{"tabela_destino":"03_01_46_06","nome_arquivo":"mai.csv","ano":2025,"mes":"mai","dia":null,"coluna_data":"data_entrega","data_upload":"2025-08-01T19:58:09.907Z","hash_arquivo":"3173ff2721ac86ba3c79780066554026e294fb4f37faeddd7d8dde1e630d7874","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_01_46_06\\2025\\mai.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_01_46_06_2025_mai_mai.csv"}
-{"tabela_destino":"03_01_46_06","nome_arquivo":"abr.csv","ano":2025,"mes":"abr","dia":null,"coluna_data":"data_entrega","data_upload":"2025-08-01T19:58:10.207Z","hash_arquivo":"9dfbedd2770482a2e354d2ca5b5d6ef672858cb5ffd33a4a12bef352f7e94093","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_01_46_06\\2025\\abr.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_01_46_06_2025_abr_abr.csv"}
-{"tabela_destino":"03_01_46_06","nome_arquivo":"mar.csv","ano":2025,"mes":"mar","dia":null,"coluna_data":"data_entrega","data_upload":"2025-08-01T19:58:10.210Z","hash_arquivo":"3b60caa1db7a5e744d75aad86b8e6143b88cf71b09faca8d52d1e376dc99f55e","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_01_46_06\\2025\\mar.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_01_46_06_2025_mar_mar.csv"}
-{"tabela_destino":"03_01_46_06","nome_arquivo":"fev.csv","ano":2025,"mes":"fev","dia":null,"coluna_data":"data_entrega","data_upload":"2025-08-01T19:58:10.197Z","hash_arquivo":"813a633b69c7cf8335dfbf85cc8b8dba8e1dc41d42648170e425d0627ecba754","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_01_46_06\\2025\\fev.csv","sucesso":true,"mensagem_erro":null,"identificador":"03_01_46_06_2025_fev_fev.csv"}
-
-----------------------------
 cacheHash_03_11_40.jsonl --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\cache\cacheHash_03_11_40.jsonl
-{"tabela_destino":"03_11_40","nome_arquivo":"julho.csv","ano":2025,"mes":"julho","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-07-31T19:11:36.684Z","hash_arquivo":"451c1a2482f994dfd63366d527c1f1aa86f7dd4fbec12db9739384610162b774","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\julho.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_julho_julho.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"julho.csv","ano":2025,"mes":"julho","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-07-31T19:34:22.968Z","hash_arquivo":"451c1a2482f994dfd63366d527c1f1aa86f7dd4fbec12db9739384610162b774","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\julho.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_julho_julho.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"julho.csv","ano":2025,"mes":"julho","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T18:56:42.767Z","hash_arquivo":"451c1a2482f994dfd63366d527c1f1aa86f7dd4fbec12db9739384610162b774","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\julho.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_julho_julho.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"jul.csv","ano":2025,"mes":"jul","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:23:51.077Z","hash_arquivo":"48baeff229376bef9221682dafe0d386b0850c83e3f0076d7ab68182d4615d1f","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\jul.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_jul_jul.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"jun.csv","ano":2025,"mes":"jun","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:23:51.077Z","hash_arquivo":"ba28ee0f2d4962d4bd7df404e4ac6b2450011acca4fdcf1a590c655b3804b1f5","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\jun.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_jun_jun.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"abr.csv","ano":2025,"mes":"abr","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:23:51.093Z","hash_arquivo":"9a2a201cbeee447c047319f37aac1afe970adda259ad7f04b9cdf20015ffc1c6","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\abr.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_abr_abr.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"fev.csv","ano":2025,"mes":"fev","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:23:51.076Z","hash_arquivo":"938ef5e976762817474e5ec5b2a3de6c811ace650a994474d5d9b9ed564b9127","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\fev.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_fev_fev.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"jan.csv","ano":2025,"mes":"jan","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:23:51.077Z","hash_arquivo":"5c63267ff679e03c0d6b9dff7ff2db5d9df774095675664097b3f0d20163717e","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\jan.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_jan_jan.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"julho.csv","ano":2025,"mes":"julho","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:23:57.751Z","hash_arquivo":"451c1a2482f994dfd63366d527c1f1aa86f7dd4fbec12db9739384610162b774","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\julho.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_julho_julho.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"mai.csv","ano":2025,"mes":"mai","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:23:59.137Z","hash_arquivo":"09e5e829ae5bd0e422c69ff9059c8ee6bfa0ad4017b3748edcfd6a2fecfaf126","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2025\\mai.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2025_mai_mai.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"ago.csv","ano":2024,"mes":"ago","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:13.763Z","hash_arquivo":"11ec057da5373097335c220ef2b30e4a97203c202918c5940d25150011fb9ed1","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\ago.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_ago_ago.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"jul.csv","ano":2024,"mes":"jul","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:13.757Z","hash_arquivo":"ab7fbffb20cff6c7bf8ac699c75f278d5485f4c7837496a4f7927f7042acbc94","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\jul.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_jul_jul.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"fev.csv","ano":2024,"mes":"fev","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:13.757Z","hash_arquivo":"c353b6035f44b807a0e37cd06326321c4093abcefc0e24c4d6fa86d1456f58cc","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\fev.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_fev_fev.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"dez.csv","ano":2024,"mes":"dez","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:13.758Z","hash_arquivo":"ba9741dad2f3331239fbd2a37495020446d7faacd4098a6d794bcc4bd74700ad","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\dez.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_dez_dez.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"jan.csv","ano":2024,"mes":"jan","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:13.757Z","hash_arquivo":"c39a261efbe17197dd938a44e011e36a35c942701574a44c3f7605406607ed39","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\jan.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_jan_jan.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"abr.csv","ano":2024,"mes":"abr","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:24.129Z","hash_arquivo":"0a875de736395512b7c75280cd5b8333389e45d691e1d1b074f2ca3c7ca42d79","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\abr.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_abr_abr.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"jun.csv","ano":2024,"mes":"jun","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:24.904Z","hash_arquivo":"d0b0023a51d841c7a9c2206adf5e4e0b5b06f0e11e031070d51113018101ff3d","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\jun.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_jun_jun.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"mai.csv","ano":2024,"mes":"mai","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:25.604Z","hash_arquivo":"f3f5da636b3e7952d70b557638f69052080e55fe82b02b69e01bd3bc8f36b936","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\mai.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_mai_mai.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"mar.csv","ano":2024,"mes":"mar","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:27.566Z","hash_arquivo":"9a74ba822dbb4de988b93d784330101162e8dac103f7f910b8e3cde7610ef5e9","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\mar.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_mar_mar.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"nov.csv","ano":2024,"mes":"nov","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:29.518Z","hash_arquivo":"192818f5414b8107a4564040818ddd57fbd3ed54b71389722e364f240e575669","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\nov.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_nov_nov.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"set.csv","ano":2024,"mes":"set","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:36.936Z","hash_arquivo":"e8f60159ab8537cee42ed737b82ee14c1c2891d9b9bb7aa8e52a246341e41109","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\set.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_set_set.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"out.csv","ano":2024,"mes":"out","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:26:35.961Z","hash_arquivo":"f36dddaa375f220ca00f9238f5d9355061baacd044a1951368f96a3e25621aa6","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2024\\out.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2024_out_out.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"mai.csv","ano":2023,"mes":"mai","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:40:40.605Z","hash_arquivo":"7408a07b93c5406ad0bc6602554e6cc47053c01b5c2e0f249a887074e3ffa5a7","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\mai.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_mai_mai.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"fev.csv","ano":2023,"mes":"fev","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:40:40.619Z","hash_arquivo":"1a27a7527d03c72046f9988fea941520516006ccfd68ca2fa5fb2e9d71fb7852","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\fev.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_fev_fev.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"mar.csv","ano":2023,"mes":"mar","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:40:40.604Z","hash_arquivo":"6b5df3216746f7db14d75218ccc78c27c1f80e4f38a274bd3224de4705b597b0","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\mar.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_mar_mar.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"abr.csv","ano":2023,"mes":"abr","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:40:40.613Z","hash_arquivo":"7b802ee62b3f041e1f4ec74ac5c8fbba74a962376d0cde4710624d5eb32a0937","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\abr.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_abr_abr.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"jan.csv","ano":2023,"mes":"jan","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:40:40.626Z","hash_arquivo":"db88e01a997152e5847e4c7170ec0848cd3073eb81a493ce4e4bb61e97b3bcba","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\jan.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_jan_jan.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"jun.csv","ano":2023,"mes":"jun","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:41:25.166Z","hash_arquivo":"0359558c0e4b63de2c7c6c3307d318dc12334901f9c1f562bf3a6bc850a7647c","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\jun.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_jun_jun.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"jul.csv","ano":2023,"mes":"jul","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:41:25.166Z","hash_arquivo":"baec3ffd4aad9f8d2e41bc211e0d6a5ca9ad33deff36cb992af3589479aa617e","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\jul.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_jul_jul.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"ago.csv","ano":2023,"mes":"ago","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:41:25.166Z","hash_arquivo":"8a5b1c8b079f84a225aa001668ae287831657772128468983272b745db538820","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\ago.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_ago_ago.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"out.csv","ano":2023,"mes":"out","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:41:25.167Z","hash_arquivo":"000bf874a2b16c1e0cf44c252f33df07a57618f56fdbf498db969ffc98c91614","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\out.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_out_out.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"set.csv","ano":2023,"mes":"set","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:41:25.170Z","hash_arquivo":"b26ab974a9d33be16e8ca22ad9143a07cbd081f55613bfa514b1b5572439b5e6","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\set.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_set_set.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"nov.csv","ano":2023,"mes":"nov","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:41:25.166Z","hash_arquivo":"6115eec9a36b9cd29e555f63fc09aff8df862fbf00732aec8e721bde8f5c1dc3","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\nov.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_nov_nov.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"dez.csv","ano":2023,"mes":"dez","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:41:25.166Z","hash_arquivo":"83eb67537efb8240389b0b329edec35da04e3d4a7f3048df360a07b2f1173a90","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2023\\dez.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2023_dez_dez.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"mai.csv","ano":2022,"mes":"mai","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.603Z","hash_arquivo":"01448e761fdd03d45dfcb934492ae5b1016bba202ae8ad64e4f5bb3e5f87de3f","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\mai.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_mai_mai.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"jun.csv","ano":2022,"mes":"jun","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.603Z","hash_arquivo":"c91c295596e990482d7e83aa24d3f98c6f4cce66f955daf4c0838ffc23f5523e","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\jun.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_jun_jun.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"ago.csv","ano":2022,"mes":"ago","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.581Z","hash_arquivo":"4e01aabc3205f76d392e9f097813d26fd616f39ea156d53c90a79102bcb4f037","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\ago.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_ago_ago.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"abr.csv","ano":2022,"mes":"abr","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.611Z","hash_arquivo":"80a77fcb4a8aa355f36e837ea6dbc8904b23f413de4c257e6b531410c2184783","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\abr.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_abr_abr.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"set.csv","ano":2022,"mes":"set","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.611Z","hash_arquivo":"2c1ca16d0e8d6ffda1a554bfe0c9940a6c9249ed220e4565cbe9c7435d68d22f","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\set.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_set_set.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"fev.csv","ano":2022,"mes":"fev","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.603Z","hash_arquivo":"305e2b2d668e4b5b6a411847fc69f3e34f8f3d444ddca7cd90d39858968bf5b2","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\fev.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_fev_fev.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"jan.csv","ano":2022,"mes":"jan","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.603Z","hash_arquivo":"d95dd288f49fabba86f092e2162f8393290a1c0feec398aa49dec9ecd946080f","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\jan.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_jan_jan.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"jul.csv","ano":2022,"mes":"jul","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.603Z","hash_arquivo":"ae2606f6defa40ecb25a58dd7a37abad5221d0bef7938a864f505f2c65ef6a5a","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\jul.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_jul_jul.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"out.csv","ano":2022,"mes":"out","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.610Z","hash_arquivo":"4eb9ad8efa7ff669a20f931653528ea8629e8a9eaaf4e0ca52aa9a4a10952d10","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\out.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_out_out.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"mar.csv","ano":2022,"mes":"mar","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.611Z","hash_arquivo":"84410ee4e3d66b52629ff7cf5d9c130e4e0edaca8921b5ed4367759c5f353422","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\mar.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_mar_mar.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"nov.csv","ano":2022,"mes":"nov","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.611Z","hash_arquivo":"af1d816debad39e4ee52dcf6c452d0a5e5ecc9bc6a7b3e65415015ff45113948","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\nov.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_nov_nov.csv"}
-{"tabela_destino":"03_11_40","nome_arquivo":"dez.csv","ano":2022,"mes":"dez","dia":null,"coluna_data":"dt_entrega","data_upload":"2025-08-01T19:42:41.602Z","hash_arquivo":"9c74ea590aef165e97b6dfdd792602e59a1288060d5405d0f546b7184914b2ac","caminho_original":"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL\\rotinas\\03_11_40\\2022\\dez.csv","sucesso":false,"mensagem_erro":"Algumas linhas falharam","identificador":"03_11_40_2022_dez_dez.csv"}
 
 ----------------------------
 createDataController.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\controller\createDataController.js
@@ -1766,16 +1734,16 @@ export async function manageInsertController(metadados) {
 
         const { result, linhaTipada: linhaInserida } =
           await insertRegisterinTable(metadados.tabela, linhaTipada);
-        // Log detalhado: original e tipada
-        //console.log(
-        //  `Linha ${i} inserida:\r\n`
-        //    +`\r\n`+
-        //    `Original: ${JSON.stringify(linhaOriginal)}\r\n`
-        //    +`\r\n`+
-        //    `Tipada:   ${JSON.stringify(linhaInserida)}\r\n`
-        //    +`\r\n`+
-        //    `----------------------------------------------`
-        //);
+        //Log detalhado: original e tipada
+        addInfo(
+          `Linha ${i} inserida:\r\n`
+            +`\r\n`+
+            `Original: ${JSON.stringify(linhaOriginal)}\r\n`
+            +`\r\n`+
+            `Tipada:   ${JSON.stringify(linhaInserida)}\r\n`
+            +`\r\n`+
+            `----------------------------------------------`
+        );
         sucesso++;
         atualizarBarra(barraId);
       } catch (e) {
@@ -3113,17 +3081,6 @@ function limparCamposExtras(data) {
   });
 }
 
-function filtrarLinhasValidas(data) {
-  return data.filter((linha) => {
-    const extras =
-      Array.isArray(linha.__parsed_extra) && linha.__parsed_extra.length > 0;
-    const preenchidos = Object.values(linha).filter(
-      (v) => typeof v === "string" && v.trim() !== ""
-    ).length;
-    return preenchidos >= 3 && !extras;
-  });
-}
-
 function normalizarCabecalhosEValores(linha, contexto) {
   const novaLinha = {};
   const nomesUsados = {};
@@ -3165,23 +3122,33 @@ export default async function createJsonController(filePath) {
     throw new Error(`[Json] - erro ao ler o arquivo, erro: ${e.message}`);
   }
 
-  const data = iconv.decode(buffer, "latin1");
+  let data;
+  try {
+    data = iconv.decode(buffer, "utf8");
+    if ((data.match(/\uFFFD/g) || []).length > 3) {
+      data = iconv.decode(buffer, "latin1");
+    }
+  } catch {
+    data = iconv.decode(buffer, "latin1");
+  }
   const firstLine = data.split(/\r?\n/)[0];
 
-  if (!(firstLine.includes(",") || firstLine.includes(";"))) {
+  const linhas = data.split(/\r\n|\n|\r/);
+  if (linhas.length < 2) {
     throw new Error(
-      `[Json]  Arquivo ignorado: ${filePath} - Não é um CSV válido`
+      `[Json] Arquivo ignorado: ${filePath} - Não há dados após o header`
     );
   }
-
   const delimiter = firstLine.includes(";") ? ";" : ",";
   const parsed = Papa.parse(data, {
     header: true,
     delimiter,
     skipEmptyLines: true,
     transformHeader: (h) => {
-      const header = h?.trim?.() ?? "";
-      return header === "" ? "unnamed" : normalizar(header);
+      if (!h) return "unnamed";
+      let header = normalizar(h);
+      header = header.replace(/[^\x20-\x7E]/g, "");
+      return header === "" ? "unnamed" : header;
     },
     transform: (value) => value.trim(),
   });
@@ -3190,9 +3157,8 @@ export default async function createJsonController(filePath) {
   logarErrosDoParse(parsed.errors, contexto);
 
   const linhasCorrigidas = limparCamposExtras(parsed.data);
-  const linhasValidas = filtrarLinhasValidas(linhasCorrigidas);
 
-  if (linhasValidas.length === 0) {
+  if (linhasCorrigidas.length === 0) {
     addAviso(
       `[Json] - Nenhuma linha válida encontrada no arquivo ${filePath}.`,
       contexto
@@ -3208,12 +3174,12 @@ export default async function createJsonController(filePath) {
     );
   }
 
-  const dataSanitized = linhasValidas
+  const dataSanitized = linhasCorrigidas
     .map((linha) => normalizarCabecalhosEValores(linha, contexto))
     .map((linha) => sanitizeRow(linha, tiposEsperados));
 
   addInfo(
-    `[Json] - ${linhasValidas.length} linhas válidas extraídas de ${filePath}`,
+    `[Json] - ${linhasCorrigidas.length} linhas válidas extraídas de ${filePath}`,
     contexto
   );
   return dataSanitized;
@@ -3263,8 +3229,10 @@ export default function mapearTipo(tipoSql) {
 normalizar.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\utils\normalizar.js
 export default function normalizar(nome) {
   return nome
-    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
     .normalize("NFD")
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .replace(/^\uFEFF/, "")
+    .replace(/[^\x20-\x7E]/g, "")
     .replace(/[\u0300-\u036f]/g, "") // remove acentos
     .replace(/%/g, "perc") // % → perc
     .replace(/\s*\.\s*/g, "_") // ponto entre palavras → _
@@ -3394,8 +3362,8 @@ sanitizeValue.js --> C:\Users\lucas.l\Desktop\Banco\database_monitoring\src\util
 import { addAviso } from "../middleware/errorHandler.js";
 
 export function sanitizeValue(value, tipoEsperado) {
-  const isEmpty = value === "" || value ===null ||value === undefined;
-    
+  const isEmpty = value === "" || value === null || value === undefined;
+
   if (isEmpty) return null;
 
   switch (tipoEsperado) {
@@ -3403,9 +3371,7 @@ export function sanitizeValue(value, tipoEsperado) {
       const clean = String(value).replace(/[^\d-]/g, "");
       const parsed = parseInt(clean, 10);
       if (isNaN(parsed)) {
-        addAviso(
-          `dado int foi setado como null, validar valor: [${value}]`
-        );
+        addAviso(`dado int foi setado como null, validar valor: [${value}]`);
       }
 
       return isNaN(parsed) ? null : parsed;
@@ -3421,12 +3387,16 @@ export function sanitizeValue(value, tipoEsperado) {
         return parseFloat(`${coordMatch[1]}.${coordMatch[2]}${coordMatch[3]}`);
       }
 
-      if ((valueStr.match(/\./g) || []).length > 1) {
-        raw = valueStr.replace(/\./g, "").replace(",", ".");
-      } else if (valueStr.includes(",") && !valueStr.includes(".")) {
+      if (valueStr.includes(",") && valueStr.includes(".")) {
+        if (valueStr.indexOf(",") > valueStr.indexOf(".")) {
+          raw = valueStr.replace(/\./g, "").replace(",", ".");
+        } else {
+          raw = valueStr.replace(/,/g, "");
+        }
+      } else if (valueStr.includes(",")) {
         raw = valueStr.replace(",", ".");
       } else {
-        raw = valueStr; // já está no padrão correto
+        raw = valueStr;
       }
 
       const parsed = parseFloat(raw);
@@ -3447,27 +3417,42 @@ export function sanitizeValue(value, tipoEsperado) {
         // DD/MM/YYYY
         const [_, d, m, y] = match;
         return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
-      }
-      else if ((match = str.match(/^(\d{4})-(\d{2})-(\d{2})$/))) {
+      } else if ((match = str.match(/^(\d{4})-(\d{2})-(\d{2})$/))) {
         // YYYY-MM-DD
         return str;
-      }
-      else if ((match = str.match(/^(\d{2})(\d{2})(\d{4})$/))) {
+      } else if ((match = str.match(/^(\d{2})(\d{2})(\d{4})$/))) {
         // DDMMYYYY
         const [_, d, m, y] = match;
         return `${y}-${m}-${d}`;
-      }
-      else if ((match = str.match(/^(\d{1})(\d{2})(\d{4})$/))) {
+      } else if ((match = str.match(/^(\d{1})(\d{2})(\d{4})$/))) {
         // DMMYYYY
         const [_, d, m, y] = match;
         return `${y}-${m}-${d.padStart(2, "0")}`;
+      } else if (
+        // 1. DD/MM/YYYY HH:mm or HH:mm:ss → extrai só data
+        (match = str.match(
+          /^(\d{2})\/(\d{2})\/(\d{4})[ T](\d{2}):\d{2}(:\d{2})?$/
+        ))
+      ) {
+        const [_, d, m, y] = match;
+        return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+      } else if (
+        // 2. YYYY-MM-DD HH:mm(:ss) → extrai só data
+        (match = str.match(/^(\d{4})-(\d{2})-(\d{2})[ T]\d{2}:\d{2}(:\d{2})?$/))
+      ) {
+        const [_, y, m, d] = match;
+        return `${y}-${m}-${d}`;
+      } else if (
+        (match = str.match(
+          /^(\d{2})\/(\d{2})\/(\d{4})\s*-\s*(\d{2}):(\d{2}):(\d{2})$/
+        ))
+      ) {
+        const [_, d, m, y] = match;
+        return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
       } else {
-        addAviso(`valor data setado como null, validar, valor: [${value}] `)
+        addAviso(`valor data setado como null, validar, valor: [${value}] `);
         return null;
       }
-
-
-      
     }
     case "datetime": {
       const str = String(value).replace(/\s+/g, " ").trim();
@@ -3516,8 +3501,17 @@ export function sanitizeValue(value, tipoEsperado) {
       }
 
       // 5. YYYYMMDDHHmmss
-      else if ((match = str.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/))) {
+      else if (
+        (match = str.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/))
+      ) {
         const [_, y, m, d, h, min, s] = match;
+        return `${y}-${m}-${d} ${h}:${min}:${s}`;
+      } else if (
+        (match = str.match(
+          /^(\d{2})\/(\d{2})\/(\d{4})\s*-\s*(\d{2}):(\d{2}):(\d{2})$/
+        ))
+      ) {
+        const [_, d, m, y, h, min, s] = match;
         return `${y}-${m}-${d} ${h}:${min}:${s}`;
       }
 
@@ -3527,9 +3521,7 @@ export function sanitizeValue(value, tipoEsperado) {
       ) {
         const [_, d, m, y, h, min, s] = match;
         return `${y}-${m}-${d} ${h}:${min}:${s}`;
-      }
-
-      else if (
+      } else if (
         (match = str.match(
           /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})\.(\d{3})(Z)?$/
         ))
@@ -3537,22 +3529,18 @@ export function sanitizeValue(value, tipoEsperado) {
         const [_, y, m, d, h, min, s, ms] = match;
         return `${y}-${m}-${d} ${h}:${min}:${s}.${ms}`;
       } else {
-        addAviso(`Valor datetime setado como null, validar, valor: [${value}]`)
+        addAviso(`Valor datetime setado como null, validar, valor: [${value}]`);
         return null;
-
       }
-
-      
     }
 
     case "time": {
       const str = String(value).trim();
       const match = str.match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/);
-      if (!match){
-        addAviso(`Valor time setado como null validar, valor [${value}]`)
+      if (!match) {
+        addAviso(`Valor time setado como null validar, valor [${value}]`);
         return null;
-
-      } 
+      }
 
       // Padroniza sempre como string HHH:MM:SS (mesmo se vier HHH:MM)
       const [_, h, m, s] = match.map((v) =>
