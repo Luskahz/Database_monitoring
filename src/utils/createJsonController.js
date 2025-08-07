@@ -6,6 +6,7 @@ import sanitizeRow from "./sanitizeValue.js";
 import fs from "fs/promises";
 import iconv from "iconv-lite";
 import Papa from "papaparse";
+import chardet from "chardet";
 
 function detectarColunasDuplicadas(headers, contexto) {
   const set = new Set();
@@ -95,14 +96,20 @@ export default async function createJsonController(filePath) {
   }
 
   let data;
-  try {
-    data = iconv.decode(buffer, "utf8");
-    if ((data.match(/\uFFFD/g) || []).length > 3) {
-      data = iconv.decode(buffer, "latin1");
-    }
-  } catch {
+  const detectedEncoding = chardet.detect(buffer);
+
+  if (detectedEncoding === "ISO-8859-1") {
     data = iconv.decode(buffer, "latin1");
+  } else if (detectedEncoding === "UTF-8") {
+    data = iconv.decode(buffer, "utf8");
+  } else {
+    throw new Error(
+      addAviso(
+        detectedEncoding
+      )`Codificação não detectada corretamente, ou não suportada. Codificação detectada: ${detectedEncoding}`
+    );
   }
+
   const firstLine = data.split(/\r?\n/)[0];
 
   const linhas = data.split(/\r\n|\n|\r/);
@@ -119,7 +126,7 @@ export default async function createJsonController(filePath) {
     transformHeader: (h) => {
       if (!h) return "unnamed";
       let header = normalizar(h);
-      header = header.replace(/[^\x20-\x7E]/g, "");
+      header = header.replace(/[\u0000-\u001F\u007F]/g, "");
       return header === "" ? "unnamed" : header;
     },
     transform: (value) => value.trim(),
