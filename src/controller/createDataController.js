@@ -6,24 +6,22 @@ import createJsonController from "../utils/createJsonController.js";
 import { addAviso, addErro } from "../middleware/errorHandler.js";
 
 export default async function createDataController(filePath, action) {
-  const contexto = filePath
+  const contexto = filePath;
   let dataJson;
   try {
-      
     dataJson = await createJsonController(filePath);
     if (!dataJson || dataJson.length === 0) {
       addAviso("CSV vazio, validar se está válido", contexto);
-     
-      return null 
+
+      return null;
     } else if (Object.keys(dataJson[0]).length === 0) {
       addAviso("CSV possui registros, mas sem colunas detectadas.", contexto);
-      return null
+      return null;
     }
   } catch (e) {
     addErro(`Erro ao converter CSV para JSON: ${e.message}`, contexto);
     throw e;
   }
-
 
   try {
     const { metadados, logData } = await createFundamentalDocsController(
@@ -46,7 +44,11 @@ export async function createMetadadosController(
   action
 ) {
   const destino = destinoByFilePath(filePath);
-  const infos = await extractInfosByData(destino.tabela_destino, dataJson, filePath);
+  const infos = await extractInfosByData(
+    destino.tabela_destino,
+    dataJson,
+    filePath
+  );
 
   return {
     nome_arquivo: destino.nome_arquivo,
@@ -87,8 +89,6 @@ export async function createFundamentalDocsController(
   action,
   contexto
 ) {
-
-  
   try {
     const hash = createHashByData(dataJson);
     const metadados = await createMetadadosController(
@@ -102,16 +102,21 @@ export async function createFundamentalDocsController(
     return { metadados, logData };
   } catch (e) {
     addErro(
-      `Erro ao gerar os objetos fundamentais, metadados e logdata, erro: ${e.message}`, contexto
+      `Erro ao gerar os objetos fundamentais, metadados e logdata, erro: ${e.message}`,
+      contexto
     );
     throw e;
   }
 }
 
 async function extractInfosByData(tabelaName, dataJson, filePath) {
-  const contexto = filePath
+  const contexto = filePath;
   try {
-    const dataColun = await doesCsvHaveDataController(tabelaName, dataJson, contexto);
+    const dataColun = await doesCsvHaveDataController(
+      tabelaName,
+      dataJson,
+      contexto
+    );
     const tiposEsperados = await getTiposFromTable(tabelaName);
     const colunsTable = await getColumnsFromTable(tabelaName);
     const colunsJson = Object.keys(dataJson[0] || {});
@@ -124,7 +129,8 @@ async function extractInfosByData(tabelaName, dataJson, filePath) {
     };
   } catch (e) {
     addErro(
-      `[FATAL] Erro ao extrair informações da tabela destino ou colunas do Json csv, erro: ${e.message}`, contexto
+      `[FATAL] Erro ao extrair informações da tabela destino ou colunas do Json csv, erro: ${e.message}`,
+      contexto
     );
     throw e;
   }

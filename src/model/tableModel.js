@@ -120,16 +120,18 @@ export async function getColumnsFromTable(tabela) {
  *    colunas_json: object
  * }} metadados
  */
-export async function insertRegisterinTable(tabela, linhaTipada) {
-  let colunas;
-  try {
-    colunas = await getColumnsFromTable(tabela)
-  } catch (e) {
-    throw new Error(
-      `[model coleta de tipagem para insert] erro ao coletar as colunas da tabela, erro: ${e.message}`
-    );
+export async function insertRegisterinTable(tabela, linhaTipada, colunas) {
+  let cols = colunas;
+  if (!cols) {
+    try {
+      cols = await getColumnsFromTable(tabela);
+    } catch (e) {
+      throw new Error(
+        `[model coleta de tipagem para insert] erro ao coletar as colunas da tabela, erro: ${e.message}`
+      );
+    }
   }
-  if (!colunas || colunas.length === 0) {
+if (!cols || cols.length === 0) {
     throw new Error(
       `[model coleta de tipagem para insert] Tabela '${tabela}' não possui colunas válidas.`
     );
@@ -138,8 +140,8 @@ export async function insertRegisterinTable(tabela, linhaTipada) {
   const valores = colunas.map((col) => {
     return linhaTipada[col] ?? null;
   });
-  const colunasSql = colunas.map((col) => `\`${col}\``).join(", ");
-  const placeholders = colunas.map(() => "?").join(", ");
+  const colunasSql = cols.map((col) => `\`${col}\``).join(", ");
+  const placeholders = cols.map(() => "?").join(", ");
   const sql = `INSERT INTO \`${schema}\`.\`${tabela}\` (${colunasSql}) VALUES (${placeholders})`;
 
   try {

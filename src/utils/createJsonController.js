@@ -7,7 +7,6 @@ import fs from "fs/promises";
 import iconv from "iconv-lite";
 import Papa from "papaparse";
 import chardet from "chardet";
-import { updateLoggerController } from "../middleware/logger.js";
 
 function detectarColunasDuplicadas(headers, contexto) {
   const set = new Set();

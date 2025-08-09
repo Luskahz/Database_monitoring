@@ -14,7 +14,8 @@ const limit = pLimit(12);
 export async function startMonitoring() {
   const monitorPath = path.resolve(
     __dirname,
-    "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL"
+    //"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL"
+    "../../"
   );
 
   const watcher = chokidar.watch(monitorPath, {
@@ -24,8 +25,8 @@ export async function startMonitoring() {
     interval: 500,
     depth: 10,
     awaitWriteFinish: {
-      stabilityThreshold: 2000,
-      pollInterval: 100,
+      stabilityThreshold: 5000,
+      pollInterval: 500,
     },
     ignored: /[\\\/]database_monitoring[\\\/]/,
     awaitWriteFinish: {

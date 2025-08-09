@@ -2,6 +2,7 @@ import {
   insertRegisterinTable,
   listPeriodInTable,
   deleteFromTable,
+  getColumnsFromTable,
 } from "../model/tableModel.js";
 import {
   iniciarBarra,
@@ -12,6 +13,7 @@ import {
 import { insertValidator } from "./insertValidator.js";
 import tiparLinha from "../utils/tiparLinha.js";
 import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
+import pLimit from "p-limit";
 import { updateLoggerController } from "../middleware/logger.js";
 
 const linhasPorArquivo = new Map();
@@ -86,45 +88,49 @@ export async function manageInsertController(metadados) {
   const total = metadados.data_json.length;
   const barraId = nomeArquivo;
   iniciarBarra(barraId, total, nomeArquivo, metadados.tabela);
-  try {
-    for (let i = 0; i < metadados.data_json.length; i++) {
+  const colunasTabela = await getColumnsFromTable(metadados.tabela);
+  const limit = pLimit(10);
+  const tarefas = metadados.data_json.map((linhaOriginal, i) =>
+    limit(async () => {
       try {
-        const linhaOriginal = metadados.data_json[i];
-        const linhaTipada = tiparLinha(
-          linhaOriginal,
-          metadados.tipos_esperados
-        );
+        const linhaTipada = linhaOriginal;
 
-        const { result, linhaTipada: linhaInserida } =
-          await insertRegisterinTable(metadados.tabela, linhaTipada);
-        //Log detalhado: original e tipada
+        const { linhaTipada: linhaInserida } = await insertRegisterinTable(
+          metadados.tabela,
+          linhaTipada,
+          colunasTabela
+        );
         addInfo(
-          `Linha ${i} inserida:\r\n`
-            +`\r\n`+
-            `Original: ${JSON.stringify(linhaOriginal)}\r\n`
-            +`\r\n`+
-            `Tipada:   ${JSON.stringify(linhaInserida)}\r\n`
-            +`\r\n`+
+          `Linha ${i} inserida:\r\n` +
+            +`\r\n` +
+            `Original: ${JSON.stringify(linhaOriginal)}\r\n` +
+            +`\r\n` +
+            `Tipada:   ${JSON.stringify(linhaInserida)}\r\n` +
+            +`\r\n` +
             `----------------------------------------------`
         );
         sucesso++;
-        atualizarBarra(barraId);
       } catch (e) {
         addErro(`Erro ao inserir linha ${i}, erro: ${e.message}`, contexto);
         erros.push({
           linha: i,
           erro: e.message,
-          dados: metadados.data_json[i],
+          dados: linhaOriginal,
         });
         await updateLoggerController(metadados, contexto);
+      } finally {
+        atualizarBarra(barraId);
       }
-    }
+    })
+  );
+
+  try {
+    await Promise.all(tarefas);
   } finally {
     finalizarBarra(barraId);
   }
 
   addInfo("processo de insersão finalizado, validar caso erros", contexto);
-  finalizarBarra(barraId);
   return {
     erro: erros.length > 0,
     total: metadados.data_json.length,
