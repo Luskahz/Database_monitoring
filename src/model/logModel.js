@@ -120,6 +120,7 @@ export async function insertLog(logData) {
  * }} metadados
  */
 export async function deleteLogByHash(logData) {
+  console.log(logData)
   const { hash_arquivo } = logData;
   try {
     return await db.query(

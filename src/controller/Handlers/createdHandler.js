@@ -29,10 +29,8 @@ export default async function createdHandler(filePath) {
 
     //---------- criando os docs, e validando o fluxo de insersão -----------
 
-    let resultado;
     try {
-      resultado = await createDataController(filePath);
-      ({ metadados, logData } = resultado);
+       ({ metadados, logData } = await createDataController(filePath));
     } catch (e) {
       addErro(
         `erro ao gerar os dados fundamentais, erro:${e.message}`,

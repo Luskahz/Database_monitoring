@@ -90,7 +90,7 @@ export async function createFundamentalDocsController(
   contexto
 ) {
   try {
-    const hash = createHashByData(dataJson);
+    const hash = await createHashByData(dataJson);
     const metadados = await createMetadadosController(
       filePath,
       dataJson,

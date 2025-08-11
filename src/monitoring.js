@@ -14,8 +14,7 @@ const limit = pLimit(12);
 export async function startMonitoring() {
   const monitorPath = path.resolve(
     __dirname,
-    //"\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL"
-    "../../"
+    "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL"
   );
 
   const watcher = chokidar.watch(monitorPath, {

@@ -7,6 +7,7 @@ import fs from "fs/promises";
 import iconv from "iconv-lite";
 import Papa from "papaparse";
 import chardet from "chardet";
+import { parse } from "path";
 
 function detectarColunasDuplicadas(headers, contexto) {
   const set = new Set();

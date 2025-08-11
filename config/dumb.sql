@@ -614,7 +614,7 @@ CREATE TABLE -- Mensal / chave primaria definida
 
 CREATE TABLE -- Mensal / chave primaria definida
   IF NOT EXISTS `03_11_40` (
-    mapa INT,
+    mapa INT primary key,
     veiculo INT,
     placa VARCHAR(20),
     dt_entrega DATE,
@@ -632,7 +632,7 @@ CREATE TABLE -- Mensal / chave primaria definida
     km_inicial INT,
     km_final INT,
     km_rodado INT,
-    primary key (mapa)
+
   );
 
 CREATE TABLE -- Mensal / chave primaria definida
