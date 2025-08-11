@@ -1,35 +1,11 @@
 import { addAviso } from "../middleware/errorHandler.js";
-import { getDateColumnsFromTable } from "../model/tableModel.js";
 import {
   getLoggerContext,
   updateLoggerController,
 } from "../middleware/logger.js";
-
-export async function doesCsvHaveDataController(tabela, data_json, contexto) {
-  try {
-    const dataCol = await getDateColumnsFromTable(tabela);
-    if (!dataCol) return null;
-
-    const primeiraLinha = data_json?.[0] || {};
-    const chavesJson = Object.keys(primeiraLinha);
-
-    const index = chavesJson.findIndex((key) => key === dataCol);
-
-    if (index === -1) {
-      addAviso(`Coluna de data '${dataCol}' não encontrada no CSV.`, contexto);
-      updateLoggerController(getLoggerContext({}, {}, contexto), contexto);
-      return null;
-    }
-
-    return dataCol;
-  } catch (e) {
-    throw new Error(
-      `[Controller insersão] Erro ao extrair coluna data, erro: ${e.message}`
-    );
-  }
-}
-
 /**
+ *
+ * @param {Array} list
  * @param {{
  *    nome_arquivo: string,
  *    ano: number,
@@ -40,6 +16,8 @@ export async function doesCsvHaveDataController(tabela, data_json, contexto) {
  *    acao: string,
  *    colunas_tabela: object
  *    colunas_json: object
+ *    datas_csv: Array<string>,
+ *    caminho_original: string,
  * }} metadados
  */
 export async function insertValidator(list, metadados) {
@@ -47,10 +25,10 @@ export async function insertValidator(list, metadados) {
   if (list === null) {
     return "cadastro";
   } else {
-    const { coluna_data, data_json } = metadados; //null caso for cadastral
-    if (!Array.isArray(data_json) || data_json.length === 0) {
+    const { coluna_data, datas_csv } = metadados;
+    if (!Array.isArray(datas_csv) || datas_csv.length === 0) {
       addAviso(
-        "[Controller insersão] JSON de dados está vazio. Nenhuma validação de coluna de data será feita.",
+        "[Controller insersão] CSV sem dados válidos para coluna de data.",
         contexto
       );
       await updateLoggerController(
@@ -66,13 +44,7 @@ export async function insertValidator(list, metadados) {
         "Banco",
         contexto
       );
-      const datasCsv = extrairDatasValidas(
-        data_json,
-        coluna_data,
-        "CSV",
-        contexto
-      );
-      const conflito = [...datasCsv].some((data) => datasBanco.has(data));
+      const conflito = datas_csv.some((data) => datasBanco.has(data));
 
       if (conflito) {
         addAviso(

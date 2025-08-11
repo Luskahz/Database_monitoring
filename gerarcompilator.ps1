@@ -12,6 +12,9 @@ $arquivosIgnorados = @("package-lock.json")
 
 Get-ChildItem -Recurse -File | Where-Object {
     $_.FullName -notmatch "\\node_modules\\" -and
+    $_.FullName -notmatch "\\node-22\\" -and
+    $_.FullName -notmatch "\\node-v22.18.0-win-x64\\" -and
+    $_.FullName -notmatch "\\node-v22.18.0-win-x64.zip\\" -and
     $extensoesIgnoradas -notcontains $_.Extension.ToLower() -and
     $arquivosIgnorados -notcontains $_.Name
 } | ForEach-Object {

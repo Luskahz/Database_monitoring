@@ -95,6 +95,7 @@ export async function getColumnsFromTable(tabela) {
       FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = ?
         AND TABLE_SCHEMA = ?
+        ORDER BY ORDINAL_POSITION
     `,
       [tabela, schema]
     );
@@ -137,7 +138,7 @@ if (!cols || cols.length === 0) {
     );
   }
 
-  const valores = colunas.map((col) => {
+  const valores = cols.map((col) => {
     return linhaTipada[col] ?? null;
   });
   const colunasSql = cols.map((col) => `\`${col}\``).join(", ");

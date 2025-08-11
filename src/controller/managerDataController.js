@@ -2,7 +2,6 @@ import {
   insertRegisterinTable,
   listPeriodInTable,
   deleteFromTable,
-  getColumnsFromTable,
 } from "../model/tableModel.js";
 import {
   iniciarBarra,
@@ -11,10 +10,10 @@ import {
 } from "../utils/progressBar.js";
 
 import { insertValidator } from "./insertValidator.js";
-import tiparLinha from "../utils/tiparLinha.js";
 import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
-import pLimit from "p-limit";
 import { updateLoggerController } from "../middleware/logger.js";
+import { streamCsvRows } from "../utils/csvStream.js";
+import tiparLinha from "../utils/tiparLinha.js";
 
 const linhasPorArquivo = new Map();
 let proximaLinhaDisponivel = 1;
@@ -30,14 +29,14 @@ export async function manageInsertController(metadados) {
   const contexto = metadados.caminho_original;
   const nomeArquivo = metadados.nome_arquivo ?? "arquivo-desconhecido";
   const linhaProgresso = reservarLinhaParaArquivo(nomeArquivo);
-  if (!Array.isArray(metadados.data_json) || metadados.data_json.length === 0) {
+  if (!metadados.total_linhas || metadados.total_linhas === 0) {
     addAviso("Nenhuma linha disponível para inserção.", contexto);
     return;
   }
 
   let listFromTable;
   try {
-    listFromTable = await listPeriodInTable(metadados); //caso a base seja cadastral, vai retornar null aqui se não, vai retornar um objeto com {dataCol: 'data da linha'}
+    listFromTable = await listPeriodInTable(metadados);
   } catch (e) {
     addErro(`Erro ao consultar o período no banco: ${e.message}`, contexto);
     throw e;
@@ -85,28 +84,29 @@ export async function manageInsertController(metadados) {
     return;
   }
   addInfo("iniciando processo de insersão dos dados na tabela...", contexto);
-  const total = metadados.data_json.length;
+  const total = metadados.total_linhas;
   const barraId = nomeArquivo;
   iniciarBarra(barraId, total, nomeArquivo, metadados.tabela);
-  const colunasTabela = await getColumnsFromTable(metadados.tabela);
-  const limit = pLimit(10);
-  const tarefas = metadados.data_json.map((linhaOriginal, i) =>
-    limit(async () => {
+  let i = 0;
+  try {
+    for await (const linhaOriginal of streamCsvRows(
+      metadados.caminho_original,
+      metadados.tipos_esperados
+    )) {
       try {
-        const linhaTipada = linhaOriginal;
-
-        const { linhaTipada: linhaInserida } = await insertRegisterinTable(
-          metadados.tabela,
-          linhaTipada,
-          colunasTabela
+        const linhaTipada = tiparLinha(
+          linhaOriginal,
+          metadados.tipos_esperados
         );
+        const { result, linhaTipada: linhaInserida } =
+          await insertRegisterinTable(metadados.tabela, linhaTipada);
         addInfo(
           `Linha ${i} inserida:\r\n` +
-            +`\r\n` +
+            `\r\n` +
             `Original: ${JSON.stringify(linhaOriginal)}\r\n` +
-            +`\r\n` +
+            `\r\n` +
             `Tipada:   ${JSON.stringify(linhaInserida)}\r\n` +
-            +`\r\n` +
+            `\r\n` +
             `----------------------------------------------`
         );
         sucesso++;
@@ -120,20 +120,17 @@ export async function manageInsertController(metadados) {
         await updateLoggerController(metadados, contexto);
       } finally {
         atualizarBarra(barraId);
+        i++;
       }
-    })
-  );
-
-  try {
-    await Promise.all(tarefas);
+    }
   } finally {
     finalizarBarra(barraId);
+    addInfo("processo de insersão finalizado, validar caso erros", contexto);
   }
 
-  addInfo("processo de insersão finalizado, validar caso erros", contexto);
   return {
     erro: erros.length > 0,
-    total: metadados.data_json.length,
+    total: total,
     inseridos: sucesso,
     falhas: erros.length,
     mensagem: erros.length > 0 ? "Algumas linhas falharam" : null,

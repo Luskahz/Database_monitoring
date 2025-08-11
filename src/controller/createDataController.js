@@ -1,35 +1,21 @@
 import path from "path";
-import { doesCsvHaveDataController } from "./insertValidator.js";
-import { getColumnsFromTable, getTiposFromTable } from "../model/tableModel.js";
-import createHashByData from "../utils/createHashByData.js";
-import createJsonController from "../utils/createJsonController.js";
+import { analyzeCsv } from "../utils/csvStream.js";
 import { addAviso, addErro } from "../middleware/errorHandler.js";
 
 export default async function createDataController(filePath, action) {
   const contexto = filePath;
-  let dataJson;
-  try {
-    dataJson = await createJsonController(filePath);
-    if (!dataJson || dataJson.length === 0) {
-      addAviso("CSV vazio, validar se está válido", contexto);
-
-      return null;
-    } else if (Object.keys(dataJson[0]).length === 0) {
-      addAviso("CSV possui registros, mas sem colunas detectadas.", contexto);
-      return null;
-    }
-  } catch (e) {
-    addErro(`Erro ao converter CSV para JSON: ${e.message}`, contexto);
-    throw e;
-  }
 
   try {
     const { metadados, logData } = await createFundamentalDocsController(
       filePath,
-      dataJson,
       action,
       contexto
     );
+
+    if (!metadados || metadados.total_linhas === 0) {
+      addAviso("CSV vazio, validar se está válido", contexto);
+      return null;
+    }
     return { metadados, logData };
   } catch (e) {
     addErro(`Erro ao gerar metadados e logData: ${e.message}`, contexto);
@@ -37,18 +23,9 @@ export default async function createDataController(filePath, action) {
   }
 }
 
-export async function createMetadadosController(
-  filePath,
-  dataJson,
-  hash,
-  action
-) {
+export async function createMetadadosController(filePath, action) {
   const destino = destinoByFilePath(filePath);
-  const infos = await extractInfosByData(
-    destino.tabela_destino,
-    dataJson,
-    filePath
-  );
+  const analise = await analyzeCsv(filePath, destino.tabela_destino);
 
   return {
     nome_arquivo: destino.nome_arquivo,
@@ -56,13 +33,14 @@ export async function createMetadadosController(
     mes: destino.mes,
     dia: destino.dia,
     tabela: destino.tabela_destino,
-    data_json: dataJson,
-    hash: hash,
-    coluna_data: infos.coluna_data,
+    hash: analise.hash,
+    coluna_data: analise.coluna_data,
     acao: action,
-    colunas_tabela: infos.colunas_tabela,
-    colunas_json: infos.colunas_json,
-    tipos_esperados: infos.tipagem,
+    colunas_tabela: analise.colunas_tabela,
+    colunas_json: analise.colunas_json,
+    tipos_esperados: analise.tipos_esperados,
+    datas_csv: analise.datas_csv,
+    total_linhas: analise.total_linhas,
     caminho_original: filePath,
   };
 }
@@ -77,7 +55,7 @@ export function createLogDataController(metadados) {
     coluna_data: metadados.coluna_data,
     data_upload: new Date(),
     hash_arquivo: metadados.hash,
-    caminho_original: metadados.caminho_original, //trocar
+    caminho_original: metadados.caminho_original,
     sucesso: true,
     mensagem_erro: null,
   };
@@ -85,51 +63,16 @@ export function createLogDataController(metadados) {
 
 export async function createFundamentalDocsController(
   filePath,
-  dataJson,
   action,
   contexto
 ) {
   try {
-    const hash = await createHashByData(dataJson);
-    const metadados = await createMetadadosController(
-      filePath,
-      dataJson,
-      hash,
-      action
-    );
+    const metadados = await createMetadadosController(filePath, action);
     const logData = createLogDataController(metadados);
-
     return { metadados, logData };
   } catch (e) {
     addErro(
       `Erro ao gerar os objetos fundamentais, metadados e logdata, erro: ${e.message}`,
-      contexto
-    );
-    throw e;
-  }
-}
-
-async function extractInfosByData(tabelaName, dataJson, filePath) {
-  const contexto = filePath;
-  try {
-    const dataColun = await doesCsvHaveDataController(
-      tabelaName,
-      dataJson,
-      contexto
-    );
-    const tiposEsperados = await getTiposFromTable(tabelaName);
-    const colunsTable = await getColumnsFromTable(tabelaName);
-    const colunsJson = Object.keys(dataJson[0] || {});
-
-    return {
-      coluna_data: dataColun,
-      tipagem: tiposEsperados,
-      colunas_tabela: colunsTable,
-      colunas_json: colunsJson,
-    };
-  } catch (e) {
-    addErro(
-      `[FATAL] Erro ao extrair informações da tabela destino ou colunas do Json csv, erro: ${e.message}`,
       contexto
     );
     throw e;
