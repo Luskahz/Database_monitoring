@@ -5,9 +5,22 @@ import iconv from "iconv-lite";
 import { PassThrough } from "stream";
 
 export async function detectEncoding(filePath) {
-  const head = await fs.readFile(filePath, { length: 65536 }).catch(() => null);
-  const enc = (head && chardet.detect(head)) || "UTF-8";
-  return enc.toUpperCase().startsWith("ISO-8859") ? "latin1" : "utf8";
+  const head = await fs.readFile(filePath).catch(() => null);
+  const guess = head ? chardet.detect(head) : null;
+  const s = (guess || "").toUpperCase();
+
+  // normaliza os casos mais comuns
+  if (s.includes("UTF-8")) return { encoding: "utf8" };
+  if (
+    s.includes("ISO-8859") ||
+    s.includes("WINDOWS-1252") ||
+    s.includes("CP1252") ||
+    s.includes("WIN-1252")
+  ) {
+    return { encoding: "latin1" };
+  }
+  // fallback seguro
+  return { encoding: "utf8" };
 }
 
 export async function createDecodedStream(

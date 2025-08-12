@@ -24,7 +24,7 @@ export async function startMonitoring() {
     interval: 500,
     depth: 10,
     awaitWriteFinish: {
-      stabilityThreshold: 5000,
+      stabilityThreshold: 10000,
       pollInterval: 500,
     },
     ignored: /[\\\/]database_monitoring[\\\/]/,

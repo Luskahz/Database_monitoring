@@ -19,6 +19,7 @@ import {
 } from "../utils/csvStream.js";
 import tiparLinha from "../utils/tiparLinha.js";
 import { detectDelimiter, detectEncoding } from "../utils/prepareStreamByFilepath.js";
+import { debugPeekHeader } from "../utils/debugHeader.js";
 
 export async function manageInsertController(metadados) {
   
@@ -86,8 +87,9 @@ export async function manageInsertController(metadados) {
 
   addInfo("iniciando processo de insersão dos dados na tabela...", contexto);
 
-
+  // extrai o header do csv
   const rawHeaders = await readCsvHeader(contexto, encoding, delimiter);
+  await debugPeekHeader(contexto, encoding);
   const { headers: headersNorm, duplicates } = normalizeHeadersOnce(rawHeaders);
   if (duplicates.size) {
     addAviso(
@@ -95,7 +97,7 @@ export async function manageInsertController(metadados) {
       contexto
     );
   }
-
+  // começa a iniciar as linhas
   const total = metadados.total_linhas;
   const barraId = `${nomeArquivo}::${metadados.ano}::${metadados.tabela}`; 
   iniciarBarra(barraId, total, nomeArquivo, metadados.tabela, metadados.ano);

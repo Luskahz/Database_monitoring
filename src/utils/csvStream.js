@@ -138,7 +138,6 @@ export function normalizeHeadersOnce(rawHeaders) {
   for (const h of rawHeaders) {
     let header = (h ?? "").toString();
     header = normalizar(header)
-      .replace(/[^\x20-\x7E]/g, "")
       .trim();
     if (header === "") header = "unnamed";
 
@@ -164,10 +163,11 @@ export async function readCsvHeader(filePath, encoding, delimiter) {
     const parser = Papa.parse(Papa.NODE_STREAM_INPUT, {
       header: false,
       delimiter,
-      preview: 1, // só queremos a primeira linha
+      preview: 1, 
       skipEmptyLines: true,
       dynamicTyping: false,
     });
+
 
     const cleanup = () => {
       parser.off?.("data", onData);
