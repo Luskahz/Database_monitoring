@@ -158,7 +158,6 @@ export async function insertHashInCache(logData) {
       parts.push(dia);
     }
     parts.push(nome_arquivo);
-    console.log(logData)
 
     const enrichedLogData = {
       ...logData,

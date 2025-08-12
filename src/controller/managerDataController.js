@@ -15,20 +15,9 @@ import { updateLoggerController } from "../middleware/logger.js";
 import { streamCsvRows } from "../utils/csvStream.js";
 import tiparLinha from "../utils/tiparLinha.js";
 
-const linhasPorArquivo = new Map();
-let proximaLinhaDisponivel = 1;
-
-function reservarLinhaParaArquivo(nomeArquivo) {
-  if (!linhasPorArquivo.has(nomeArquivo)) {
-    linhasPorArquivo.set(nomeArquivo, proximaLinhaDisponivel++);
-  }
-  return linhasPorArquivo.get(nomeArquivo);
-}
-
 export async function manageInsertController(metadados) {
   const contexto = metadados.caminho_original;
   const nomeArquivo = metadados.nome_arquivo ?? "arquivo-desconhecido";
-  const linhaProgresso = reservarLinhaParaArquivo(nomeArquivo);
   if (!metadados.total_linhas || metadados.total_linhas === 0) {
     addAviso("Nenhuma linha disponível para inserção.", contexto);
     return;
@@ -100,7 +89,7 @@ export async function manageInsertController(metadados) {
         );
         const { result, linhaTipada: linhaInserida } =
           await insertRegisterinTable(metadados.tabela, linhaTipada);
-        addInfo(
+        addAviso(
           `Linha ${i} inserida:\r\n` +
             `\r\n` +
             `Original: ${JSON.stringify(linhaOriginal)}\r\n` +

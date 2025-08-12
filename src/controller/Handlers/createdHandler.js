@@ -17,8 +17,10 @@ import { manageInsertController } from "../managerDataController.js";
 
 export default async function createdHandler(filePath) {
   if (!filePath) {
-    addErro("caminho do arquivo não definido no handler, sem como identificar qual arquivo deu erro...")
-    return
+    addErro(
+      "caminho do arquivo não definido no handler, sem como identificar qual arquivo deu erro..."
+    );
+    return;
   }
   const contexto = filePath;
   let metadados, logData;
@@ -30,7 +32,7 @@ export default async function createdHandler(filePath) {
     //---------- criando os docs, e validando o fluxo de insersão -----------
 
     try {
-       ({ metadados, logData } = await createDataController(filePath));
+      ({ metadados, logData } = await createDataController(filePath));
     } catch (e) {
       addErro(
         `erro ao gerar os dados fundamentais, erro:${e.message}`,
@@ -38,7 +40,6 @@ export default async function createdHandler(filePath) {
       );
       return;
     } finally {
-      
       await updateLoggerController(
         getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
         contexto

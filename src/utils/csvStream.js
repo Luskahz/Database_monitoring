@@ -1,7 +1,7 @@
 import fs from "fs";
 import crypto from "crypto";
 import Papa from "papaparse";
-import normalizar from "./normalizar.js";
+import  normalizar from "./normalizar.js";
 import sanitizeRow from "./sanitizeValue.js";
 import { addAviso, addInfo } from "../middleware/errorHandler.js";
 import {
@@ -31,13 +31,12 @@ export async function analyzeCsv(filePath, tabelaName) {
       header: true,
       skipEmptyLines: true,
       transformHeader,
-      transform: (value) => (typeof value === "string" ? value.trim() : value),
+      transform: (v) => (typeof v === "string" ? v.trim() : v)
     });
 
     parser.on("data", (row) => {
       if (first) {
         colunasJson = Object.keys(row);
-        console.log(colunasJson)
         if (duplicates.size > 0) {
           addAviso(
             `[Json] - Colunas duplicadas detectadas e renomeadas: ${[
@@ -92,15 +91,17 @@ function buildHeaderTransformer(contexto, duplicatesRef) {
   const emitidos = new Set(); // headers já retornados “sem sufixo”
   return (h) => {
     if (!h) return "unnamed";
-    let header = normalizar(h).replace(/[^\x20-\x7E]/g, "").trim();
+    let header = normalizar(h)
+      .replace(/[^\x20-\x7E]/g, "")
+      .trim();
     header = header === "" ? "unnamed" : header;
 
     if (!usados[header]) {
       usados[header] = 1;
       emitidos.add(header);
-      return header;               // primeira vez volta “limpo”
+      return header; // primeira vez volta “limpo”
     }
-    
+
     if (emitidos.has(header)) {
       // idempotência: não promover para _2 só por “segunda chamada fantasma”
       return header;
@@ -113,18 +114,19 @@ function buildHeaderTransformer(contexto, duplicatesRef) {
 }
 
 export function streamCsvRows(filePath, tiposEsperados) {
-  const transformHeader = buildHeaderTransformer(filePath, new Set());
-  const parser = Papa.parse(Papa.NODE_STREAM_INPUT, {
-    header: true,
-    skipEmptyLines: true,
-    transformHeader,
-    transform: (value) => value.trim(),
-  });
-  const stream = fs.createReadStream(filePath).pipe(parser);
-
   async function* generator() {
+    const transformHeader = buildHeaderTransformer(filePath, new Set());
+    const parser = Papa.parse(Papa.NODE_STREAM_INPUT, {
+      header: true,
+      skipEmptyLines: true,
+      transformHeader,
+      transform: (v) => (typeof v === "string" ? v.trim() : v),
+    });
+    const stream = fs.createReadStream(filePath).pipe(parser);
+
     for await (const row of stream) {
-      yield sanitizeRow(row, tiposEsperados);
+      console.log(row)
+      yield row;
     }
   }
   return generator();

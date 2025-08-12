@@ -1,6 +1,6 @@
 import cliProgress from "cli-progress";
 
-const multiBar = new cliProgress.MultiBar(
+export const multiBar = new cliProgress.MultiBar(
   {
     clearOnComplete: false,
     hideCursor: true,
@@ -10,7 +10,7 @@ const multiBar = new cliProgress.MultiBar(
     barIncompleteChar: "\u2591",
     autopadding: false,
     stopOnComplete: false,
-    fps: 5
+    fps: 5,
   },
   cliProgress.Presets.shades_grey
 );

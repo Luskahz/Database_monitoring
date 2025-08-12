@@ -1,3 +1,4 @@
+import "../src/utils/bootStrapLogs.js"; 
 import express from "express";
 import { startMonitoring } from "./monitoring.js";
 
