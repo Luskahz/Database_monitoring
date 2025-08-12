@@ -32,6 +32,7 @@ export default async function createdHandler(filePath) {
     //---------- criando os docs, e validando o fluxo de insersão -----------
 
     try {
+      
       ({ metadados, logData } = await createDataController(filePath));
     } catch (e) {
       addErro(

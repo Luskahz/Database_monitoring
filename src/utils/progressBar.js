@@ -5,7 +5,7 @@ export const multiBar = new cliProgress.MultiBar(
     clearOnComplete: false,
     hideCursor: true,
     format:
-      "[{filename}] → [{bar}] {percentage}% | [{value}/{total}  {tabela}]",
+      "[{filename} - {ano}] → [{bar}] {percentage}% | [{value}/{total}  {tabela}]",
     barCompleteChar: "\u2588",
     barIncompleteChar: "\u2591",
     autopadding: false,
@@ -21,12 +21,13 @@ let barrasAtivas = 0;
 /**
  * Cria uma barra de progresso identificada por ID único
  */
-export function iniciarBarra(id, total, filename, tabela) {
+export function iniciarBarra(id, total, filename, tabela, ano) {
   if (barras.has(id)) return;
 
   const bar = multiBar.create(total, 0, {
     filename,
     tabela,
+    ano, // adiciona o ano
   });
 
   barras.set(id, bar);
@@ -83,13 +84,4 @@ export function finalizarTodasAsBarras() {
   }
 }
 
-/**
- * Log inteligente: se barra ativa, usa multiBar.log, senão console.log
- */
-//export function safeLog(mensagem) {
-//  if (isBarraAtiva()) {
-//    logBarra(mensagem);
-//  } else {
-//    console.log(mensagem);
-//  }
-//}
+

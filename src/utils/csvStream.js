@@ -1,20 +1,21 @@
 import crypto from "crypto";
 import Papa from "papaparse";
 import normalizar from "./normalizar.js";
-import { sanitizeValue } from "./sanitizeValue.js"
+import { sanitizeValue } from "./sanitizeValue.js";
 import { addAviso, addInfo } from "../middleware/errorHandler.js";
 import {
   getTiposFromTable,
   getColumnsFromTable,
   getDateColumnsFromTable,
 } from "../model/tableModel.js";
-import { detectEncoding, detectDelimiter, createDecodedStream } from "./prepareStreamByFilepath.js"
-
+import {
+  detectEncoding,
+  detectDelimiter,
+  createDecodedStream,
+} from "./prepareStreamByFilepath.js";
 
 export async function analyzeCsv(filePath, tabelaName) {
   const contexto = filePath;
-
-  // 1) Metadados de tabela
   const tiposEsperados = await getTiposFromTable(tabelaName);
   const colunasTabela = await getColumnsFromTable(tabelaName);
   const colunaDataEsperada = await getDateColumnsFromTable(tabelaName);
@@ -111,16 +112,18 @@ export function streamCsvRows(filePath, headersNorm, encoding, delimiter) {
     });
     const stream = input.pipe(parser);
 
-    let isFirstRow = true; 
+    let isFirstRow = true;
     for await (const rowArray of stream) {
-      if (isFirstRow) { isFirstRow = false; continue; }
+      if (isFirstRow) {
+        isFirstRow = false;
+        continue;
+      }
 
       const row = Array.isArray(rowArray) ? rowArray : rowArray?.data || [];
       const obj = {};
       for (let i = 0; i < headersNorm.length; i++) {
         const v = row[i];
-        obj[headersNorm[i]] =
-          typeof v === "string" ? v.trim() : (v ?? null);
+        obj[headersNorm[i]] = typeof v === "string" ? v.trim() : v ?? null;
       }
       yield obj;
     }
@@ -154,16 +157,60 @@ export function normalizeHeadersOnce(rawHeaders) {
 
 export async function readCsvHeader(filePath, encoding, delimiter) {
   const input = await createDecodedStream(filePath, encoding);
+
   return new Promise((resolve, reject) => {
+    let resolved = false;
+
     const parser = Papa.parse(Papa.NODE_STREAM_INPUT, {
       header: false,
       delimiter,
-      preview: 1,
+      preview: 1, // só queremos a primeira linha
       skipEmptyLines: true,
       dynamicTyping: false,
-      complete: (res) => resolve(res.data?.[0] ?? []),
-      error: reject,
     });
+
+    const cleanup = () => {
+      parser.off?.("data", onData);
+      parser.off?.("error", onError);
+      parser.off?.("end", onEnd);
+      // tenta parar o fluxo cedo
+      try {
+        input.unpipe(parser);
+      } catch {}
+      try {
+        parser.end?.();
+      } catch {}
+      try {
+        input.destroy?.();
+      } catch {}
+    };
+
+    const onData = (row) => {
+      if (resolved) return;
+      resolved = true;
+      cleanup();
+      const arr = Array.isArray(row) ? row : row?.data || [];
+      resolve(arr);
+    };
+
+    const onError = (err) => {
+      if (resolved) return;
+      resolved = true;
+      cleanup();
+      reject(err);
+    };
+
+    const onEnd = () => {
+      if (resolved) return;
+      resolved = true;
+      cleanup();
+      resolve([]); // arquivo vazio ou sem linha válida
+    };
+
+    parser.on("data", onData);
+    parser.on("error", onError);
+    parser.on("end", onEnd);
+
     input.pipe(parser);
   });
 }

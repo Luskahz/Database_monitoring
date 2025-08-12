@@ -18,10 +18,10 @@ import {
   streamCsvRows,
 } from "../utils/csvStream.js";
 import tiparLinha from "../utils/tiparLinha.js";
-import { detectDelimiter } from "../utils/prepareStreamByFilepath.js";
-import { detectEncoding } from "../utils/prepareStreamByFilepath.js";
+import { detectDelimiter, detectEncoding } from "../utils/prepareStreamByFilepath.js";
 
 export async function manageInsertController(metadados) {
+  
   const contexto = metadados.caminho_original;
   const nomeArquivo = metadados.nome_arquivo ?? "arquivo-desconhecido";
   const { encoding } = await detectEncoding(contexto);
@@ -81,7 +81,11 @@ export async function manageInsertController(metadados) {
     await updateLoggerController(metadados, contexto);
     return;
   }
+
+
+
   addInfo("iniciando processo de insersão dos dados na tabela...", contexto);
+
 
   const rawHeaders = await readCsvHeader(contexto, encoding, delimiter);
   const { headers: headersNorm, duplicates } = normalizeHeadersOnce(rawHeaders);
@@ -93,8 +97,8 @@ export async function manageInsertController(metadados) {
   }
 
   const total = metadados.total_linhas;
-  const barraId = `${nomeArquivo}::${metadados.tabela}`; 
-  iniciarBarra(barraId, total, nomeArquivo, metadados.tabela);
+  const barraId = `${nomeArquivo}::${metadados.ano}::${metadados.tabela}`; 
+  iniciarBarra(barraId, total, nomeArquivo, metadados.tabela, metadados.ano);
   let i = 0;
 
   try {
