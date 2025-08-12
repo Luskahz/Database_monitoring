@@ -9,7 +9,7 @@ import createdHandler from "./controller/Handlers/createdHandler.js";
 import deletedHandler from "./controller/Handlers/deletedHandler.js";
 import { addErro } from "./middleware/errorHandler.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const limit = pLimit(24);
+const limit = pLimit(50);
 
 export async function startMonitoring() {
   const monitorPath = path.resolve(

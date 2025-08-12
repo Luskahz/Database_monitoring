@@ -1,5 +1,6 @@
 import {
   insertRegisterinTable,
+  insertBatchInTable,
   listPeriodInTable,
   deleteFromTable,
 } from "../model/tableModel.js";
@@ -18,11 +19,13 @@ import {
   streamCsvRows,
 } from "../utils/csvStream.js";
 import tiparLinha from "../utils/tiparLinha.js";
-import { detectDelimiter, detectEncoding } from "../utils/prepareStreamByFilepath.js";
+import {
+  detectDelimiter,
+  detectEncoding,
+} from "../utils/prepareStreamByFilepath.js";
 import { debugPeekHeader } from "../utils/debugHeader.js";
 
 export async function manageInsertController(metadados) {
-  
   const contexto = metadados.caminho_original;
   const nomeArquivo = metadados.nome_arquivo ?? "arquivo-desconhecido";
   const { encoding } = await detectEncoding(contexto);
@@ -83,13 +86,11 @@ export async function manageInsertController(metadados) {
     return;
   }
 
-
-
   addInfo("iniciando processo de insersão dos dados na tabela...", contexto);
 
   // extrai o header do csv
   const rawHeaders = await readCsvHeader(contexto, encoding, delimiter);
-  await debugPeekHeader(contexto, encoding);
+  //await debugPeekHeader(contexto, encoding);
   const { headers: headersNorm, duplicates } = normalizeHeadersOnce(rawHeaders);
   if (duplicates.size) {
     addAviso(
@@ -99,9 +100,40 @@ export async function manageInsertController(metadados) {
   }
   // começa a iniciar as linhas
   const total = metadados.total_linhas;
-  const barraId = `${nomeArquivo}::${metadados.ano}::${metadados.tabela}`; 
+  const barraId = `${nomeArquivo}::${metadados.ano}::${metadados.tabela}`;
   iniciarBarra(barraId, total, nomeArquivo, metadados.tabela, metadados.ano);
+  const cols = metadados.colunas_tabela;
   let i = 0;
+
+  const BATCH_SIZE = 1000;
+  let batch = [];
+
+  async function flushBatch() {
+    if (batch.length === 0) return;
+    const linhasTipadas = batch.map((b) => b.tipada);
+    try {
+      await insertBatchInTable(metadados.tabela, linhasTipadas, cols);
+      sucesso += batch.length;
+      atualizarBarra(barraId, batch.length);
+      i += batch.length;
+    } catch (e) {
+      // fallback para identificar erros linha a linha
+      for (const item of batch) {
+        try {
+          await insertRegisterinTable(metadados.tabela, item.tipada, cols);
+          sucesso++;
+        } catch (err) {
+          addErro(`Erro ao inserir linha ${i}, erro: ${err.message}`, contexto);
+          erros.push({ linha: i, erro: err.message, dados: item.original });
+          await updateLoggerController(metadados, contexto);
+        } finally {
+          atualizarBarra(barraId);
+          i++;
+        }
+      }
+    }
+    batch = [];
+  }
 
   try {
     for await (const linhaOriginal of streamCsvRows(
@@ -110,37 +142,13 @@ export async function manageInsertController(metadados) {
       encoding,
       delimiter
     )) {
-      try {
-        const linhaTipada = tiparLinha(
-          linhaOriginal,
-          metadados.tipos_esperados
-        );
-
-        const { result, linhaTipada: linhaInserida } =
-          await insertRegisterinTable(metadados.tabela, linhaTipada);
-        addAviso(
-          `Linha ${i} inserida:\r\n` +
-            `\r\n` +
-            `Original: ${JSON.stringify(linhaOriginal)}\r\n` +
-            `\r\n` +
-            `Tipada:   ${JSON.stringify(linhaInserida)}\r\n` +
-            `\r\n` +
-            `----------------------------------------------`
-        );
-        sucesso++;
-      } catch (e) {
-        addErro(`Erro ao inserir linha ${i}, erro: ${e.message}`, contexto);
-        erros.push({
-          linha: i,
-          erro: e.message,
-          dados: linhaOriginal,
-        });
-        await updateLoggerController(metadados, contexto);
-      } finally {
-        atualizarBarra(barraId);
-        i++;
+      const linhaTipada = tiparLinha(linhaOriginal, metadados.tipos_esperados);
+      batch.push({ original: linhaOriginal, tipada: linhaTipada });
+      if (batch.length >= BATCH_SIZE) {
+        await flushBatch();
       }
     }
+    await flushBatch();
   } finally {
     finalizarBarra(barraId);
     addInfo("processo de insersão finalizado, validar caso erros", contexto);

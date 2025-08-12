@@ -132,7 +132,7 @@ export async function insertRegisterinTable(tabela, linhaTipada, colunas) {
       );
     }
   }
-if (!cols || cols.length === 0) {
+  if (!cols || cols.length === 0) {
     throw new Error(
       `[model coleta de tipagem para insert] Tabela '${tabela}' não possui colunas válidas.`
     );
@@ -274,4 +274,49 @@ export async function getTiposFromTable(tabela) {
   });
 
   return tipos;
+}
+
+/**
+ * Insere múltiplas linhas em um único comando INSERT.
+ * @param {string} tabela
+ * @param {Array<object>} linhasTipadas
+ * @param {Array<string>} colunas
+ */
+export async function insertBatchInTable(tabela, linhasTipadas, colunas) {
+  if (!linhasTipadas || linhasTipadas.length === 0) {
+    return { result: null, linhasTipadas: [] };
+  }
+
+  let cols = colunas;
+  if (!cols) {
+    try {
+      cols = await getColumnsFromTable(tabela);
+    } catch (e) {
+      throw new Error(
+        `[model coleta de tipagem para insert] erro ao coletar as colunas da tabela, erro: ${e.message}`
+      );
+    }
+  }
+
+  if (!cols || cols.length === 0) {
+    throw new Error(
+      `[model coleta de tipagem para insert] Tabela '${tabela}' não possui colunas válidas.`
+    );
+  }
+
+  const valores = linhasTipadas.map((linha) =>
+    cols.map((col) => linha[col] ?? null)
+  );
+
+  const colunasSql = cols.map((col) => `\`${col}\``).join(", ");
+  const sql = `INSERT INTO \`${schema}\`.\`${tabela}\` (${colunasSql}) VALUES ?`;
+
+  try {
+    const [result] = await db.query(sql, [valores]);
+    return { result, linhasTipadas };
+  } catch (e) {
+    throw new Error(
+      `[model insert batch] erro ao realizar a query de insersão do lote, erro: ${e.message}`
+    );
+  }
 }

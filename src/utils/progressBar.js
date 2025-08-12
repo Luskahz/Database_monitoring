@@ -37,10 +37,10 @@ export function iniciarBarra(id, total, filename, tabela, ano) {
 /**
  * Incrementa o valor da barra de progresso
  */
-export function atualizarBarra(id) {
+export function atualizarBarra(id, valor = 1) {
   const bar = barras.get(id);
   if (bar) {
-    bar.increment();
+    bar.increment(valor);
   }
 }
 
@@ -83,5 +83,3 @@ export function finalizarTodasAsBarras() {
     finalizarBarra(id);
   }
 }
-
-

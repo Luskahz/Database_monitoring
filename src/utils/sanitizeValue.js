@@ -45,7 +45,7 @@ export function sanitizeValue(value, tipoEsperado) {
         );
       }
 
-      return isNaN(parsed) ? null : parsed;
+      return isNaN(parsed) ? null : parsed.toFixed(2);
     }
 
     case "date": {
