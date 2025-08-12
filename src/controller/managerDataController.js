@@ -12,12 +12,21 @@ import {
 import { insertValidator } from "./insertValidator.js";
 import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
 import { updateLoggerController } from "../middleware/logger.js";
-import { streamCsvRows } from "../utils/csvStream.js";
+import {
+  normalizeHeadersOnce,
+  readCsvHeader,
+  streamCsvRows,
+} from "../utils/csvStream.js";
 import tiparLinha from "../utils/tiparLinha.js";
+import { detectDelimiter } from "../utils/prepareStreamByFilepath.js";
+import { detectEncoding } from "../utils/prepareStreamByFilepath.js";
 
 export async function manageInsertController(metadados) {
   const contexto = metadados.caminho_original;
   const nomeArquivo = metadados.nome_arquivo ?? "arquivo-desconhecido";
+  const { encoding } = await detectEncoding(contexto);
+  const delimiter = await detectDelimiter(contexto, encoding);
+
   if (!metadados.total_linhas || metadados.total_linhas === 0) {
     addAviso("Nenhuma linha disponível para inserção.", contexto);
     return;
@@ -73,20 +82,34 @@ export async function manageInsertController(metadados) {
     return;
   }
   addInfo("iniciando processo de insersão dos dados na tabela...", contexto);
+
+  const rawHeaders = await readCsvHeader(contexto, encoding, delimiter);
+  const { headers: headersNorm, duplicates } = normalizeHeadersOnce(rawHeaders);
+  if (duplicates.size) {
+    addAviso(
+      `[CSV] Cabeçalhos duplicados renomeados: ${[...duplicates].join(", ")}`,
+      contexto
+    );
+  }
+
   const total = metadados.total_linhas;
-  const barraId = nomeArquivo;
+  const barraId = `${nomeArquivo}::${metadados.tabela}`; 
   iniciarBarra(barraId, total, nomeArquivo, metadados.tabela);
   let i = 0;
+
   try {
     for await (const linhaOriginal of streamCsvRows(
-      metadados.caminho_original,
-      metadados.tipos_esperados
+      contexto,
+      headersNorm,
+      encoding,
+      delimiter
     )) {
       try {
         const linhaTipada = tiparLinha(
           linhaOriginal,
           metadados.tipos_esperados
         );
+
         const { result, linhaTipada: linhaInserida } =
           await insertRegisterinTable(metadados.tabela, linhaTipada);
         addAviso(
