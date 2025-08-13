@@ -1,17 +1,40 @@
-$parentDirectory = Split-Path (Get-Location) -Parent
-$nodePath = Join-Path $parentDirectory "config\node-22"
+# initUserSistemVar.ps1
+$ErrorActionPreference = 'Stop'
 
-Write-Host $nodePath
-Read-Host -Prompt "Pressione Enter para chamar o proximo passo"
+$ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+$NodePath = Join-Path $ProjectRoot "config\node-22"
 
-$currentPath = [System.Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::User)
+if (-not (Test-Path $NodePath)) {
+    throw "Node portátil não encontrado em '$NodePath'. Execute primeiro a instalação."
+}
 
-if ($currentPath -contains $nodePath) {
-    Write-Host "O caminho para o Node.js já está configurado na variável PATH do usuário."
-} else {
-    # Adiciona o caminho para a variável PATH do usuário
-    $newPath = $currentPath + ";" + $nodePath
-    [System.Environment]::SetEnvironmentVariable('Path', $newPath, [System.EnvironmentVariableTarget]::User)
+$currentUserPath = [System.Environment]::GetEnvironmentVariable('Path', 'User')
+if ([string]::IsNullOrWhiteSpace($currentUserPath)) { $currentUserPath = "" }
 
-    Write-Host "Caminho para o Node.js foi adicionado à variável PATH do usuário com sucesso!"
+$parts = $currentUserPath.Split(';', [System.StringSplitOptions]::RemoveEmptyEntries)
+$exists = $parts | Where-Object { $_.TrimEnd('\') -ieq $NodePath.TrimEnd('\') }
+
+if (-not $exists) {
+    $newUserPath = if ($currentUserPath) { "$NodePath;$currentUserPath" } else { $NodePath }
+    [System.Environment]::SetEnvironmentVariable('Path', $newUserPath, 'User')
+    Write-Host "» PATH do usuário atualizado com: $NodePath"
+}
+else {
+    Write-Host "» PATH do usuário já continha: $NodePath"
+}
+
+# Sessão atual
+if (-not ($env:Path.Split(';') | Where-Object { $_.TrimEnd('\') -ieq $NodePath.TrimEnd('\') })) {
+    $env:Path = "$NodePath;$env:Path"
+    Write-Host "» PATH da sessão atualizado."
+}
+
+# Validação
+try {
+    $nodeV = & node -v
+    $npmV = & npm -v
+    Write-Host "Node: $nodeV | npm: $npmV"
+}
+catch {
+    Write-Host "Aviso: abra uma nova janela do PowerShell/VSCode para herdar o novo PATH."
 }

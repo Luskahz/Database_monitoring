@@ -1,83 +1,47 @@
+# initNode.ps1
+$ErrorActionPreference = 'Stop'
 
-function VerificarNode {
-    try {
-        $nodeVersion = & node -v
-        $npmVersion = & npm -v
+$ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+$ConfigDir = Join-Path $ProjectRoot "config"
+$NodeHome = Join-Path $ConfigDir  "node-22"
+$NodeZip = Join-Path $ConfigDir  "node-v22.18.0-win-x64.zip"
+$ExtractDir = $ConfigDir
+$ExtractName = "node-v22.18.0-win-x64"
+$ExtractFull = Join-Path $ExtractDir $ExtractName
 
-        if ($nodeVersion -and $npmVersion) {
-            $isNodeInstaled = $true
-        } else {
-            $isNodeInstaled = $false
-        }
-    } catch {
-        $isNodeInstaled = $false
+function Test-PortableNode { Test-Path (Join-Path $NodeHome "node.exe") }
+
+if (Test-PortableNode) {
+    Write-Host "Node portátil já está instalado em '$NodeHome'."
+    return
+}
+
+if (-not (Test-Path $NodeZip)) {
+    throw "Arquivo ZIP não encontrado: $NodeZip"
+}
+
+if (-not (Test-Path $ConfigDir)) { New-Item -ItemType Directory -Path $ConfigDir | Out-Null }
+if (-not (Test-Path $NodeHome)) { New-Item -ItemType Directory -Path $NodeHome  | Out-Null }
+
+Write-Host "Extraindo '$NodeZip'..."
+Expand-Archive -Path $NodeZip -DestinationPath $ExtractDir -Force
+
+$itemsToMove = @("node.exe", "npm.cmd", "npx.cmd", "node_modules")
+foreach ($item in $itemsToMove) {
+    $src = Join-Path $ExtractFull $item
+    if (Test-Path $src) {
+        Write-Host "Movendo: $item"
+        Move-Item -Path $src -Destination $NodeHome -Force
+    }
+    else {
+        Write-Host "Aviso: não encontrado no ZIP → $item"
     }
 }
 
-VerificarNode
-
-
-if ($isNodeInstaled) {
-    Write-Host "Node.js já está instalado no sistema. Não é necessário continuar o processo."
-    return
+if (Test-Path $ExtractFull) {
+    try { Remove-Item $ExtractFull -Recurse -Force } catch {}
 }
 
+if (-not (Test-PortableNode)) { throw "Falha na instalação: node.exe não encontrado em '$NodeHome'." }
 
-$nodeDir = Join-Path (Get-Location) "..\config\node-22"
-if (Test-Path $nodeDir) {
-    Write-Host "Node.js já foi instalado anteriormente. O processo será abortado."
-    return
-}
-
-Write-Host "Iniciando o processo de instalação do Node.js..."
-
-$nodeZipPath = Join-Path (Get-Location) "..\config\node-v22.18.0-win-x64.zip"
-if (-Not (Test-Path $nodeZipPath)) {
-    Write-Host "Arquivo node.zip não encontrado na pasta pai. Abortando a instalação."
-    return
-}
-
-$destino = Get-Location
-$extractDir = Join-Path $destino "..\config"
-$extractDirFinal = Join-Path $destino "..\config\node-v22.18.0-win-x64"
-if (-Not (Test-Path $extractDir)) {
-    New-Item -ItemType Directory -Path $extractDir
-}
-
-Write-Host "Extraindo o arquivo node.zip..."
-Expand-Archive -Path $nodeZipPath -DestinationPath $extractDir -Force
-Write-Host "Extração concluída com sucesso."
-
-$nodeDir = Join-Path $destino "..\config\node-22"
-if (-Not (Test-Path $nodeDir)) {
-    New-Item -ItemType Directory -Path $nodeDir
-}
-
-Write-Host "Movendo os arquivos para a pasta node-22..."
-
-$itens = @("node_modules", "node.exe", "npm.cmd", "npx.cmd")
-$progress = 0
-$total = $itens.Length
-
-foreach ($item in $itens) {
-    $sourcePath = Join-Path $extractDirFinal $item
-    $destPath = Join-Path $nodeDir $item
-
-    Write-Host "Movendo: $item..."
-
-    if (Test-Path $sourcePath) {
-        Move-Item -Path $sourcePath -Destination $nodeDir
-        $progress++
-        $percent = ($progress / $total) * 100
-        Write-Host "Progresso: $percent% concluído."
-    } else {
-        Write-Host "Aviso: O item '$item' não foi encontrado para mover."
-    }
-}
-
-Write-Host "Todos os arquivos foram movidos para a pasta node-22."
-Write-Host "Instalação do Node.js concluída."
-Write-Host "Chamando o próximo script initUserSistemVar.ps1..."
-
-Read-Host -Prompt "Pressione Enter para fechar o console..."
-.\initUserSistemVar.ps1
+Write-Host "Instalação concluída em: $NodeHome"

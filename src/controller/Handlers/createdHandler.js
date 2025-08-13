@@ -1,8 +1,4 @@
-import {
-  addErro,
-  addInfo,
-  clearAllErrors,
-} from "../../middleware/errorHandler.js";
+import { addErro, addInfo } from "../../middleware/errorHandler.js";
 import {
   createLoggerController,
   finalLoggerController,
@@ -15,25 +11,26 @@ import createDataController from "../createDataController.js";
 import fluxoValidatorController from "../fluxoValidatorController.js";
 import { manageInsertController } from "../managerDataController.js";
 
-export default async function createdHandler(filePath) {
+export default async function createdHandler(filePath, action) {
+  const contexto = filePath;
   if (!filePath) {
     addErro(
-      "caminho do arquivo não definido no handler, sem como identificar qual arquivo deu erro..."
+      "caminho do arquivo não definido no handler, sem como identificar qual arquivo deu erro...",
+      contexto
     );
     return;
   }
-  const contexto = filePath;
+
   let metadados, logData;
+
   try {
     // ------------criando logger -----------------
-    clearAllErrors(contexto);
     await createLoggerController(filePath);
 
     //---------- criando os docs, e validando o fluxo de insersão -----------
 
     try {
-      
-      ({ metadados, logData } = await createDataController(filePath));
+      ({ metadados, logData } = await createDataController(filePath, action));
     } catch (e) {
       addErro(
         `erro ao gerar os dados fundamentais, erro:${e.message}`,
@@ -42,7 +39,7 @@ export default async function createdHandler(filePath) {
       return;
     } finally {
       await updateLoggerController(
-        getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
+        getLoggerContext(metadados, logData, filePath),
         contexto
       );
     }
@@ -50,7 +47,7 @@ export default async function createdHandler(filePath) {
     if (!metadados || !logData) {
       addErro(`metadados ou logData não foram gerados corretamente`, contexto);
       await updateLoggerController(
-        getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
+        getLoggerContext(metadados, logData, filePath),
         contexto
       );
       return;
@@ -64,7 +61,7 @@ export default async function createdHandler(filePath) {
       return;
     } finally {
       await updateLoggerController(
-        getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
+        getLoggerContext(metadados, logData, filePath),
         contexto
       );
     }
@@ -90,10 +87,10 @@ export default async function createdHandler(filePath) {
           contexto
         );
       } finally {
-        await insertHashInCache(logData);
+        await insertHashInCache(logData, contexto);
         await insertLog(logData);
         await updateLoggerController(
-          getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
+          getLoggerContext(metadados, logData, filePath),
           contexto
         );
       }
@@ -116,7 +113,7 @@ export default async function createdHandler(filePath) {
     return;
   } finally {
     await finalLoggerController(
-      getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
+      getLoggerContext(metadados, logData, filePath),
       contexto
     );
   }

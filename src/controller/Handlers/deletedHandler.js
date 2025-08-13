@@ -1,12 +1,9 @@
-import {
-  addAviso,
-  addErro,
-  clearAllErrors,
-} from "../../middleware/errorHandler.js";
+import { addAviso, addErro } from "../../middleware/errorHandler.js";
 import {
   finalLoggerController,
   getLoggerContext,
   updateLoggerController,
+  createLoggerController,
 } from "../../middleware/logger.js";
 import {
   deleteRegisterFromCache,
@@ -18,12 +15,17 @@ import { managerDeleterController } from "../managerDataController.js";
 
 export default async function deletedHandler(filePath, acao) {
   const contexto = filePath;
-  clearAllErrors(contexto);
+
+  try {
+    await createLoggerController(filePath);
+  } catch (e) {
+    console.error("[Logger] falha ao criar logger de delete:", e);
+  }
   let logData = {};
   try {
     const destino = destinoByFilePath(filePath);
     try {
-      logData = await getRegisterFromCache(destino);
+      logData = await getRegisterFromCache(destino, false, contexto);
       addAviso("tentativa de extração do cache finalizada.", contexto);
       if (!logData) {
         addErro(
@@ -62,7 +64,7 @@ export default async function deletedHandler(filePath, acao) {
         return; // ou `throw new Error(...)` dependendo da criticidade
       }
       await deleteLogByHash(logData);
-      await deleteRegisterFromCache(destino);
+      await deleteRegisterFromCache(destino, contexto);
       addAviso("exclusão do log no cache e no banco finalizadas", contexto);
     } catch (e) {
       addErro(

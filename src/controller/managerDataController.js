@@ -13,28 +13,37 @@ import {
 import { insertValidator } from "./insertValidator.js";
 import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
 import { updateLoggerController } from "../middleware/logger.js";
-import {
-  normalizeHeadersOnce,
-  readCsvHeader,
-  streamCsvRows,
-} from "../utils/csvStream.js";
-import tiparLinha from "../utils/tiparLinha.js";
+import { streamCsvRows } from "../utils/csvStream.js";
 import {
   detectDelimiter,
   detectEncoding,
 } from "../utils/prepareStreamByFilepath.js";
 import { debugPeekHeader } from "../utils/debugHeader.js";
-
+import sanitizeRow from "../utils/sanitizeValue.js";
 export async function manageInsertController(metadados) {
   const contexto = metadados.caminho_original;
   const nomeArquivo = metadados.nome_arquivo ?? "arquivo-desconhecido";
-  const { encoding } = await detectEncoding(contexto);
-  const delimiter = await detectDelimiter(contexto, encoding);
+
+  // Preferir os valores vindos da análise (um único detect por arquivo)
+  let encoding = metadados.encoding;
+  let delimiter = metadados.delimiter;
+  const headersNorm = metadados.colunas_json;
+
+  // Fallback opcional: garante valores se, por algum motivo, não vieram nos metadados
+  if (!encoding || !delimiter) {
+    const detE = await detectEncoding(contexto);
+    encoding = encoding || detE.encoding;
+    delimiter = delimiter || (await detectDelimiter(contexto, encoding));
+  }
 
   if (!metadados.total_linhas || metadados.total_linhas === 0) {
     addAviso("Nenhuma linha disponível para inserção.", contexto);
     return;
   }
+
+  // 👇 você tinha removido estas duas variáveis, mas as usa no retorno
+  const erros = [];
+  let sucesso = 0;
 
   let listFromTable;
   try {
@@ -45,8 +54,7 @@ export async function manageInsertController(metadados) {
   }
 
   const validator = await insertValidator(listFromTable, metadados);
-  const erros = [];
-  let sucesso = 0;
+
   if (validator === "cadastro") {
     try {
       await deleteFromTable(metadados);
@@ -88,16 +96,6 @@ export async function manageInsertController(metadados) {
 
   addInfo("iniciando processo de insersão dos dados na tabela...", contexto);
 
-  // extrai o header do csv
-  const rawHeaders = await readCsvHeader(contexto, encoding, delimiter);
-  //await debugPeekHeader(contexto, encoding);
-  const { headers: headersNorm, duplicates } = normalizeHeadersOnce(rawHeaders);
-  if (duplicates.size) {
-    addAviso(
-      `[CSV] Cabeçalhos duplicados renomeados: ${[...duplicates].join(", ")}`,
-      contexto
-    );
-  }
   // começa a iniciar as linhas
   const total = metadados.total_linhas;
   const barraId = `${nomeArquivo}::${metadados.ano}::${metadados.tabela}`;
@@ -105,7 +103,7 @@ export async function manageInsertController(metadados) {
   const cols = metadados.colunas_tabela;
   let i = 0;
 
-  const BATCH_SIZE = 1000;
+  const BATCH_SIZE = 500;
   let batch = [];
 
   async function flushBatch() {
@@ -117,17 +115,33 @@ export async function manageInsertController(metadados) {
       atualizarBarra(barraId, batch.length);
       i += batch.length;
     } catch (e) {
-      // fallback para identificar erros linha a linha
+      // 👇 importante para entender por que não está batendo os 1000
+      addAviso(
+        `[BATCH] Falha ao inserir ${batch.length} registros em lote. ` +
+          `Fazendo fallback linha-a-linha. Motivo: ${e.message}`,
+        contexto
+      );
+      await updateLoggerController(metadados, contexto);
+
       for (const item of batch) {
+        const linhaIdx = i;
+        const linhaHumana = linhaIdx + 1;
         try {
           await insertRegisterinTable(metadados.tabela, item.tipada, cols);
           sucesso++;
+          atualizarBarra(barraId, 1); // <-- só avança se inseriu OK
         } catch (err) {
-          addErro(`Erro ao inserir linha ${i}, erro: ${err.message}`, contexto);
-          erros.push({ linha: i, erro: err.message, dados: item.original });
+          addErro(
+            `Erro ao inserir linha ${linhaHumana}, erro: ${err.message}`,
+            contexto
+          );
+          erros.push({
+            linha: linhaHumana,
+            erro: err.message,
+            dados: item.original,
+          });
           await updateLoggerController(metadados, contexto);
         } finally {
-          atualizarBarra(barraId);
           i++;
         }
       }
@@ -142,11 +156,13 @@ export async function manageInsertController(metadados) {
       encoding,
       delimiter
     )) {
-      const linhaTipada = tiparLinha(linhaOriginal, metadados.tipos_esperados);
+      const linhaTipada = sanitizeRow(
+        linhaOriginal,
+        metadados.tipos_esperados,
+        contexto
+      );
       batch.push({ original: linhaOriginal, tipada: linhaTipada });
-      if (batch.length >= BATCH_SIZE) {
-        await flushBatch();
-      }
+      if (batch.length >= BATCH_SIZE) await flushBatch();
     }
     await flushBatch();
   } finally {
@@ -156,7 +172,7 @@ export async function manageInsertController(metadados) {
 
   return {
     erro: erros.length > 0,
-    total: total,
+    total,
     inseridos: sucesso,
     falhas: erros.length,
     mensagem: erros.length > 0 ? "Algumas linhas falharam" : null,

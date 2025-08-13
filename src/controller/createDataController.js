@@ -34,6 +34,8 @@ export async function createMetadadosController(filePath, action) {
     dia: destino.dia,
     tabela: destino.tabela_destino,
     hash: analise.hash,
+    encoding: analise.encoding,
+    delimiter: analise.delimiter,
     coluna_data: analise.coluna_data,
     acao: action,
     colunas_tabela: analise.colunas_tabela,

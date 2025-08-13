@@ -20,11 +20,11 @@ export async function analyzeCsv(filePath, tabelaName) {
   const colunasTabela = await getColumnsFromTable(tabelaName);
   const colunaDataEsperada = await getDateColumnsFromTable(tabelaName);
 
-  // 2) Encoding + delimiter detectados
+  // 2) Detect
   const { encoding } = await detectEncoding(filePath);
   const delimiter = await detectDelimiter(filePath, encoding);
 
-  // 3) Lê cabeçalho cru (primeira linha) e normaliza 1x
+  // 3) Header cru + normalização
   const rawHeaders = await readCsvHeader(filePath, encoding, delimiter);
   const { headers: headersNorm, duplicates } = normalizeHeadersOnce(rawHeaders);
   if (duplicates.size) {
@@ -34,14 +34,14 @@ export async function analyzeCsv(filePath, tabelaName) {
     );
   }
 
-  // 4) Inicializa hash & coletores
+  // 4) Hash & coletores
   const datasCsv = new Set();
   const hash = crypto.createHash("sha256");
   let totalLinhas = 0;
 
   hash.update("[");
 
-  // 5) Stream das linhas (header:false) + mapeamento manual
+  // 5) Stream das linhas (header:false) + pular a 1ª linha (o header)
   const input = await createDecodedStream(filePath, encoding);
   const parser = Papa.parse(Papa.NODE_STREAM_INPUT, {
     header: false,
@@ -51,28 +51,27 @@ export async function analyzeCsv(filePath, tabelaName) {
   });
   const stream = input.pipe(parser);
 
+  let isFirstRow = true;
   for await (const rowArray of stream) {
     const rowArr = Array.isArray(rowArray) ? rowArray : rowArray?.data || [];
+
+    // pula o header
+    if (isFirstRow) { isFirstRow = false; continue; }
+
     const rowObj = {};
     for (let i = 0; i < headersNorm.length; i++) {
       rowObj[headersNorm[i]] = rowArr[i] ?? null;
     }
 
-    // junta no hash
     if (totalLinhas > 0) hash.update(",");
     hash.update(JSON.stringify(rowObj));
 
-    // coleta datas (se houver coluna data esperada)
     if (colunaDataEsperada && rowObj[colunaDataEsperada]) {
       const tipoBruto = tiposEsperados[colunaDataEsperada];
-      const tipo =
-        tipoBruto === "date" || tipoBruto === "datetime" ? tipoBruto : "date";
+      const tipo = (tipoBruto === "date" || tipoBruto === "datetime") ? tipoBruto : "date";
       const valorData = sanitizeValue(rowObj[colunaDataEsperada], tipo);
-      if (
-        typeof valorData === "string" &&
-        /^\d{4}-\d{2}-\d{2}/.test(valorData)
-      ) {
-        datasCsv.add(valorData.slice(0, 10)); // YYYY-MM-DD
+      if (typeof valorData === "string" && /^\d{4}-\d{2}-\d{2}/.test(valorData)) {
+        datasCsv.add(valorData.slice(0, 10));
       }
     }
 
@@ -81,15 +80,13 @@ export async function analyzeCsv(filePath, tabelaName) {
 
   hash.update("]");
 
-  // 6) Retorno
-  addInfo(
-    `[Json] - ${totalLinhas} linhas válidas extraídas de ${filePath}`,
-    contexto
-  );
+  addInfo(`[Json] - ${totalLinhas} linhas válidas extraídas de ${filePath}`, contexto);
 
   return {
     hash: hash.digest("hex"),
-    colunas_json: headersNorm, // <- agora em sincronia com o insert
+    encoding,                // <<< novo
+    delimiter,               // <<< novo
+    colunas_json: headersNorm,
     tipos_esperados: tiposEsperados,
     colunas_tabela: colunasTabela,
     coluna_data:

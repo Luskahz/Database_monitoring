@@ -138,19 +138,27 @@ export async function insertRegisterinTable(tabela, linhaTipada, colunas) {
     );
   }
 
-  const valores = cols.map((col) => {
-    return linhaTipada[col] ?? null;
-  });
+  const valores = cols.map((col) => linhaTipada[col] ?? null);
   const colunasSql = cols.map((col) => `\`${col}\``).join(", ");
   const placeholders = cols.map(() => "?").join(", ");
-  const sql = `INSERT INTO \`${schema}\`.\`${tabela}\` (${colunasSql}) VALUES (${placeholders})`;
+
+  // Monta a cláusula para atualizar todos os campos, exceto PK
+  const updateClause = cols
+    .map((col) => `\`${col}\` = VALUES(\`${col}\`)`)
+    .join(", ");
+
+  const sql = `
+    INSERT INTO \`${schema}\`.\`${tabela}\` (${colunasSql})
+    VALUES (${placeholders})
+    ON DUPLICATE KEY UPDATE ${updateClause}
+  `;
 
   try {
     const [result] = await db.query(sql, valores);
     return { result, linhaTipada };
   } catch (e) {
     throw new Error(
-      `[model insert ] erro ao realizar a query de insersão do registro, erro: ${e.message}`
+      `[model insert] erro ao realizar a query de insersão do registro, erro: ${e.message}`
     );
   }
 }
@@ -304,12 +312,23 @@ export async function insertBatchInTable(tabela, linhasTipadas, colunas) {
     );
   }
 
+  // Monta valores para cada linha
   const valores = linhasTipadas.map((linha) =>
     cols.map((col) => linha[col] ?? null)
   );
 
   const colunasSql = cols.map((col) => `\`${col}\``).join(", ");
-  const sql = `INSERT INTO \`${schema}\`.\`${tabela}\` (${colunasSql}) VALUES ?`;
+
+  // Gera cláusula de atualização automática
+  const updateClause = cols
+    .map((col) => `\`${col}\` = VALUES(\`${col}\`)`)
+    .join(", ");
+
+  const sql = `
+    INSERT INTO \`${schema}\`.\`${tabela}\` (${colunasSql})
+    VALUES ?
+    ON DUPLICATE KEY UPDATE ${updateClause}
+  `;
 
   try {
     const [result] = await db.query(sql, [valores]);
