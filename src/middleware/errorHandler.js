@@ -1,10 +1,9 @@
 // errorHandler.js
 import { appendLine } from "./logger.js";
 
-// <-- FALTAVA ISSO
 const contextoDeMensagens = new Map();
 
-function safeAppendToLog(contexto, tipo, msg) {
+async function safeAppendToLog(contexto, tipo, msg) {
   const now = new Date().toISOString();
   // não propaga erro de IO do log
   return appendLine(

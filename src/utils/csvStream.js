@@ -46,7 +46,7 @@ export async function analyzeCsv(filePath, tabelaName) {
   const parser = Papa.parse(Papa.NODE_STREAM_INPUT, {
     header: false,
     delimiter,
-    skipEmptyLines: true,
+    skipEmptyLines: 'greedy',
     dynamicTyping: false,
   });
   const stream = input.pipe(parser);
@@ -104,7 +104,7 @@ export function streamCsvRows(filePath, headersNorm, encoding, delimiter) {
     const parser = Papa.parse(Papa.NODE_STREAM_INPUT, {
       header: false,
       delimiter,
-      skipEmptyLines: true,
+      skipEmptyLines: 'greedy',
       dynamicTyping: false,
     });
     const stream = input.pipe(parser);
@@ -161,7 +161,7 @@ export async function readCsvHeader(filePath, encoding, delimiter) {
       header: false,
       delimiter,
       preview: 1, 
-      skipEmptyLines: true,
+      skipEmptyLines: 'greedy',
       dynamicTyping: false,
     });
 

@@ -1,3 +1,4 @@
+import { logCsvVsTableHeaders } from "../../middleware/createLogger.js";
 import { addErro, addInfo } from "../../middleware/errorHandler.js";
 import {
   createLoggerController,
@@ -31,6 +32,12 @@ export default async function createdHandler(filePath, action) {
 
     try {
       ({ metadados, logData } = await createDataController(filePath, action));
+      await logCsvVsTableHeaders({
+        contexto: filePath,
+        tabela: metadados.tabela,
+        colunasCsv: metadados.colunas_json,
+        colunasTabela: metadados.colunas_tabela,
+      });
     } catch (e) {
       addErro(
         `erro ao gerar os dados fundamentais, erro:${e.message}`,
