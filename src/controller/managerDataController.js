@@ -20,9 +20,16 @@ import {
 } from "../utils/prepareStreamByFilepath.js";
 import { debugPeekHeader } from "../utils/debugHeader.js";
 import sanitizeRow from "../utils/sanitizeValue.js";
+import {
+  loadDecimalProfilesFromSchema,
+  expandTiposWithSchema,
+} from "../model/tableModel.js";
+
 export async function manageInsertController(metadados) {
   const contexto = metadados.caminho_original;
   const nomeArquivo = metadados.nome_arquivo ?? "arquivo-desconhecido";
+  const schemaMap  = await loadDecimalProfilesFromSchema(metadados.tabela);
+  const tiposFinal = expandTiposWithSchema(metadados.tipos_esperados, schemaMap);
 
   // Preferir os valores vindos da análise (um único detect por arquivo)
   let encoding = metadados.encoding;
@@ -158,7 +165,7 @@ export async function manageInsertController(metadados) {
     )) {
       const linhaTipada = sanitizeRow(
         linhaOriginal,
-        metadados.tipos_esperados,
+        tiposFinal,
         contexto
       );
       batch.push({ original: linhaOriginal, tipada: linhaTipada });

@@ -2,6 +2,8 @@ import db, { schema } from "../../config/db.js";
 
 import mapearTipo from "../utils/mapearTipos.js";
 
+const schemaCache = new Map();
+
 const meses = {
   janeiro: 1,
   jan: 1,
@@ -338,4 +340,64 @@ export async function insertBatchInTable(tabela, linhasTipadas, colunas) {
       `[model insert batch] erro ao realizar a query de insersão do lote, erro: ${e.message}`
     );
   }
+}
+
+export async function loadDecimalProfilesFromSchema(tableName) {
+  const schemaName = schema;
+  const key = `${schemaName}.${tableName}`;
+  if (schemaCache.has(key)) return schemaCache.get(key);
+
+  const sql = `
+    SELECT COLUMN_NAME, DATA_TYPE, NUMERIC_SCALE
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?`;
+  const [rows] = await db.query(sql, [schemaName, tableName]);
+
+  const map = new Map();
+  for (const r of rows) {
+    const col = r.COLUMN_NAME;
+    const t = String(r.DATA_TYPE).toLowerCase();
+    const scale = r.NUMERIC_SCALE == null ? null : Number(r.NUMERIC_SCALE);
+
+    if (t === "decimal" || t === "numeric") {
+      if (scale != null && scale <= 2) {
+        map.set(col, {
+          type: "decimal",
+          profile: "money",
+          thousands: "allow",
+          maxFracDigits: scale,
+        });
+      } else {
+        map.set(col, {
+          type: "decimal",
+          profile: "quantity",
+          thousands: "never",
+          maxFracDigits: scale ?? 6,
+        });
+      }
+    } else if (t === "double" || t === "float") {
+      map.set(col, {
+        type: "decimal",
+        profile: "quantity",
+        thousands: "never",
+        maxFracDigits: 6,
+      });
+    }
+  }
+  schemaCache.set(key, map);
+  return map;
+}
+
+// mescla tipos definidos por você (prioridade) com os inferidos do schema
+export function expandTiposWithSchema(tipos, schemaMap) {
+  const out = { ...(tipos ?? {}) };
+  for (const [col, opts] of schemaMap.entries()) {
+    const current = out[col];
+    if (!current) {
+      out[col] = opts;
+    } else if (typeof current === "string" && current === "decimal") {
+      out[col] = opts; // se você só disse "decimal", assume perfil inferido
+    } // se já veio objeto {type:"decimal",...}, mantém (override manual)
+  }
+  return out;
 }

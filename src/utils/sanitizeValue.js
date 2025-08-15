@@ -2,39 +2,41 @@ import { addAviso } from "../middleware/errorHandler.js";
 
 export function sanitizeValue(value, tipoEsperado, contexto) {
   const isEmpty = value === "" || value === null || value === undefined;
-
   if (isEmpty) return null;
 
-  switch (tipoEsperado) {
+  // Suporta string ("decimal") ou objeto { type: "decimal", ... }
+  const tipo =
+    typeof tipoEsperado === "string" ? tipoEsperado : tipoEsperado?.type;
+  const opts = typeof tipoEsperado === "object" ? tipoEsperado : undefined;
+
+  switch (tipo) {
     case "int": {
       return parseIntSafe(value, contexto);
     }
     case "decimal": {
       const original = String(value).trim();
-      const coordWeird = original
-        .replace(/[\s\u00A0]+/g, "") // remove espaços/NBSP
-        .replace(/[−–—―‐]/g, "-") // normaliza hífen unicode
-        .match(/^(-?)(\d{1,2})\.(\d{3})\.(\d{3})$/);
 
-      if (coordWeird) {
-        return normalizeCoordinate(coordWeird);
+      // coord "estranha" só se explicitamente permitido
+      if (opts?.coordWeird) {
+        const coordWeird = original
+          .replace(/[\s\u00A0]+/g, "")
+          .replace(/[−–—―‐]/g, "-")
+          .match(/^(-?)(\d{1,2})\.(\d{3})\.(\d{3})$/);
+        if (coordWeird) return normalizeCoordinate(coordWeird);
       }
 
-      return parseDecimal(value, contexto);
+      return parseDecimal(value, contexto, opts);
     }
-    case "date": {
+    case "date":
       return parseDate(value, contexto);
-    }
-    case "datetime": {
+    case "datetime":
       return parseDateTime(value, contexto);
-    }
-    case "time": {
+    case "time":
       return parseTime(value, contexto);
-    }
     case "string":
     default:
       return String(value)
-        .replace(/^\uFEFF/, "") // BOM
+        .replace(/^\uFEFF/, "")
         .replace(/\r\n?/g, "\n")
         .trim();
   }
@@ -43,130 +45,195 @@ export function sanitizeValue(value, tipoEsperado, contexto) {
 export default function sanitizeRow(row, tipos, contexto) {
   const novaLinha = {};
   for (const [campo, valor] of Object.entries(row ?? {})) {
-    const tipo = tipos?.[campo] ?? "string";
-    novaLinha[campo] = sanitizeValue(valor, tipo, contexto);
+    const tipoCfg = tipos?.[campo] ?? "string";
+    const tipoCfgComCampo =
+      typeof tipoCfg === "object" && tipoCfg?.type === "decimal"
+        ? { ...tipoCfg, _field: campo } // <-- injeta o nome do campo
+        : tipoCfg;
+
+    // contexto permanece exatamente o filepath
+    novaLinha[campo] = sanitizeValue(valor, tipoCfgComCampo, contexto);
   }
   return novaLinha;
 }
 
-function parseDecimal(value, contexto) {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  const original = String(value).trim();
+function parseDecimal(value, contexto, options = {}) {
+  // defaults
+  const {
+    profile = "money",
+    decimalSep = "auto",
+    thousands = "auto",
+    maxFracDigits = null,
+    _field = null, // <-- vem do sanitizeRow
+  } = options;
+  const warn = (msg) => {
+    const prefix = _field ? `[${_field}] ` : "";
+    addAviso(prefix + msg, contexto); // contexto = filepath intacto
+  };
 
-  // Casos triviais sem dígitos
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return clampFrac(value, maxFracDigits);
+  }
+
+  const original = String(value).trim();
   if (
     original === "" ||
     original === "-" ||
     original === "," ||
     original === "."
   ) {
-    addAviso(
-      `decimal vazio, dado decimal foi setado como null, validar valor: [${value}]`,
-      contexto
-    );
+    warn(`decimal vazio, setado como null, valor: [${value}]`);
     return null;
   }
 
-  // Normaliza: remove espaços (inclui NBSP) e converte hífens unicode para '-'
+  // normaliza espaços e hífens unicode
   let s = original.replace(/[\s\u00A0]+/g, "").replace(/[−–—―‐]/g, "-");
 
-  // Formato contábil (parênteses) => negativo
+  // contábil (parênteses) = negativo
   let negative = false;
   if (/^\(.*\)$/.test(s)) {
     negative = true;
     s = s.slice(1, -1);
   }
 
-  // Rejeita "sinal no meio" (ex.: 1-2, 1+2) -> provavelmente intervalo
+  // rejeita "sinal no meio" 1-2 / 1+2
   if (/\d-\d/.test(s) || /\d\+\d/.test(s)) {
-    addAviso(
-      `possível intervalo ou sinal no meio, decimal setado como null, validar valor: [${value}]`,
-      contexto
-    );
+    warn(`possível intervalo (sinal no meio), decimal=null: [${value}]`);
     return null;
   }
 
-  // Sinal no começo ou no fim (ex.: -123, 123-) => negativo
+  // sinal no começo/fim
   if (/^-/.test(s) || /-$/.test(s)) negative = true;
-
-  // '+' só é aceito no começo; qualquer outro caso invalida
   if (/\+/.test(s) && !/^\+/.test(s)) {
-    addAviso(
-      `sinal '+' em posição inválida, decimal setado como null, validar valor: [${value}]`,
-      contexto
-    );
+    warn(`'+' em posição inválida, decimal=null: [${value}]`);
     return null;
   }
-  s = s.replace(/^\+/, ""); // remove '+' inicial
+  s = s.replace(/^\+/, "");
 
-  // Mantém apenas dígitos, vírgula, ponto e hífen
+  // mantém apenas dígitos, vírgula, ponto e hífen
   s = s.replace(/[^\d.,-]/g, "");
-  // Remove hífens (já marcamos negative)
   s = s.replace(/-/g, "");
 
-  // Se não sobrou nenhum dígito, é inválido
   if (!/\d/.test(s)) {
-    addAviso(
-      `decimal vazio, dado decimal foi setado como null, validar valor: [${value}]`,
-      contexto
-    );
+    warn(`decimal vazio, setado como null, valor: [${value}]`);
     return null;
   }
 
-  // Detecta separador decimal com heurística
+  // Estratégia de separadores
   const commaCount = (s.match(/,/g) || []).length;
   const dotCount = (s.match(/\./g) || []).length;
 
-  let decimalSep = null;
+  let decSep = null;
 
-  if (commaCount && dotCount) {
-    // Ambos existem: o último entre ',' e '.' é o decimal
-    decimalSep = s.lastIndexOf(",") > s.lastIndexOf(".") ? "," : ".";
-  } else if (commaCount || dotCount) {
-    const sep = commaCount ? "," : ".";
-    const count = commaCount || dotCount;
-
-    if (count > 1) {
-      // Múltiplas ocorrências do MESMO separador -> tratar como milhares (sem decimal)
-      decimalSep = null;
+  // 1) Decisor explícito
+  if (decimalSep === "," || decimalSep === ".") {
+    const sep = decimalSep;
+    const last = s.lastIndexOf(sep);
+    if (last >= 0) {
+      const intPart = s.slice(0, last).replace(/[.,]/g, "");
+      const fracPart = s.slice(last + 1).replace(/[^\d]/g, "");
+      decSep = sep;
+      s = `${intPart}.${fracPart}`;
     } else {
-      // Apenas uma ocorrência: se houver 3 dígitos à direita, interpretar como milhar
-      const idx = s.lastIndexOf(sep);
-      const fracLen = s.length - idx - 1;
-      decimalSep = fracLen === 3 ? null : sep;
-    }
-  } // senão continua null (sem separadores)
-
-  // Normaliza para ponto como separador decimal
-  let normalized;
-  if (decimalSep) {
-    const idx = s.lastIndexOf(decimalSep);
-    const intPart = s.slice(0, idx).replace(/[.,]/g, "");
-    const fracPart = s.slice(idx + 1).replace(/[^\d]/g, "");
-    const left = intPart === "" ? "0" : intPart; // permite ".5" => "0.5"
-    normalized = fracPart.length > 0 ? `${left}.${fracPart}` : left;
-  } else {
-    normalized = s.replace(/[.,]/g, "");
-    if (normalized === "") {
-      addAviso(
-        `decimal vazio, dado decimal foi setado como null, validar valor: [${value}]`,
-        contexto
-      );
-      return null;
+      // sem separador decimal → remove possíveis milhares conforme política
+      s =
+        thousands === "never" ? s.replace(/[.,]/g, "") : s.replace(/[.,]/g, "");
+      // acima é igual nos dois casos; se quiser, pode preservar pontos quando decimalSep fixo
     }
   }
 
-  let num = Number(normalized);
-  if (!Number.isFinite(num)) {
-    addAviso(
-      `numero não finito, dado decimal foi setado como null, validar valor: [${value}]`,
-      contexto
-    );
+  // 2) Auto: ambos presentes → o último é decimal
+  if (!decSep && commaCount && dotCount) {
+    decSep = s.lastIndexOf(",") > s.lastIndexOf(".") ? "," : ".";
+    const last = s.lastIndexOf(decSep);
+    const intPart = s.slice(0, last).replace(/[.,]/g, "");
+    const fracPart = s.slice(last + 1).replace(/[^\d]/g, "");
+    s = `${intPart}.${fracPart}`;
+  }
+
+  // 3) Auto: apenas um tipo de separador
+  if (!decSep && (commaCount || dotCount)) {
+    const sep = commaCount ? "," : ".";
+    const count = commaCount || dotCount;
+    const last = s.lastIndexOf(sep);
+    const intLen = last >= 0 ? last : s.length;
+    const fracLen = last >= 0 ? s.length - last - 1 : 0;
+
+    // preferências por perfil
+    const preferDecimal = profile === "quantity"; // quantidade tende a ter casas decimais
+    const preferThousands = profile === "money"; // dinheiro tende a ter milhares
+
+    if (count > 1) {
+      // múltiplos do mesmo separador:
+      // money → tratar como milhares (sem decimal)
+      // quantity → se o último está perto do fim com 1..6 dígitos, assume decimal; senão, milhares
+      if (preferThousands) {
+        s = s.replace(/[.,]/g, "");
+      } else {
+        if (last >= 0) {
+          const fracLen2 = s.length - last - 1;
+          if (fracLen2 >= 1 && fracLen2 <= 6) {
+            const intPart = s.slice(0, last).replace(/[.,]/g, "");
+            const fracPart = s.slice(last + 1).replace(/[^\d]/g, "");
+            decSep = sep;
+            s = `${intPart}.${fracPart}`;
+          } else {
+            s = s.replace(/[.,]/g, "");
+          }
+        } else {
+          s = s.replace(/[.,]/g, "");
+        }
+      }
+    } else {
+      // apenas uma ocorrência desse separador
+      if (fracLen === 3) {
+        // regra ambígua
+        if (preferDecimal) {
+          // quantidade: com poucos dígitos antes, tratar como decimal
+          decSep = intLen <= 3 ? sep : null;
+        } else {
+          // dinheiro: tender a milhares
+          decSep = null;
+        }
+      } else {
+        // 1, 2, 4–6 dígitos → decimal
+        decSep = sep;
+      }
+
+      if (decSep) {
+        const intPart = s.slice(0, last).replace(/[.,]/g, "");
+        const fracPart = s.slice(last + 1).replace(/[^\d]/g, "");
+        s = `${intPart}.${fracPart}`;
+      } else {
+        s = s.replace(/[.,]/g, "");
+      }
+    }
+  }
+
+  // 4) nenhum separador detectado → fica como está
+  if (!/^\d+(\.\d+)?$/.test(s)) {
+    // limpeza final (se sobrou algum separador solto)
+    s = s.replace(/[^\d.]/g, "");
+  }
+  if (s === "") {
+    warn(`decimal vazio, setado como null, valor: [${value}]`);
     return null;
   }
 
+  let num = Number(s);
+  if (!Number.isFinite(num)) {
+    warn(`número não finito, decimal=null: [${value}]`);
+    return null;
+  }
   if (negative) num = -num;
-  return num;
+
+  return clampFrac(num, maxFracDigits);
+}
+
+function clampFrac(n, maxFracDigits) {
+  if (maxFracDigits == null) return n;
+  // arredonda mas devolve número, não string
+  return Number(n.toFixed(maxFracDigits));
 }
 
 function parseIntSafe(value, contexto) {
@@ -537,6 +604,3 @@ function normalizeCoordinate(match) {
   const fracPart = match[3] + match[4];
   return sign * Number(`${intPart}.${fracPart}`);
 }
-
-
-
