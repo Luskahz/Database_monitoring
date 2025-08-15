@@ -110,7 +110,7 @@ export async function manageInsertController(metadados) {
   const cols = metadados.colunas_tabela;
   let i = 0;
 
-  const BATCH_SIZE = 500;
+  const BATCH_SIZE = 10000;
   let batch = [];
 
   async function flushBatch() {
