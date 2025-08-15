@@ -152,60 +152,57 @@ function parseDecimal(value, contexto, options = {}) {
   }
 
   // 3) Auto: apenas um tipo de separador
+  // 3) Auto: apenas um tipo de separador
   if (!decSep && (commaCount || dotCount)) {
     const sep = commaCount ? "," : ".";
     const count = commaCount || dotCount;
     const last = s.lastIndexOf(sep);
-    const intLen = last >= 0 ? last : s.length;
-    const fracLen = last >= 0 ? s.length - last - 1 : 0;
+    const left = last >= 0 ? s.slice(0, last) : s;
+    const right = last >= 0 ? s.slice(last + 1) : "";
+    const fracLen = right.length;
+
+    // intLen efetivo: ignora zeros à esquerda (evita intLen artificialmente grande)
+    const leftTrimmed = left.replace(/^0+/, "");
+    const intLenEff =
+      leftTrimmed.length === 0 ? (left.length > 0 ? 1 : 0) : leftTrimmed.length;
 
     // preferências por perfil
-    const preferDecimal = profile === "quantity"; // quantidade tende a ter casas decimais
-    const preferThousands = profile === "money"; // dinheiro tende a ter milhares
+    const preferDecimal = profile === "quantity" || thousands === "never";
+    const preferThousands = profile === "money" && thousands !== "never";
 
     if (count > 1) {
-      // múltiplos do mesmo separador:
-      // money → tratar como milhares (sem decimal)
-      // quantity → se o último está perto do fim com 1..6 dígitos, assume decimal; senão, milhares
-      if (preferThousands) {
-        s = s.replace(/[.,]/g, "");
-      } else {
-        if (last >= 0) {
-          const fracLen2 = s.length - last - 1;
-          if (fracLen2 >= 1 && fracLen2 <= 6) {
-            const intPart = s.slice(0, last).replace(/[.,]/g, "");
-            const fracPart = s.slice(last + 1).replace(/[^\d]/g, "");
-            decSep = sep;
-            s = `${intPart}.${fracPart}`;
-          } else {
-            s = s.replace(/[.,]/g, "");
-          }
-        } else {
-          s = s.replace(/[.,]/g, "");
-        }
-      }
-    } else {
-      // apenas uma ocorrência desse separador
-      if (fracLen === 3) {
-        // regra ambígua
-        if (preferDecimal) {
-          // quantidade: com poucos dígitos antes, tratar como decimal
-          decSep = intLen <= 3 ? sep : null;
-        } else {
-          // dinheiro: tender a milhares
-          decSep = null;
-        }
-      } else {
-        // 1, 2, 4–6 dígitos → decimal
+      // múltiplas ocorrências do mesmo separador
+      if (preferDecimal) {
+        // último como decimal; outros viram milhares (removidos)
+        const intPart = left.replace(/[.,]/g, "");
+        const fracPart = right.replace(/[^\d]/g, "");
         decSep = sep;
-      }
-
-      if (decSep) {
-        const intPart = s.slice(0, last).replace(/[.,]/g, "");
-        const fracPart = s.slice(last + 1).replace(/[^\d]/g, "");
         s = `${intPart}.${fracPart}`;
       } else {
+        // money: trata como milhares
         s = s.replace(/[.,]/g, "");
+      }
+    } else {
+      // apenas UMA ocorrência
+      if (preferDecimal) {
+        // quantity ou thousands=never -> força DECIMAL (1..6 dígitos faz sentido para quantidade)
+        const intPart = left.replace(/[.,]/g, "");
+        const fracPart = right.replace(/[^\d]/g, "");
+        decSep = sep;
+        s = `${intPart}.${fracPart}`;
+      } else {
+        // money: regra anterior, mas com intLen efetivo
+        if (fracLen === 3 && intLenEff > 3) {
+          // parece milhar
+          decSep = null;
+          s = s.replace(/[.,]/g, "");
+        } else {
+          // trata como decimal
+          const intPart = left.replace(/[.,]/g, "");
+          const fracPart = right.replace(/[^\d]/g, "");
+          decSep = sep;
+          s = `${intPart}.${fracPart}`;
+        }
       }
     }
   }
