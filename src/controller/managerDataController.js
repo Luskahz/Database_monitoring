@@ -18,7 +18,6 @@ import {
   detectDelimiter,
   detectEncoding,
 } from "../utils/prepareStreamByFilepath.js";
-import { debugPeekHeader } from "../utils/debugHeader.js";
 import sanitizeRow from "../utils/sanitizeValue.js";
 import {
   loadDecimalProfilesFromSchema,
@@ -28,163 +27,251 @@ import {
 export async function manageInsertController(metadados) {
   const contexto = metadados.caminho_original;
   const nomeArquivo = metadados.nome_arquivo ?? "arquivo-desconhecido";
-  const schemaMap  = await loadDecimalProfilesFromSchema(metadados.tabela);
-  const tiposFinal = expandTiposWithSchema(metadados.tipos_esperados, schemaMap);
+  const barraId = `${nomeArquivo}::${metadados.ano ?? "-"}::${
+    metadados.tabela
+  }`;
 
-  // Preferir os valores vindos da análise (um único detect por arquivo)
-  let encoding = metadados.encoding;
-  let delimiter = metadados.delimiter;
-  const headersNorm = metadados.colunas_json;
+  // -------- Barra global: 0..100 (3 fases) --------
+  const PHASES = { prep: 15, read: 45, insert: 40 }; // soma 100
+  let phaseBase = 0;
+  let phaseSpan = PHASES.prep;
+  let lastPctAbs = 0;
 
-  // Fallback opcional: garante valores se, por algum motivo, não vieram nos metadados
-  if (!encoding || !delimiter) {
-    const detE = await detectEncoding(contexto);
-    encoding = encoding || detE.encoding;
-    delimiter = delimiter || (await detectDelimiter(contexto, encoding));
+  iniciarBarra(barraId, 100, nomeArquivo, metadados.tabela, metadados.ano);
+
+  function setPhase(name) {
+    phaseBase += phaseSpan;
+    phaseSpan = PHASES[name];
   }
-
-  if (!metadados.total_linhas || metadados.total_linhas === 0) {
-    addAviso("Nenhuma linha disponível para inserção.", contexto);
-    return;
-  }
-
-  // 👇 você tinha removido estas duas variáveis, mas as usa no retorno
-  const erros = [];
-  let sucesso = 0;
-
-  let listFromTable;
-  try {
-    listFromTable = await listPeriodInTable(metadados);
-  } catch (e) {
-    addErro(`Erro ao consultar o período no banco: ${e.message}`, contexto);
-    throw e;
-  }
-
-  const validator = await insertValidator(listFromTable, metadados);
-
-  if (validator === "cadastro") {
-    try {
-      await deleteFromTable(metadados);
-      addInfo(
-        `[Delete dados] - dados excluidos, tabela do banco pronta pra reincersão dos novos dados cadastrais`,
-        contexto
-      );
-    } catch (e) {
-      addErro(
-        `[delete tabela cadastro] - Erro ao deletar os dados do cadastro antes da reinserção, erro: ${e.message}`,
-        contexto
-      );
-      await updateLoggerController(metadados, contexto);
-      return;
-    }
-  } else if (validator === "substituir") {
-    try {
-      await deleteFromTable(metadados);
-      addAviso(
-        `[gerenciamento de inserções] operação de substituição, dados referente a data inserida foram excluidos`,
-        contexto
-      );
-    } catch (e) {
-      addErro(
-        `Erro ao deletar período antes da reinserção, erro: ${e.message}`,
-        contexto
-      );
-      await updateLoggerController(metadados, contexto);
-      return;
-    }
-  } else if (validator === null) {
-    addErro(
-      "Validação retornou nulo. Dados possivelmente inválidos ou sem coluna de data.",
-      contexto
+  function publish(percent0to1, statusText) {
+    const abs = Math.max(
+      0,
+      Math.min(100, Math.floor(phaseBase + percent0to1 * phaseSpan))
     );
-    await updateLoggerController(metadados, contexto);
-    return;
+    const delta = abs - lastPctAbs;
+    if (delta > 0) {
+      atualizarBarra(barraId, delta, statusText);
+      lastPctAbs = abs;
+    } else if (statusText) {
+      atualizarBarra(barraId, 0, statusText);
+    }
   }
 
-  addInfo("iniciando processo de insersão dos dados na tabela...", contexto);
+  try {
+    // -------- Fase 1: preparação --------
+    publish(0.1, "Detectando encoding...");
+    let { encoding } = metadados;
+    if (!encoding) {
+      const det = await detectEncoding(contexto);
+      encoding = det.encoding;
+    }
 
-  // começa a iniciar as linhas
-  const total = metadados.total_linhas;
-  const barraId = `${nomeArquivo}::${metadados.ano}::${metadados.tabela}`;
-  iniciarBarra(barraId, total, nomeArquivo, metadados.tabela, metadados.ano);
-  const cols = metadados.colunas_tabela;
-  let i = 0;
+    publish(0.4, `Encoding: ${encoding} | Detectando delimitador...`);
+    let { delimiter } = metadados;
+    if (!delimiter) {
+      delimiter = await detectDelimiter(contexto, encoding);
+    }
 
-  const BATCH_SIZE = 10000;
-  let batch = [];
+    publish(0.8, `Delimitador: ${delimiter}`);
+    const headersNorm = metadados.colunas_json;
 
-  async function flushBatch() {
-    if (batch.length === 0) return;
-    const linhasTipadas = batch.map((b) => b.tipada);
+    // Tipos esperados (schema + overrides)
+    const schemaMap = await loadDecimalProfilesFromSchema(metadados.tabela);
+    const tiposFinal = expandTiposWithSchema(
+      metadados.tipos_esperados,
+      schemaMap
+    );
+
+    publish(1.0, "Preparação concluída");
+    setPhase("read"); // 15..60%
+
+    // -------- Valida dados e ação --------
+    const total = metadados.total_linhas || 0;
+    if (total === 0) {
+      addAviso("Nenhuma linha disponível para inserção.", contexto);
+      publish(1.0, "Nada a fazer");
+      setPhase("insert");
+      publish(1.0, "Sem inserções necessárias");
+      return {
+        erro: false,
+        total: 0,
+        inseridos: 0,
+        falhas: 0,
+        mensagem: "Arquivo vazio",
+      };
+    }
+
+    let listFromTable;
     try {
-      await insertBatchInTable(metadados.tabela, linhasTipadas, cols);
-      sucesso += batch.length;
-      atualizarBarra(barraId, batch.length);
-      i += batch.length;
+      listFromTable = await listPeriodInTable(metadados);
     } catch (e) {
-      // 👇 importante para entender por que não está batendo os 1000
-      addAviso(
-        `[BATCH] Falha ao inserir ${batch.length} registros em lote. ` +
-          `Fazendo fallback linha-a-linha. Motivo: ${e.message}`,
+      addErro(`Erro ao consultar o período no banco: ${e.message}`, contexto);
+      await updateLoggerController(metadados, contexto);
+      throw e;
+    }
+
+    const validator = await insertValidator(listFromTable, metadados);
+
+    if (validator === "cadastro" || validator === "substituir") {
+      try {
+        await deleteFromTable(metadados);
+        const msg =
+          validator === "cadastro"
+            ? "[Delete dados] tabela limpa para reinserção cadastral"
+            : "[Gerenciamento] substituição: período removido antes da reinserção";
+        addInfo(msg, contexto);
+      } catch (e) {
+        addErro(`Erro ao deletar antes da reinserção: ${e.message}`, contexto);
+        await updateLoggerController(metadados, contexto);
+        throw e;
+      }
+    } else if (validator === null) {
+      addErro(
+        "Validação nula (dados inválidos ou sem coluna de data).",
         contexto
       );
       await updateLoggerController(metadados, contexto);
+      return {
+        erro: true,
+        total,
+        inseridos: 0,
+        falhas: total,
+        mensagem: "Validação nula",
+      };
+    }
 
-      for (const item of batch) {
-        const linhaIdx = i;
-        const linhaHumana = linhaIdx + 1;
-        try {
-          await insertRegisterinTable(metadados.tabela, item.tipada, cols);
-          sucesso++;
-          atualizarBarra(barraId, 1); // <-- só avança se inseriu OK
-        } catch (err) {
-          addErro(
-            `Erro ao inserir linha ${linhaHumana}, erro: ${err.message}`,
-            contexto
-          );
-          erros.push({
-            linha: linhaHumana,
-            erro: err.message,
-            dados: item.original,
-          });
-          await updateLoggerController(metadados, contexto);
-        } finally {
-          i++;
+    addInfo("Iniciando leitura e montagem de lotes...", contexto);
+
+    // -------- Fase 2 (read): leitura/sanitização + enfileirar --------
+    const BATCH_SIZE = 10_000;
+    let batch = [];
+    let lidas = 0;
+    let inseridosAteAgora = 0;
+    const cols = metadados.colunas_tabela;
+
+    // para reportar progresso na fase insert
+    function publishInsertStatus(texto) {
+      const p = Math.min(1, inseridosAteAgora / total);
+      publish(p, texto);
+    }
+
+    let insertPhaseStarted = false;
+
+    async function flushBatch() {
+      if (batch.length === 0) return;
+
+      atualizarBarra(
+        barraId,
+        0,
+        `Inserindo ${batch.length} registros no banco...`
+      );
+      if (!insertPhaseStarted) {
+        setPhase("insert"); // 60..100%
+        insertPhaseStarted = true;
+      }
+
+      const lote = batch;
+      batch = []; // limpa antes do await
+
+      publishInsertStatus(`Enviando lote de ${lote.length} registros...`);
+
+      try {
+        await insertBatchInTable(metadados.tabela, lote, cols);
+        inseridosAteAgora += lote.length;
+        publishInsertStatus(`Inseridos: ${inseridosAteAgora}/${total}`);
+      } catch (e) {
+        addAviso(
+          `[BATCH] Falha no lote (${lote.length}). Fallback linha-a-linha. Motivo: ${e.message}`,
+          contexto
+        );
+        await updateLoggerController(metadados, contexto);
+
+        let ok = 0,
+          fail = 0;
+        for (const row of lote) {
+          try {
+            await insertRegisterinTable(metadados.tabela, row, cols);
+            ok++;
+            inseridosAteAgora++;
+          } catch (err) {
+            fail++;
+            addErro(
+              `Erro ao inserir linha ${inseridosAteAgora + 1}: ${err.message}`,
+              contexto
+            );
+          } finally {
+            publishInsertStatus(`Fallback: ok=${ok}, fail=${fail}`);
+          }
         }
       }
     }
-    batch = [];
-  }
 
-  try {
-    for await (const linhaOriginal of streamCsvRows(
-      contexto,
-      headersNorm,
-      encoding,
-      delimiter
-    )) {
-      const linhaTipada = sanitizeRow(
-        linhaOriginal,
-        tiposFinal,
-        contexto
-      );
-      batch.push({ original: linhaOriginal, tipada: linhaTipada });
-      if (batch.length >= BATCH_SIZE) await flushBatch();
+    try {
+      let currentBatchCount = 0;
+
+      for await (const linhaOriginal of streamCsvRows(
+        contexto,
+        headersNorm,
+        encoding,
+        delimiter
+      )) {
+        const linhaTipada = sanitizeRow(linhaOriginal, tiposFinal, contexto);
+
+        // guarda a linha tipada "crua"
+        batch.push(linhaTipada);
+        currentBatchCount++;
+        lidas++;
+
+        // avança a fase read (15..60%) com base em lidas/total
+        publish(
+          lidas / total,
+          `Montando lote (${currentBatchCount}/${BATCH_SIZE})`
+        );
+
+        if (batch.length >= BATCH_SIZE) {
+          atualizarBarra(
+            barraId,
+            0,
+            `Enviando lote de ${BATCH_SIZE} registros...`
+          );
+          await flushBatch();
+          currentBatchCount = 0;
+        }
+      }
+
+      // resto do último lote
+      await flushBatch();
+
+      // se não houve insert (p.ex. leitura sem linhas úteis)
+      if (!insertPhaseStarted) {
+        publish(1.0, "Leitura & sanitização concluídas");
+        setPhase("insert");
+        publish(1.0, "Sem inserções necessárias");
+      }
+
+      // finaliza em 100%
+      if (lastPctAbs < 100) {
+        atualizarBarra(barraId, 100 - lastPctAbs, "Concluído");
+        lastPctAbs = 100;
+      }
+
+      addInfo("Processo de inserção finalizado.", contexto);
+
+      return {
+        erro: false,
+        total,
+        inseridos: inseridosAteAgora,
+        falhas: Math.max(0, total - inseridosAteAgora),
+        mensagem: null,
+      };
+    } catch (e) {
+      addErro(`Falha no pipeline de leitura/inserção: ${e.message}`, contexto);
+      await updateLoggerController(metadados, contexto);
+      throw e;
     }
-    await flushBatch();
   } finally {
-    finalizarBarra(barraId);
-    addInfo("processo de insersão finalizado, validar caso erros", contexto);
+    await finalizarBarra(barraId);
   }
-
-  return {
-    erro: erros.length > 0,
-    total,
-    inseridos: sucesso,
-    falhas: erros.length,
-    mensagem: erros.length > 0 ? "Algumas linhas falharam" : null,
-    detalhes_erros: erros,
-  };
 }
 
 export async function managerDeleterController(logData) {

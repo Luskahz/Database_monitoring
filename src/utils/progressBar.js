@@ -5,7 +5,7 @@ export const multiBar = new cliProgress.MultiBar(
     clearOnComplete: false,
     hideCursor: true,
     format:
-      "[{filename} - {ano}] → [{bar}] {percentage}% | [{value}/{total}  {tabela}]",
+      "[{filename} - {ano}] → [{bar}] {percentage}% | [{value}/{total} {tabela}] {status}",
     barCompleteChar: "\u2588",
     barIncompleteChar: "\u2591",
     autopadding: false,
@@ -16,70 +16,63 @@ export const multiBar = new cliProgress.MultiBar(
 );
 
 const barras = new Map();
-let barrasAtivas = 0;
 
-/**
- * Cria uma barra de progresso identificada por ID único
- */
 export function iniciarBarra(id, total, filename, tabela, ano) {
   if (barras.has(id)) return;
-
   const bar = multiBar.create(total, 0, {
     filename,
     tabela,
-    ano, // adiciona o ano
+    ano,
+    status: "", // placeholder
   });
-
   barras.set(id, bar);
-  barrasAtivas++;
 }
 
-/**
- * Incrementa o valor da barra de progresso
- */
-export function atualizarBarra(id, valor = 1) {
+export function atualizarBarra(id, valor = 1, status) {
   const bar = barras.get(id);
-  if (bar) {
+  if (!bar) return;
+
+  if (typeof status === "string") {
+    // atualiza payload sem mexer em value
+    bar.update(bar.value, { status });
+  }
+  if (valor !== 0) {
     bar.increment(valor);
   }
 }
 
-/**
- * Finaliza e remove a barra do controle
- */
+export function setTotalBarra(id, novoTotal) {
+  const bar = barras.get(id);
+  if (!bar) return;
+  bar.setTotal(novoTotal);
+}
+
 export async function finalizarBarra(id) {
   const bar = barras.get(id);
-  if (bar) {
-    if (bar.value < bar.getTotal()) {
-      bar.update(bar.value); // força refresh da linha com valor real
-      await new Promise((r) => setTimeout(r, 20)); // dá tempo de atualizar
-    }
-    bar.stop();
-    barras.delete(id);
-    barrasAtivas--;
-  }
+  if (!bar) return;
+
+  // refresh final da linha
+  bar.update(bar.value);
+  await new Promise((r) => setTimeout(r, 10));
+
+  bar.stop();
+  barras.delete(id);
 
   if (barras.size === 0) {
     multiBar.stop();
   }
 }
 
-/**
- * Verifica se há alguma barra em execução
- */
 export function isBarraAtiva() {
-  return barrasAtivas > 0;
+  return barras.size > 0;
 }
 
-/**
- * Loga uma mensagem fora do bloco da barra
- */
 export function logBarra(mensagem) {
   multiBar.log(mensagem);
 }
 
 export function finalizarTodasAsBarras() {
-  for (const id of barras.keys()) {
+  for (const id of Array.from(barras.keys())) {
     finalizarBarra(id);
   }
 }
