@@ -9,7 +9,7 @@ import {
   deleteRegisterFromCache,
   getRegisterFromCache,
 } from "../../model/cacheModel.js";
-import { deleteLogByHash } from "../../model/logModel.js";
+import { deleteLogByHash, getLogWithFilePath } from "../../model/logModel.js";
 import { destinoByFilePath } from "../createDataController.js";
 import { managerDeleterController } from "../managerDataController.js";
 
@@ -25,7 +25,7 @@ export default async function deletedHandler(filePath, acao) {
   try {
     const destino = destinoByFilePath(filePath);
     try {
-      logData = await getRegisterFromCache(destino, false, contexto);
+      logData = await getLogWithFilePath(filePath);
       addAviso("tentativa de extração do cache finalizada.", contexto);
       if (!logData) {
         addErro(
@@ -64,11 +64,9 @@ export default async function deletedHandler(filePath, acao) {
         return; // ou `throw new Error(...)` dependendo da criticidade
       }
       await deleteLogByHash(logData);
-      await deleteRegisterFromCache(destino, contexto);
-      addAviso("exclusão do log no cache e no banco finalizadas", contexto);
     } catch (e) {
       addErro(
-        `problema ao apagar o hash do banco ou do cache, erro: ${e.message}`,
+        `problema ao apagar o hash do banco, erro: ${e.message}`,
         contexto
       );
       return;

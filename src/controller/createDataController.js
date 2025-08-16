@@ -47,7 +47,7 @@ export async function createMetadadosController(filePath, action) {
   };
 }
 
-function truncarFilepath(fullpath) {
+export function truncarFilepath(fullpath) {
   const marcador = "Diretórios_SQL";
   const idx = fullpath.indexOf(marcador);
   if (idx === -1) return fullpath; // fallback: não achou

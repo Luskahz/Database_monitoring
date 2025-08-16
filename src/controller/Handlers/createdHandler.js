@@ -94,7 +94,6 @@ export default async function createdHandler(filePath, action) {
           contexto
         );
       } finally {
-        await insertHashInCache(logData, contexto);
         await insertLog(logData);
         await updateLoggerController(
           getLoggerContext(metadados, logData, filePath),
