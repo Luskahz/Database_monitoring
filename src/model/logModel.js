@@ -77,14 +77,15 @@ export async function insertLog(logData) {
     hash_arquivo,
     sucesso,
     mensagem_erro,
+    caminho_original
   } = logData;
 
   try {
     await db.query(
       `
     INSERT INTO \`${schema}\`.log_ingestao
-      (tabela_destino, nome_arquivo, ano, mes, dia, coluna_data, data_upload, hash_arquivo, sucesso, mensagem_erro)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (tabela_destino, nome_arquivo, ano, mes, dia, coluna_data, data_upload, hash_arquivo, sucesso, mensagem_erro, caminho)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
       [
         tabela_destino,
@@ -97,6 +98,7 @@ export async function insertLog(logData) {
         hash_arquivo,
         sucesso,
         mensagem_erro,
+        caminho_original
       ]
     );
   } catch (e) {

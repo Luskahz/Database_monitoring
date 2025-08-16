@@ -47,6 +47,13 @@ export async function createMetadadosController(filePath, action) {
   };
 }
 
+function truncarFilepath(fullpath) {
+  const marcador = "Diretórios_SQL";
+  const idx = fullpath.indexOf(marcador);
+  if (idx === -1) return fullpath; // fallback: não achou
+  return fullpath.slice(idx).replace(/\\\\/g, "\\");
+}
+
 export function createLogDataController(metadados) {
   return {
     tabela_destino: metadados.tabela,
@@ -57,12 +64,11 @@ export function createLogDataController(metadados) {
     coluna_data: metadados.coluna_data,
     data_upload: new Date(),
     hash_arquivo: metadados.hash,
-    caminho_original: metadados.caminho_original,
+    caminho_original: truncarFilepath(metadados.caminho_original), // <- truncado aqui
     sucesso: true,
     mensagem_erro: null,
   };
 }
-
 export async function createFundamentalDocsController(
   filePath,
   action,
