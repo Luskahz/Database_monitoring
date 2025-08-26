@@ -5,10 +5,6 @@ import {
   updateLoggerController,
   createLoggerController,
 } from "../../middleware/logger.js";
-import {
-  deleteRegisterFromCache,
-  getRegisterFromCache,
-} from "../../model/cacheModel.js";
 import { deleteLogByHash, getLogWithFilePath } from "../../model/logModel.js";
 import { destinoByFilePath } from "../createDataController.js";
 import { managerDeleterController } from "../managerDataController.js";
