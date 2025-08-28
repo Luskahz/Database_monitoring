@@ -66,48 +66,52 @@ export async function getAllHashesFromTable(metadados) {
   }
 }
 
+const INSERT_LOG_SQL =
+  `INSERT INTO \`${schema}\`.log_ingestao
+   (tabela_destino, nome_arquivo, ano, mes, dia, coluna_data, data_upload, hash_arquivo, sucesso, mensagem_erro, caminho)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+const exec = db.execute ? db.execute.bind(db) : db.query.bind(db);
+
+
+let insertStmtPromise = null;
+function getInsertStmt() {
+  if (!db.prepare) return null;
+  if (!insertStmtPromise) insertStmtPromise = db.prepare(INSERT_LOG_SQL);
+  return insertStmtPromise;
+}
+
 export async function insertLog(logData) {
-  const {
-    tabela_destino,
-    nome_arquivo,
-    ano,
-    mes,
-    dia,
-    coluna_data,
-    data_upload,
-    hash_arquivo,
-    sucesso,
-    mensagem_erro,
-    caminho_original,
-  } = logData;
+
+  const values = [
+    logData.tabela_destino ?? null,
+    logData.nome_arquivo ?? null,
+    logData.ano != null ? Number(logData.ano) : null,
+    logData.mes ?? null,
+    logData.dia ?? null,
+    logData.coluna_data ?? null,
+    logData.data_upload ?? new Date(),       
+    logData.hash_arquivo ?? null,
+    logData.sucesso ? 1 : 0,                 
+    logData.mensagem_erro ?? null,
+    logData.caminho_original ?? null,
+  ];
 
   try {
-    await db.query(
-      `
-    INSERT INTO \`${schema}\`.log_ingestao
-      (tabela_destino, nome_arquivo, ano, mes, dia, coluna_data, data_upload, hash_arquivo, sucesso, mensagem_erro, caminho)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `,
-      [
-        tabela_destino,
-        nome_arquivo,
-        ano,
-        mes,
-        dia,
-        coluna_data,
-        data_upload,
-        hash_arquivo,
-        sucesso,
-        mensagem_erro,
-        caminho_original,
-      ]
-    );
+    const stmt = getInsertStmt && getInsertStmt();     
+    if (stmt) {
+      const ps = await stmt;                           
+      await ps.execute(values);
+    } else {
+      await exec(INSERT_LOG_SQL, values);
+    }
   } catch (e) {
     throw new Error(
       `[model inserir log banco] Erro ao inserir log na tabela de ingestão, erro: ${e.message}`
     );
   }
 }
+
 
 /**
  * @param {{
@@ -151,10 +155,9 @@ export async function getLogWithFilePath(filePath) {
     );
 
     if (rows.length === 0) {
-      return null; // não achou nada
+      return null; 
     }
 
-    // retorna o primeiro log já como objeto JSON
     return {
       id: rows[0].id,
       tabela_destino: rows[0].tabela_destino,

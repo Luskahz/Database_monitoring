@@ -27,9 +27,7 @@ import {
 export async function manageInsertController(metadados) {
   const contexto = metadados.caminho_original;
   const nomeArquivo = metadados.nome_arquivo ?? "arquivo-desconhecido";
-  const barraId = `${nomeArquivo}::${metadados.ano ?? "-"}::${
-    metadados.tabela
-  }`;
+  const barraId = `${nomeArquivo}::${metadados.ano ?? "-"}::${metadados.tabela}`;
 
   // -------- Barra global: 0..100 (3 fases) --------
   const PHASES = { prep: 15, read: 45, insert: 40 }; // soma 100
@@ -44,10 +42,7 @@ export async function manageInsertController(metadados) {
     phaseSpan = PHASES[name];
   }
   function publish(percent0to1, statusText) {
-    const abs = Math.max(
-      0,
-      Math.min(100, Math.floor(phaseBase + percent0to1 * phaseSpan))
-    );
+    const abs = Math.max(0, Math.min(100, Math.floor(phaseBase + percent0to1 * phaseSpan)));
     const delta = abs - lastPctAbs;
     if (delta > 0) {
       atualizarBarra(barraId, delta, statusText);
@@ -61,26 +56,18 @@ export async function manageInsertController(metadados) {
     // -------- Fase 1: preparação --------
     publish(0.1, "Detectando encoding...");
     let { encoding } = metadados;
-    if (!encoding) {
-      const det = await detectEncoding(contexto);
-      encoding = det.encoding;
-    }
+    if (!encoding) encoding = (await detectEncoding(contexto)).encoding;
 
     publish(0.4, `Encoding: ${encoding} | Detectando delimitador...`);
     let { delimiter } = metadados;
-    if (!delimiter) {
-      delimiter = await detectDelimiter(contexto, encoding);
-    }
+    if (!delimiter) delimiter = await detectDelimiter(contexto, encoding);
 
     publish(0.8, `Delimitador: ${delimiter}`);
     const headersNorm = metadados.colunas_json;
 
     // Tipos esperados (schema + overrides)
     const schemaMap = await loadDecimalProfilesFromSchema(metadados.tabela);
-    const tiposFinal = expandTiposWithSchema(
-      metadados.tipos_esperados,
-      schemaMap
-    );
+    const tiposFinal = expandTiposWithSchema(metadados.tipos_esperados, schemaMap);
 
     publish(1.0, "Preparação concluída");
     setPhase("read"); // 15..60%
@@ -92,13 +79,7 @@ export async function manageInsertController(metadados) {
       publish(1.0, "Nada a fazer");
       setPhase("insert");
       publish(1.0, "Sem inserções necessárias");
-      return {
-        erro: false,
-        total: 0,
-        inseridos: 0,
-        falhas: 0,
-        mensagem: "Arquivo vazio",
-      };
+      return { erro: false, total: 0, inseridos: 0, falhas: 0, mensagem: "Arquivo vazio" };
     }
 
     let listFromTable;
@@ -106,7 +87,7 @@ export async function manageInsertController(metadados) {
       listFromTable = await listPeriodInTable(metadados);
     } catch (e) {
       addErro(`Erro ao consultar o período no banco: ${e.message}`, contexto);
-      await updateLoggerController(metadados, contexto);
+      void updateLoggerController(metadados, contexto);
       throw e;
     }
 
@@ -115,94 +96,98 @@ export async function manageInsertController(metadados) {
     if (validator === "cadastro" || validator === "substituir") {
       try {
         await deleteFromTable(metadados);
-        const msg =
-          validator === "cadastro"
-            ? "[Delete dados] tabela limpa para reinserção cadastral"
-            : "[Gerenciamento] substituição: período removido antes da reinserção";
+        const msg = validator === "cadastro"
+          ? "[Delete dados] tabela limpa para reinserção cadastral"
+          : "[Gerenciamento] substituição: período removido antes da reinserção";
         addInfo(msg, contexto);
       } catch (e) {
         addErro(`Erro ao deletar antes da reinserção: ${e.message}`, contexto);
-        await updateLoggerController(metadados, contexto);
+        void updateLoggerController(metadados, contexto);
         throw e;
       }
     } else if (validator === null) {
-      addErro(
-        "Validação nula (dados inválidos ou sem coluna de data).",
-        contexto
-      );
-      await updateLoggerController(metadados, contexto);
-      return {
-        erro: true,
-        total,
-        inseridos: 0,
-        falhas: total,
-        mensagem: "Validação nula",
-      };
+      addErro("Validação nula (dados inválidos ou sem coluna de data).", contexto);
+      void updateLoggerController(metadados, contexto);
+      return { erro: true, total, inseridos: 0, falhas: total, mensagem: "Validação nula" };
     }
 
     addInfo("Iniciando leitura e montagem de lotes...", contexto);
 
-    // -------- Fase 2 (read): leitura/sanitização + enfileirar --------
-    const BATCH_SIZE = 10_000;
+    // -------- Fase 2 (read): leitura/sanitização + pipeline de insert --------
+    const BATCH_ROWS_CAP = 10_000;               // limite por linhas
+    const MAX_BATCH_BYTES = 48 * 1024 * 1024;    // ~75% de 64MB (max_allowed_packet)
+    const HWM = 1024 * 1024;                     // 1 MiB na leitura
+
     let batch = [];
+    let batchBytes = 0;                           // acumulador de bytes do lote
     let lidas = 0;
     let inseridosAteAgora = 0;
     const cols = metadados.colunas_tabela;
+    const order = cols.map(c => c.name || c);     // ordem das colunas no INSERT
 
-    // para reportar progresso na fase insert
+    // progress durante inserts
     function publishInsertStatus(texto) {
-      const p = Math.min(1, inseridosAteAgora / total);
+      const p = total > 0 ? Math.min(1, inseridosAteAgora / total) : 1;
       publish(p, texto);
     }
 
+    // estima bytes do payload do INSERT para essa linha (protocolo texto)
+    function approxRowBytes(row) {
+      let bytes = 2; // "(" ")"
+      for (let i = 0; i < order.length; i++) {
+        const v = row[order[i]];
+        if (v == null) {
+          bytes += 4; // NULL
+        } else if (typeof v === "number") {
+          bytes += 24; // número em texto (pior caso)
+        } else {
+          const s = String(v);
+          // 2 aspas + tamanho utf8 + ~10% para escapes de aspas/backs
+          bytes += 2 + Buffer.byteLength(s, "utf8") + Math.ceil(s.length * 0.10);
+        }
+        bytes += 1; // vírgula
+      }
+      return bytes + 1; // separador/fechamento
+    }
+
+    // pipeline: no máx 1 lote em voo (sobrepõe leitura ↔ insert sem explodir memória)
+    let inflight = null;
     let insertPhaseStarted = false;
 
-    async function flushBatch() {
-      if (batch.length === 0) return;
-
-      atualizarBarra(
-        barraId,
-        0,
-        `Inserindo ${batch.length} registros no banco...`
-      );
-      if (!insertPhaseStarted) {
-        setPhase("insert"); // 60..100%
-        insertPhaseStarted = true;
-      }
-
-      const lote = batch;
-      batch = []; // limpa antes do await
-
-      publishInsertStatus(`Enviando lote de ${lote.length} registros...`);
-
+    async function doInsert(lote) {
+      atualizarBarra(barraId, 0, `Inserindo ${lote.length} registros no banco...`);
+      if (!insertPhaseStarted) { setPhase("insert"); insertPhaseStarted = true; }
       try {
         await insertBatchInTable(metadados.tabela, lote, cols);
         inseridosAteAgora += lote.length;
         publishInsertStatus(`Inseridos: ${inseridosAteAgora}/${total}`);
       } catch (e) {
-        addAviso(
-          `[BATCH] Falha no lote (${lote.length}). Fallback linha-a-linha. Motivo: ${e.message}`,
-          contexto
-        );
-        await updateLoggerController(metadados, contexto);
+        addAviso(`[BATCH] Falha no lote (${lote.length}). Fallback linha-a-linha. Motivo: ${e.message}`, contexto);
+        void updateLoggerController(metadados, contexto);
 
-        let ok = 0,
-          fail = 0;
+        let ok = 0, fail = 0;
         for (const row of lote) {
           try {
             await insertRegisterinTable(metadados.tabela, row, cols);
-            ok++;
-            inseridosAteAgora++;
+            ok++; inseridosAteAgora++;
           } catch (err) {
-            fail++;
-            addErro(
-              `Erro ao inserir linha ${inseridosAteAgora + 1}: ${err.message}`,
-              contexto
-            );
+            fail++; addErro(`Erro ao inserir linha ${inseridosAteAgora + 1}: ${err.message}`, contexto);
           } finally {
             publishInsertStatus(`Fallback: ok=${ok}, fail=${fail}`);
           }
         }
+      }
+    }
+
+    async function flushBatch() {
+      if (batch.length === 0) return;
+      const lote = batch;
+      batch = [];            // limpa antes do insert para liberar memória
+      batchBytes = 0;        // zera contador de bytes do lote
+      if (inflight) {
+        inflight = inflight.then(() => doInsert(lote));
+      } else {
+        inflight = doInsert(lote);
       }
     }
 
@@ -213,36 +198,41 @@ export async function manageInsertController(metadados) {
         contexto,
         headersNorm,
         encoding,
-        delimiter
+        delimiter,
+        { highWaterMark: HWM }
       )) {
         const linhaTipada = sanitizeRow(linhaOriginal, tiposFinal, contexto);
 
-        // guarda a linha tipada "crua"
+        const rowBytes = approxRowBytes(linhaTipada);
+
+        // cap por linhas OU por bytes → flush antes de adicionar a próxima
+        if (batch.length > 0 && (batch.length >= BATCH_ROWS_CAP || (batchBytes + rowBytes) > MAX_BATCH_BYTES)) {
+          atualizarBarra(barraId, 0, `Enviando lote (cap atingido)...`);
+          await flushBatch();
+          currentBatchCount = 0;
+
+          // backpressure simples: no máx. 1 lote em voo
+          if (inflight) { await inflight; inflight = null; }
+        }
+
         batch.push(linhaTipada);
+        batchBytes += rowBytes;
         currentBatchCount++;
         lidas++;
 
-        // avança a fase read (15..60%) com base em lidas/total
-        publish(
-          lidas / total,
-          `Montando lote (${currentBatchCount}/${BATCH_SIZE})`
-        );
-
-        if (batch.length >= BATCH_SIZE) {
-          atualizarBarra(
-            barraId,
-            0,
-            `Enviando lote de ${BATCH_SIZE} registros...`
-          );
-          await flushBatch();
-          currentBatchCount = 0;
-        }
+        // avança fase read (15..60%) com base em lidas/total
+        publish(lidas / total, `Montando lote (${currentBatchCount}/${BATCH_ROWS_CAP})`);
       }
 
-      // resto do último lote
+      // envia o resto do último lote
       await flushBatch();
 
-      // se não houve insert (p.ex. leitura sem linhas úteis)
+      // aguarda o último insert em voo (se houver)
+      if (inflight) {
+        await inflight;
+        inflight = null;
+      }
+
       if (!insertPhaseStarted) {
         publish(1.0, "Leitura & sanitização concluídas");
         setPhase("insert");
@@ -266,13 +256,14 @@ export async function manageInsertController(metadados) {
       };
     } catch (e) {
       addErro(`Falha no pipeline de leitura/inserção: ${e.message}`, contexto);
-      await updateLoggerController(metadados, contexto);
+      void updateLoggerController(metadados, contexto);
       throw e;
     }
   } finally {
     await finalizarBarra(barraId);
   }
 }
+
 
 export async function managerDeleterController(logData) {
   const contexto = logData.caminho_original;

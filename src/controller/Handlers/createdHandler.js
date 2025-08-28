@@ -1,12 +1,11 @@
-import { logCsvVsTableHeaders } from "../../middleware/createLogger.js";
 import { addErro, addInfo } from "../../middleware/errorHandler.js";
 import {
   createLoggerController,
   finalLoggerController,
   getLoggerContext,
   updateLoggerController,
+  logCsvVsTableHeaders
 } from "../../middleware/logger.js";
-import { insertHashInCache } from "../../model/cacheModel.js";
 import { insertLog } from "../../model/logModel.js";
 import createDataController from "../createDataController.js";
 import fluxoValidatorController from "../fluxoValidatorController.js";
@@ -14,63 +13,37 @@ import { manageInsertController } from "../managerDataController.js";
 
 export default async function createdHandler(filePath, action) {
   const contexto = filePath;
-  if (!filePath) {
-    addErro(
-      "caminho do arquivo não definido no handler, sem como identificar qual arquivo deu erro...",
-      contexto
-    );
-    return;
-  }
+  if (!filePath) { addErro("caminho do arquivo não definido no handler, sem como identificar qual arquivo deu erro...", contexto); return; }
 
   let metadados, logData;
-
   try {
     // ------------criando logger -----------------
     await createLoggerController(filePath);
-
     //---------- criando os docs, e validando o fluxo de insersão -----------
 
     try {
+
       ({ metadados, logData } = await createDataController(filePath, action));
-      await logCsvVsTableHeaders({
-        contexto: filePath,
-        tabela: metadados.tabela,
-        colunasCsv: metadados.colunas_json,
-        colunasTabela: metadados.colunas_tabela,
-      });
+      await logCsvVsTableHeaders({ contexto: filePath, tabela: metadados.tabela, colunasCsv: metadados.colunas_json, colunasTabela: metadados.colunas_tabela, });
+
     } catch (e) {
-      addErro(
-        `erro ao gerar os dados fundamentais, erro:${e.message}`,
-        contexto
-      );
-      return;
+      addErro( `erro ao gerar os dados fundamentais, erro:${e.message}`, contexto ); return;
     } finally {
-      await updateLoggerController(
-        getLoggerContext(metadados, logData, filePath),
-        contexto
-      );
+      await updateLoggerController(getLoggerContext(metadados, logData, filePath), contexto );
     }
 
-    if (!metadados || !logData) {
+    if (!metadados || !logData) { 
       addErro(`metadados ou logData não foram gerados corretamente`, contexto);
-      await updateLoggerController(
-        getLoggerContext(metadados, logData, filePath),
-        contexto
-      );
-      return;
+      await updateLoggerController( getLoggerContext(metadados, logData, filePath), contexto ); return;
     }
-
+    
     let fluxo;
     try {
       fluxo = await fluxoValidatorController(metadados, logData);
     } catch (e) {
-      addErro(`Erro ao validar fluxo de ingestão: ${e.message}`, contexto);
-      return;
+      addErro(`Erro ao validar fluxo de ingestão: ${e.message}`, contexto); return;
     } finally {
-      await updateLoggerController(
-        getLoggerContext(metadados, logData, filePath),
-        contexto
-      );
+      await updateLoggerController( getLoggerContext(metadados, logData, filePath), contexto);
     }
 
     //-------------- vai retorna o logdata o metadados e o fluxo -----------
@@ -83,44 +56,27 @@ export default async function createdHandler(filePath, action) {
         logData.sucesso = !resultado?.erro;
         logData.mensagem_erro = resultado?.mensagem || null;
 
-        if (resultado?.erro) {
-          addErro(logData.mensagem_erro, contexto);
-        }
+        if (resultado?.erro) { addErro(logData.mensagem_erro, contexto); }
       } catch (e) {
         logData.sucesso = false;
         logData.mensagem_erro = `Erro durante execução do managerDataController: ${e.message}`;
-        addErro(
-          `Erro durante execução do managerDataController: ${e.message}`,
-          contexto
-        );
+        addErro( `Erro durante execução do managerDataController: ${e.message}`, contexto );
       } finally {
         await insertLog(logData);
-        await updateLoggerController(
-          getLoggerContext(metadados, logData, filePath),
-          contexto
-        );
+        await updateLoggerController( getLoggerContext(metadados, logData, filePath), contexto );
       }
     } else {
-      addInfo(
-        `[ARQUIVO IGNORADO] ${metadados.nome_arquivo} já existe e não foi modificado.`,
-        contexto
-      );
-      await updateLoggerController(
-        getLoggerContext(metadados ?? {}, logData ?? {}, filePath),
-        contexto
-      );
+      addInfo( `[ARQUIVO IGNORADO] ${metadados.nome_arquivo} já existe e não foi modificado.`, contexto );
+      await updateLoggerController( getLoggerContext(metadados ?? {}, logData ?? {}, filePath), contexto );
       return;
     }
+
+
+
   } catch (e) {
-    addErro(
-      `erro no createdHandler, erro: ${e.message}, caminho do erro: ${e.stack}`,
-      contexto
-    );
+    addErro( `erro no createdHandler, erro: ${e.message}, caminho do erro: ${e.stack}`, contexto );
     return;
   } finally {
-    await finalLoggerController(
-      getLoggerContext(metadados, logData, filePath),
-      contexto
-    );
+    await finalLoggerController( getLoggerContext(metadados, logData, filePath), contexto);
   }
 }

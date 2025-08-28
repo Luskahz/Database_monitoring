@@ -1,7 +1,5 @@
 import crypto from "crypto";
 import Papa from "papaparse";
-import normalizar from "./normalizar.js";
-import { sanitizeValue } from "./sanitizeValue.js";
 import { addAviso, addInfo } from "../middleware/errorHandler.js";
 import {
   getTiposFromTable,
@@ -13,19 +11,79 @@ import {
   detectDelimiter,
   createDecodedStream,
 } from "./prepareStreamByFilepath.js";
+import normalizar from "./normalizar.js"
+import { sanitizeValue } from "./sanitizeValue.js";
+import iconv from "iconv-lite";
+import { createReadStream } from "fs";
+import { PassThrough } from "stream";
+
+
+function createFileTee(filePath, { highWaterMark = 1024 * 1024 } = {}) {
+  const src = createReadStream(filePath, { highWaterMark }); // bytes
+  const a = new PassThrough({ highWaterMark });
+  const b = new PassThrough({ highWaterMark });
+
+  let paused = false;
+
+  function writeBoth(chunk) {
+    const okA = a.write(chunk);
+    const okB = b.write(chunk);
+    if (!okA || !okB) {
+      if (!paused) { paused = true; src.pause(); }
+      // retoma quando AMBOS drenarem
+      if (!okA) a.once("drain", tryResume);
+      if (!okB) b.once("drain", tryResume);
+    }
+  }
+  function tryResume() {
+    if (a.writableNeedDrain || b.writableNeedDrain) return;
+    if (paused) { paused = false; src.resume(); }
+  }
+
+  src.on("data", writeBoth);
+  src.on("end", () => { a.end(); b.end(); });
+  src.on("error", (e) => { a.destroy(e); b.destroy(e); });
+
+  const kill = (e) => { try { src.destroy(e); } catch {} };
+  a.on("error", kill);
+  b.on("error", kill);
+
+  return { forHash: a, forParse: b, src };
+}
+
+function hashBytes(readable) {
+  return new Promise((resolve, reject) => {
+    const h = crypto.createHash("sha256");
+    readable.on("data", (chunk) => h.update(chunk));
+    readable.once("error", reject);
+    readable.once("end", () => resolve(h.digest("hex")));
+  });
+}
 
 export async function analyzeCsv(filePath, tabelaName) {
   const contexto = filePath;
-  const tiposEsperados = await getTiposFromTable(tabelaName);
-  const colunasTabela = await getColumnsFromTable(tabelaName);
-  const colunaDataEsperada = await getDateColumnsFromTable(tabelaName);
 
-  // 2) Detect
-  const { encoding } = await detectEncoding(filePath);
-  const delimiter = await detectDelimiter(filePath, encoding);
 
-  // 3) Header cru + normalização
-  const rawHeaders = await readCsvHeader(filePath, encoding, delimiter);
+  const [tiposEsperados, colunasTabela, colunaDataEsperada, encRes] =
+    await Promise.all([
+      getTiposFromTable(tabelaName),
+      getColumnsFromTable(tabelaName),
+      getDateColumnsFromTable(tabelaName),
+      detectEncoding(filePath, { headBytes: 64 * 1024, fallback: "latin1" }),
+    ]);
+  const encoding = encRes.encoding;
+
+  const delimiter = await detectDelimiter(filePath, encoding, {
+    minHeadBytes: 64 * 1024,
+    maxHeadBytes: 1024 * 1024,
+    head: encRes.head,
+  });
+
+
+  const rawHeaders = await readCsvHeader(filePath, encoding, delimiter, {
+    highWaterMark: 64 * 1024,
+    fastMode: true
+  });
   const { headers: headersNorm, duplicates } = normalizeHeadersOnce(rawHeaders);
   if (duplicates.size) {
     addAviso(
@@ -34,180 +92,196 @@ export async function analyzeCsv(filePath, tabelaName) {
     );
   }
 
-  // 4) Hash & coletores
-  const datasCsv = new Set();
-  const hash = crypto.createHash("sha256");
-  let totalLinhas = 0;
 
-  hash.update("[");
+  const headersLen = headersNorm.length;
+  const idxData = colunaDataEsperada ? headersNorm.indexOf(colunaDataEsperada) : -1;
+  const tipoBruto = idxData >= 0 ? tiposEsperados[colunaDataEsperada] : undefined;
+  const tipoData =
+    tipoBruto === "date" || tipoBruto === "datetime" ? tipoBruto : "date";
+  const datePrefixRe = /^\d{4}-\d{2}-\d{2}/;
 
-  // 5) Stream das linhas (header:false) + pular a 1ª linha (o header)
-  const input = await createDecodedStream(filePath, encoding);
+
+  const { forHash, forParse } = createFileTee(filePath, { highWaterMark: 1024 * 1024 });
+  const pHash = hashBytes(forHash); // começa já
+
+  const input =
+    encoding === "latin1"
+      ? forParse.pipe(iconv.decodeStream("latin1"))
+      : (forParse.setEncoding("utf8"), forParse);
+
   const parser = Papa.parse(Papa.NODE_STREAM_INPUT, {
     header: false,
     delimiter,
-    skipEmptyLines: 'greedy',
+    skipEmptyLines: "greedy",
     dynamicTyping: false,
+    bom: true,
   });
   const stream = input.pipe(parser);
+
+  const datasCsv = new Set();
+  let totalLinhas = 0;
+
 
   let isFirstRow = true;
   for await (const rowArray of stream) {
     const rowArr = Array.isArray(rowArray) ? rowArray : rowArray?.data || [];
-
-    // pula o header
     if (isFirstRow) { isFirstRow = false; continue; }
 
-    const rowObj = {};
-    for (let i = 0; i < headersNorm.length; i++) {
-      rowObj[headersNorm[i]] = rowArr[i] ?? null;
-    }
-
-    if (totalLinhas > 0) hash.update(",");
-    hash.update(JSON.stringify(rowObj));
-
-    if (colunaDataEsperada && rowObj[colunaDataEsperada]) {
-      const tipoBruto = tiposEsperados[colunaDataEsperada];
-      const tipo = (tipoBruto === "date" || tipoBruto === "datetime") ? tipoBruto : "date";
-      const valorData = sanitizeValue(rowObj[colunaDataEsperada], tipo);
-      if (typeof valorData === "string" && /^\d{4}-\d{2}-\d{2}/.test(valorData)) {
+    if (idxData >= 0) {
+  const rawVal = rowArr[idxData];
+  if (rawVal != null && rawVal !== "") {
+    if (typeof rawVal === "string" && datePrefixRe.test(rawVal)) {
+      datasCsv.add(rawVal.slice(0, 10));
+    } else {
+      const valorData = sanitizeValue(rawVal, tipoData);
+      if (typeof valorData === "string" && datePrefixRe.test(valorData)) {
         datasCsv.add(valorData.slice(0, 10));
       }
     }
-
+  }
+}
     totalLinhas++;
   }
 
-  hash.update("]");
-
-  addInfo(`[Json] - ${totalLinhas} linhas válidas extraídas de ${filePath}`, contexto);
+  const hashHex = await pHash; 
+  addInfo(`[Analyze] - ${totalLinhas} linhas válidas extraídas de ${filePath}`, contexto);
 
   return {
-    hash: hash.digest("hex"),
-    encoding,                // <<< novo
-    delimiter,               // <<< novo
+    hash: hashHex,                 // agora é SHA-256 dos BYTES do arquivo
+    encoding,
+    delimiter,
     colunas_json: headersNorm,
     tipos_esperados: tiposEsperados,
     colunas_tabela: colunasTabela,
-    coluna_data:
-      colunaDataEsperada && headersNorm.includes(colunaDataEsperada)
-        ? colunaDataEsperada
-        : null,
+    coluna_data: idxData >= 0 ? colunaDataEsperada : null,
     datas_csv: Array.from(datasCsv),
     total_linhas: totalLinhas,
   };
 }
 
-export function streamCsvRows(filePath, headersNorm, encoding, delimiter) {
-  async function* generator() {
-    const input = await createDecodedStream(filePath, encoding);
+
+export async function readCsvHeader(filePath, encoding, delimiter, opts = {}) {
+  const {
+    highWaterMark = 64 * 1024, 
+    fastMode = true,
+  } = opts;
+
+  const input = await createDecodedStream(filePath, encoding, { highWaterMark });
+
+  return new Promise((resolve, reject) => {
     const parser = Papa.parse(Papa.NODE_STREAM_INPUT, {
       header: false,
       delimiter,
-      skipEmptyLines: 'greedy',
+      preview: 1,                
+      skipEmptyLines: "greedy",
+      dynamicTyping: false,
+      bom: true,
+      fastMode,
+    });
+
+    let settled = false;
+    const finalize = (fn, val) => {
+      if (settled) return;
+      settled = true;
+      try { input.unpipe(parser); } catch {}
+      try { input.destroy(); } catch {}
+      try { parser.destroy?.(); } catch {}
+      try { parser.end?.(); } catch {}
+      fn(val);
+    };
+
+    parser.once("data", (row) => {
+      const arr = Array.isArray(row) ? row : (row && row.data) || [];
+      finalize(resolve, arr);
+    });
+
+    parser.once("error", (err) => finalize(reject, err));
+    parser.once("end",   ()   => finalize(resolve, [])); // arquivo vazio
+
+    input.pipe(parser);
+  });
+}
+
+export function normalizeHeadersOnce(rawHeaders) {
+  const n = rawHeaders.length;
+  const usados = Object.create(null);   
+  const headers = new Array(n);
+  let duplicates = null;                
+
+  for (let i = 0; i < n; i++) {
+    let header = String(rawHeaders[i] ?? "");
+    header = normalizar(header);
+    header = maybeTrim(header);
+    if (header === "") header = "unnamed";
+
+    const seen = usados[header] | 0;   
+    if (seen === 0) {
+      usados[header] = 1;
+      headers[i] = header;
+    } else {
+      const next = seen + 1;
+      usados[header] = next;
+      if (!duplicates) duplicates = new Set();
+      duplicates.add(header);
+      headers[i] = header + "_" + next;
+    }
+  }
+
+  return { headers, duplicates: duplicates ?? new Set() };
+}
+
+export function streamCsvRows(filePath, headersNorm, encoding, delimiter, opts = {}) {
+  const { highWaterMark = 1024 * 1024 } = opts; 
+  const EMPTY_ARR = []; 
+
+async function* generator() {
+    const input = await createDecodedStream(filePath, encoding, { highWaterMark });
+    const parser = Papa.parse(Papa.NODE_STREAM_INPUT, {
+      header: false,
+      delimiter,
+      skipEmptyLines: "greedy",
       dynamicTyping: false,
     });
     const stream = input.pipe(parser);
 
     let isFirstRow = true;
-    for await (const rowArray of stream) {
-      if (isFirstRow) {
-        isFirstRow = false;
-        continue;
-      }
+    const headersLen = headersNorm.length;
 
-      const row = Array.isArray(rowArray) ? rowArray : rowArray?.data || [];
+    for await (const rowArray of stream) {
+      if (isFirstRow) { isFirstRow = false; continue; }
+
+      const row = Array.isArray(rowArray)
+        ? rowArray
+        : (rowArray && rowArray.data) || EMPTY_ARR;
+
       const obj = {};
-      for (let i = 0; i < headersNorm.length; i++) {
+      for (let i = 0; i < headersLen; i++) {
+        const h = headersNorm[i];
         const v = row[i];
-        obj[headersNorm[i]] = typeof v === "string" ? v.trim() : v ?? null;
+        if (v == null) {
+          obj[h] = null;
+        } else if (typeof v === "string") {
+          obj[h] = maybeTrim(v);
+        } else {
+          obj[h] = v;
+        }
       }
       yield obj;
     }
   }
+
   return generator();
 }
-export function normalizeHeadersOnce(rawHeaders) {
-  const usados = {};
-  const headers = [];
-  const duplicates = new Set();
 
-  for (const h of rawHeaders) {
-    let header = (h ?? "").toString();
-    header = normalizar(header)
-      .trim();
-    if (header === "") header = "unnamed";
-
-    if (!usados[header]) {
-      usados[header] = 1;
-      headers.push(header);
-      continue;
-    }
-    // duplicado -> sufixa
-    usados[header]++;
-    duplicates.add(header);
-    headers.push(`${header}_${usados[header]}`);
-  }
-  return { headers, duplicates };
+//helper
+  function maybeTrim(s) {
+  const len = s.length;
+  if (len === 0) return s;
+  const a = s.charCodeAt(0), b = s.charCodeAt(len - 1);
+  if (a > 32 && b > 32) return s;    
+  return s.trim();
 }
 
-export async function readCsvHeader(filePath, encoding, delimiter) {
-  const input = await createDecodedStream(filePath, encoding);
-
-  return new Promise((resolve, reject) => {
-    let resolved = false;
-
-    const parser = Papa.parse(Papa.NODE_STREAM_INPUT, {
-      header: false,
-      delimiter,
-      preview: 1, 
-      skipEmptyLines: 'greedy',
-      dynamicTyping: false,
-    });
 
 
-    const cleanup = () => {
-      parser.off?.("data", onData);
-      parser.off?.("error", onError);
-      parser.off?.("end", onEnd);
-      // tenta parar o fluxo cedo
-      try {
-        input.unpipe(parser);
-      } catch {}
-      try {
-        parser.end?.();
-      } catch {}
-      try {
-        input.destroy?.();
-      } catch {}
-    };
 
-    const onData = (row) => {
-      if (resolved) return;
-      resolved = true;
-      cleanup();
-      const arr = Array.isArray(row) ? row : row?.data || [];
-      resolve(arr);
-    };
-
-    const onError = (err) => {
-      if (resolved) return;
-      resolved = true;
-      cleanup();
-      reject(err);
-    };
-
-    const onEnd = () => {
-      if (resolved) return;
-      resolved = true;
-      cleanup();
-      resolve([]); // arquivo vazio ou sem linha válida
-    };
-
-    parser.on("data", onData);
-    parser.on("error", onError);
-    parser.on("end", onEnd);
-
-    input.pipe(parser);
-  });
-}
