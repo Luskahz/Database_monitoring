@@ -1,83 +1,66 @@
 import { addAviso } from "../middleware/errorHandler.js";
-import {
-  getLoggerContext,
-  updateLoggerController,
-} from "../middleware/logger.js";
+import { getLoggerContext, updateLoggerController } from "../middleware/logger.js";
+
 /**
- *
- * @param {Array} list
- * @param {{
- *    nome_arquivo: string,
- *    ano: number,
- *    mes: string,
- *    tabela: string,
- *    data_json: object
- *    coluna_data: string,
- *    acao: string,
- *    colunas_tabela: object
- *    colunas_json: object
- *    datas_csv: Array<string>,
- *    caminho_original: string,
- * }} metadados
+ * @param {Array} list  // pode ser array de objetos (coluna_data) OU array de strings (YYYY-MM-DD)
+ * @param {object} metadados
  */
 export async function insertValidator(list, metadados) {
   const contexto = metadados.caminho_original;
-  if (list === null) {
-    return "cadastro";
-  } else {
-    const { coluna_data, datas_csv } = metadados;
-    if (!Array.isArray(datas_csv) || datas_csv.length === 0) {
-      addAviso(
-        "[Controller insersão] CSV sem dados válidos para coluna de data.",
-        contexto
-      );
-      await updateLoggerController(
-        getLoggerContext(metadados, {}, contexto),
-        contexto
-      );
-      return null;
-    }
-    try {
-      const datasBanco = extrairDatasValidas(
-        list,
-        coluna_data,
-        "Banco",
-        contexto
-      );
-      const conflito = datas_csv.some((data) => datasBanco.has(data));
 
-      if (conflito) {
+  // Sem coluna de data -> cadastro "cego"
+  if (list === null) return "cadastro";
+
+  const datasCsv = Array.isArray(metadados.datas_csv) ? metadados.datas_csv : [];
+  if (datasCsv.length === 0) {
+    addAviso("[Controller insersão] CSV sem dados válidos para coluna de data.", contexto);
+    void updateLoggerController(getLoggerContext(metadados, {}, contexto), contexto);
+    return null;
+  }
+
+  // CSV já vem normalizado (analyzeCsv): 'YYYY-MM-DD'
+  const setCsv = new Set(datasCsv);
+  const col = metadados.coluna_data;
+
+  // Caminho rápido: se list já veio como array de strings 'YYYY-MM-DD'
+  if (list.length && typeof list[0] === "string") {
+    for (let i = 0; i < list.length; i++) {
+      const d = list[i].length >= 10 ? list[i].slice(0, 10) : null;
+      if (d && setCsv.has(d)) {
         addAviso(
           "[Controller insersão] Conflito detectado: datas do CSV já existem na base. Os dados serão reprocessados.",
           contexto
         );
-        await updateLoggerController(metadados, contexto);
+        void updateLoggerController(metadados, contexto);
         return "substituir";
       }
-      return "inserir";
-    } catch (e) {
-      throw new Error(
-        `[Controller insersão] Erro ao validar datas para inserção, Erro: ${e.message}`
+    }
+    return "inserir";
+  }
+
+  // Caminho genérico: list é array de objetos com a coluna de data
+  for (let i = 0; i < list.length; i++) {
+    const raw = list[i]?.[col];
+    let d = null;
+
+    // Evita new Date() quando possível
+    if (raw instanceof Date) {
+      d = raw.toISOString().slice(0, 10);
+    } else if (typeof raw === "string") {
+      // espera 'YYYY-MM-DD...' vindo do banco; pega só o prefixo de 10
+      d = raw.length >= 10 ? raw.slice(0, 10) : null;
+    }
+
+    if (d && setCsv.has(d)) {
+      addAviso(
+        "[Controller insersão] Conflito detectado: datas do CSV já existem na base. Os dados serão reprocessados.",
+        contexto
       );
+      void updateLoggerController(metadados, contexto);
+      return "substituir";
     }
   }
+
+  return "inserir";
 }
 
-function extrairDatasValidas(array, coluna, csvOrDataBase = "CSV", contexto) {
-  return new Set(
-    array
-      .map((linha, i) => {
-        const raw = linha[coluna];
-        const date = new Date(raw);
-        if (isNaN(date)) {
-          addAviso(
-            `[Controller insersão] Linha ${i}: valor inválido em '${coluna}' → '${raw}'. Registro ignorado [${csvOrDataBase}].`,
-            contexto
-          );
-          return null;
-        }
-        return date.toISOString().split("T")[0];
-      })
-      .filter(Boolean)
-  );
-}

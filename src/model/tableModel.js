@@ -24,6 +24,22 @@ const meses = {
 };
 
 /* ========================= Helpers ========================= */
+// topo do arquivo (junto dos caches existentes)
+const insertPiecesCache = new Map(); // key: `${schema}.${tabela}` -> { colunasSql, updateClause, cols }
+
+// constroi e cacheia partes estáveis do INSERT p/ essa tabela
+function getInsertPieces(tabela, cols) {
+  const key = `${schema}.${tabela}`;
+  let cached = insertPiecesCache.get(key);
+  if (cached && cached.cols?.length === cols.length && cached.cols.every((c,i)=>c===cols[i])) {
+    return cached;
+  }
+  const colunasSql   = cols.map((col) => `\`${col}\``).join(", ");
+  const updateClause = cols.map((col) => `\`${col}\` = VALUES(\`${col}\`)`).join(", ");
+  cached = { colunasSql, updateClause, cols: [...cols] };
+  insertPiecesCache.set(key, cached);
+  return cached;
+}
 
 /** Converte "agosto"/"ago" em número do mês (1..12). */
 function monthToNumber(m) {
@@ -137,31 +153,18 @@ export async function getColumnsFromTable(tabela) {
  * Insere/Upserta 1 linha.
  */
 export async function insertRegisterinTable(tabela, linhaTipada, colunas) {
-  let cols = colunas;
-  if (!cols) {
-    try {
-      cols = await getColumnsFromTable(tabela);
-    } catch (e) {
-      throw new Error(
-        `[model coleta de tipagem para insert] erro ao coletar as colunas da tabela, erro: ${e.message}`
-      );
-    }
-  }
+  let cols = colunas || await getColumnsFromTable(tabela);
   if (!cols || cols.length === 0) {
-    throw new Error(
-      `[model coleta de tipagem para insert] Tabela '${tabela}' não possui colunas válidas.`
-    );
+    throw new Error(`[model coleta de tipagem para insert] Tabela '${tabela}' não possui colunas válidas.`);
   }
 
+  const { colunasSql, updateClause } = getInsertPieces(tabela, cols);
   const valores = cols.map((col) => linhaTipada[col] ?? null);
-  const colunasSql = cols.map((col) => `\`${col}\``).join(", ");
-  const placeholders = `(${cols.map(() => "?").join(",")})`;
-
-  const updateClause = cols.map((col) => `\`${col}\` = VALUES(\`${col}\`)`).join(", ");
+  const placeholdersRow = `(${cols.map(() => "?").join(",")})`;
 
   const sql = `
     INSERT INTO \`${schema}\`.\`${tabela}\` (${colunasSql})
-    VALUES ${placeholders}
+    VALUES ${placeholdersRow}
     ON DUPLICATE KEY UPDATE ${updateClause}
   `;
 
@@ -169,66 +172,74 @@ export async function insertRegisterinTable(tabela, linhaTipada, colunas) {
     const [result] = await db.query(sql, valores);
     return { result, linhaTipada };
   } catch (e) {
-    throw new Error(
-      `[model insert] erro ao realizar a query de insersão do registro, erro: ${e.message}`
-    );
+    throw new Error(`[model insert] erro ao realizar a query de inserção do registro, erro: ${e.message}`);
   }
 }
 
-/**
- * Retorna as datas do período (só a coluna de data), usando consulta sargável.
- */
-export async function listPeriodInTable(metadados) {
-  const { coluna_data, tabela, dia, mes, ano } = metadados;
-  if (!coluna_data) return null;
+export async function existsAnyCsvDateInTable(metadados, opts = {}) {
+  const { tabela, coluna_data, datas_csv } = metadados;
+  if (!tabela || !coluna_data) return null;
 
-  // Se não passou ano/mes, segue comportamento anterior (full table) — mas evite em produção.
-  if (!ano || !mes) {
-    try {
-      const [res] = await db.query(
-        `SELECT \`${coluna_data}\` FROM \`${schema}\`.\`${tabela}\``
-      );
-      return res || [];
-    } catch (error) {
-      throw new Error(
-        `[model periodo] Erro ao buscar período da tabela, erro: ${error.message}`
-      );
+  const uniq = new Set();
+  if (Array.isArray(datas_csv)) {
+    for (let i = 0; i < datas_csv.length; i++) {
+      const d = datas_csv[i];
+      if (d && typeof d === "string" && d.length >= 10) uniq.add(d.slice(0, 10));
     }
   }
+  const dates = Array.from(uniq);
+  if (dates.length === 0) return false;
 
-  const range = computeDateRange({ ano, mes, dia });
-  if (!range) {
-    throw new Error(`[model periodo] Mês/Dia/Ano inválido(s)`);
+  // 1) pré-cheque rápido por range (usa índice de data)
+  let min = dates[0], max = dates[0];
+  for (let i = 1; i < dates.length; i++) {
+    const d = dates[i];
+    if (d < min) min = d;
+    if (d > max) max = d;
   }
-  const [inicio, fim] = range;
+  // max exclusive (+1 dia)
+  const maxPlus1 = new Date(max);
+  maxPlus1.setUTCDate(maxPlus1.getUTCDate() + 1);
+  const maxEx = maxPlus1.toISOString().slice(0,10);
 
-  const sql = `
-    SELECT \`${coluna_data}\`
-    FROM \`${schema}\`.\`${tabela}\`
-    WHERE \`${coluna_data}\` >= ? AND \`${coluna_data}\` < ?
-  `;
-  try {
-    const [result] = await db.query(sql, [inicio, fim]);
-    return result || [];
-  } catch (error) {
-    throw new Error(
-      `[model periodo] Erro ao buscar período da tabela, erro: ${error.message}`
-    );
+  {
+    const sqlRange = `
+      SELECT 1
+      FROM \`${schema}\`.\`${tabela}\`
+      WHERE \`${coluna_data}\` >= ? AND \`${coluna_data}\` < ?
+      LIMIT 1
+    `;
+    const [r] = await db.query(sqlRange, [min, maxEx]);
+    if (r.length === 0) return false; // nada no intervalo => certeza de não haver interseção
   }
+
+  // 2) confirmação exata via IN chunked (mantém corretude)
+  const CHUNK = Number(opts.chunkSize) > 0 ? Number(opts.chunkSize) : 500;
+  for (let i = 0; i < dates.length; i += CHUNK) {
+    const part = dates.slice(i, i + CHUNK);
+    const placeholders = part.map(() => "?").join(",");
+    const sql = `
+      SELECT 1
+      FROM \`${schema}\`.\`${tabela}\`
+      WHERE \`${coluna_data}\` IN (${placeholders})
+      LIMIT 1
+    `;
+    const [rows] = await db.query(sql, part);
+    if (rows.length > 0) return true;
+  }
+  return false;
 }
 
-/**
- * Deleta por período usando range sargável; opcionalmente em chunks para reduzir lock.
- */
+
+
 export async function deleteFromTable(opcoes) {
-  const { tabela, tabela_destino, mes, ano, dia, coluna_data } = opcoes;
+  const { tabela, tabela_destino, mes, ano, dia, coluna_data, chunkSize } = opcoes;
   const nomeTabela = tabela || tabela_destino;
 
   if (!nomeTabela) {
     throw new Error("[model delete] Nome da tabela não foi informado.");
   }
 
-  // Sem coluna_data: mantém comportamento antigo (full delete) — cuidado!
   if (!coluna_data) {
     const sql = `DELETE FROM \`${schema}\`.\`${nomeTabela}\``;
     try {
@@ -246,14 +257,10 @@ export async function deleteFromTable(opcoes) {
     throw new Error(`[model delete] Mês/Ano inválidos para delete.`);
   }
   const [inicio, fim] = range;
-
-  // Delete sargável; se volume grande, apagar em chunks para reduzir locks longos.
-  const CHUNK = 50_000; // ajuste fino
+  const CHUNK = Number(chunkSize) > 0 ? Number(chunkSize) : 50_000;
   let totalAff = 0;
 
-  // Tenta chunked delete (ORDER BY coluna_data usa índice)
   try {
-    // Se o servidor não suportar DELETE ... ORDER BY ... LIMIT, caímos no full delete
     while (true) {
       const sql = `
         DELETE FROM \`${schema}\`.\`${nomeTabela}\`
@@ -268,7 +275,6 @@ export async function deleteFromTable(opcoes) {
     }
     return { affectedRows: totalAff };
   } catch {
-    // Fallback: um único DELETE sargável (pode segurar lock maior)
     try {
       const sql = `
         DELETE FROM \`${schema}\`.\`${nomeTabela}\`
@@ -283,6 +289,7 @@ export async function deleteFromTable(opcoes) {
     }
   }
 }
+
 
 export async function getTiposFromTable(tabela) {
   const key = `${schema}.${tabela}`;
@@ -323,46 +330,40 @@ export async function getTiposFromTable(tabela) {
  * Insere múltiplas linhas num único INSERT multi-VALUES, com ON DUPLICATE KEY UPDATE.
  * Mantém a assinatura/retorno. Usa placeholders explícitos (robusto e rápido).
  */
-export async function insertBatchInTable(tabela, linhasTipadas, colunas) {
+/**
+ * Insere múltiplas linhas num único INSERT multi-VALUES.
+ * @param {string} tabela
+ * @param {Array<object>} linhasTipadas
+ * @param {Array<string>} colunas
+ * @param {{ skipUpdateClause?: boolean }} opts  // <— NOVO (opcional)
+ */
+export async function insertBatchInTable(tabela, linhasTipadas, colunas, opts = {}) {
   if (!linhasTipadas || linhasTipadas.length === 0) {
     return { result: null, linhasTipadas: [] };
   }
 
-  let cols = colunas;
-  if (!cols) {
-    try {
-      cols = await getColumnsFromTable(tabela);
-    } catch (e) {
-      throw new Error(
-        `[model coleta de tipagem para insert] erro ao coletar as colunas da tabela, erro: ${e.message}`
-      );
-    }
-  }
+  let cols = colunas || await getColumnsFromTable(tabela);
   if (!cols || cols.length === 0) {
-    throw new Error(
-      `[model coleta de tipagem para insert] Tabela '${tabela}' não possui colunas válidas.`
-    );
+    throw new Error(`[model coleta de tipagem para insert] Tabela '${tabela}' não possui colunas válidas.`);
   }
 
-  const colunasSql = cols.map((col) => `\`${col}\``).join(", ");
-  const updateClause = cols.map((col) => `\`${col}\` = VALUES(\`${col}\`)`).join(", ");
-
-  // placeholders e valores achatados
+  const { colunasSql, updateClause } = getInsertPieces(tabela, cols);
   const { placeholders, flat } = buildMultiValuesPlaceholders(linhasTipadas, cols);
+
+  // quando o fluxo já deletou o período (cadastro/substituir), dá pra omitir o UPDATE:
+  const useUpdate = opts.skipUpdateClause ? false : true;
 
   const sql = `
     INSERT INTO \`${schema}\`.\`${tabela}\` (${colunasSql})
     VALUES ${placeholders}
-    ON DUPLICATE KEY UPDATE ${updateClause}
+    ${useUpdate ? `ON DUPLICATE KEY UPDATE ${updateClause}` : ``}
   `;
 
   try {
     const [result] = await db.query(sql, flat);
     return { result, linhasTipadas };
   } catch (e) {
-    throw new Error(
-      `[model insert batch] erro ao realizar a query de insersão do lote, erro: ${e.message}`
-    );
+    throw new Error(`[model insert batch] erro ao realizar a query de inserção do lote, erro: ${e.message}`);
   }
 }
 
@@ -422,8 +423,8 @@ export function expandTiposWithSchema(tipos, schemaMap) {
     if (!current) {
       out[col] = opts;
     } else if (typeof current === "string" && current === "decimal") {
-      out[col] = opts; // se você só disse "decimal", assume perfil inferido
-    } // se já veio objeto {type:"decimal",...}, mantém (override manual)
+      out[col] = opts; 
+    } 
   }
   return out;
 }

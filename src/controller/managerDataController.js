@@ -1,7 +1,6 @@
 import {
   insertRegisterinTable,
   insertBatchInTable,
-  listPeriodInTable,
   deleteFromTable,
 } from "../model/tableModel.js";
 import {
@@ -10,7 +9,6 @@ import {
   finalizarBarra,
 } from "../utils/progressBar.js";
 
-import { insertValidator } from "./insertValidator.js";
 import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
 import { updateLoggerController } from "../middleware/logger.js";
 import { streamCsvRows } from "../utils/csvStream.js";
@@ -23,6 +21,7 @@ import {
   loadDecimalProfilesFromSchema,
   expandTiposWithSchema,
 } from "../model/tableModel.js";
+import { existsAnyCsvDateInTable } from "../model/tableModel.js";
 
 export async function manageInsertController(metadados) {
   const contexto = metadados.caminho_original;
@@ -82,16 +81,20 @@ export async function manageInsertController(metadados) {
       return { erro: false, total: 0, inseridos: 0, falhas: 0, mensagem: "Arquivo vazio" };
     }
 
-    let listFromTable;
+    let validator;
     try {
-      listFromTable = await listPeriodInTable(metadados);
+      const overlap = await existsAnyCsvDateInTable(metadados); // true/false/null
+      if (overlap === null) {
+        // Sem coluna_data → segue sua regra original
+        validator = "cadastro";
+      } else {
+        validator = overlap ? "substituir" : "inserir";
+      }
     } catch (e) {
-      addErro(`Erro ao consultar o período no banco: ${e.message}`, contexto);
+      addErro(`Erro ao validar datas no banco: ${e.message}`, contexto);
       void updateLoggerController(metadados, contexto);
       throw e;
     }
-
-    const validator = await insertValidator(listFromTable, metadados);
 
     if (validator === "cadastro" || validator === "substituir") {
       try {
@@ -158,7 +161,7 @@ export async function manageInsertController(metadados) {
       atualizarBarra(barraId, 0, `Inserindo ${lote.length} registros no banco...`);
       if (!insertPhaseStarted) { setPhase("insert"); insertPhaseStarted = true; }
       try {
-        await insertBatchInTable(metadados.tabela, lote, cols);
+        await insertBatchInTable(metadados.tabela, lote, cols, { skipUpdateClause: true });
         inseridosAteAgora += lote.length;
         publishInsertStatus(`Inseridos: ${inseridosAteAgora}/${total}`);
       } catch (e) {
@@ -267,15 +270,16 @@ export async function manageInsertController(metadados) {
 
 export async function managerDeleterController(logData) {
   const contexto = logData.caminho_original;
+
   try {
-    await deleteFromTable(logData);
-    return { erro: false };
+    const res = await deleteFromTable(logData);
+    const removidos = res?.affectedRows ?? res?.affected_rows ?? 0;
+    addInfo( `[DELETE] Removidos ${removidos} registros de ${logData.tabela || logData.tabela_destino}.`, contexto );
+    void updateLoggerController(logData, contexto);
+    return { erro: false, removidos };
   } catch (e) {
-    addErro(
-      `Erro ao deletar período no banco pós exclusão do arquivo, erro: ${e.message}`,
-      contexto
-    );
-    await updateLoggerController(logData, contexto);
+    addErro( `Erro ao deletar período no banco pós exclusão do arquivo, erro: ${e.message}`, contexto);
+    void updateLoggerController(logData, contexto);
     return { erro: true, mensagem: e.message };
   }
 }
