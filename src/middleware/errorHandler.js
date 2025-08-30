@@ -1,20 +1,32 @@
-// errorHandler.js
 import { appendLine } from "./logger.js";
 
 const contextoDeMensagens = new Map();
 
+/* ─────────────────────────────── */
+/* Formatter único para timestamp  */
+/* ─────────────────────────────── */
+function formatNow() {
+  // local time com timezone fixo (BR)
+  return new Date().toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour12: false,               
+  });
+}
+
+/* ─────────────────────────────── */
+/* Função central de log           */
+/* ─────────────────────────────── */
 async function safeAppendToLog(contexto, tipo, msg) {
-  const now = new Date().toISOString();
-  // não propaga erro de IO do log
-  return appendLine(
-    contexto,
-    `[${now}] [${tipo.toUpperCase()}] ${msg}\n`
-  ).catch((e) => {
-    // último recurso: não derruba o fluxo por erro de log
+  const line = `[${formatNow()}] [${tipo.toUpperCase()}] [${contexto}] ${msg}\n`;
+
+  return appendLine(contexto, line).catch((e) => {
     console.error(`[Logger] Falha ao gravar log (${contexto}):`, e.message);
   });
 }
 
+/* ─────────────────────────────── */
+/* Controle de contexto em memória */
+/* ─────────────────────────────── */
 function ensureContext(contexto) {
   if (!contextoDeMensagens.has(contexto)) {
     contextoDeMensagens.set(contexto, { erros: [], infos: [], avisos: [] });
@@ -25,7 +37,6 @@ function ensureContext(contexto) {
 export function addErro(msg, contexto = "__global") {
   const bag = ensureContext(contexto);
   bag.erros.push(msg);
-  // não await: logging não bloqueia fluxo
   void safeAppendToLog(contexto, "erro", msg);
 }
 
@@ -41,15 +52,19 @@ export function addAviso(msg, contexto = "__global") {
   void safeAppendToLog(contexto, "aviso", msg);
 }
 
-// utilitários (se você ainda usa em algum lugar)
+/* ─────────────────────────────── */
+/* Utilitários                     */
+/* ─────────────────────────────── */
 export function getAllErrors(contexto = "__global") {
   return (
     contextoDeMensagens.get(contexto) || { erros: [], infos: [], avisos: [] }
   );
 }
+
 export function clearAllErrors(contexto = "__global") {
   contextoDeMensagens.set(contexto, { erros: [], infos: [], avisos: [] });
 }
+
 export function clearAllContexts() {
   contextoDeMensagens.clear();
 }

@@ -62,7 +62,7 @@ function hashBytes(readable) {
 
 export async function analyzeCsv(filePath, tabelaName) {
   const contexto = filePath;
-
+  addInfo(`[Analyze] Iniciando análise do arquivo ${filePath}`, contexto);
 
   const [tiposEsperados, colunasTabela, colunaDataEsperada, encRes] =
     await Promise.all([
@@ -71,84 +71,45 @@ export async function analyzeCsv(filePath, tabelaName) {
       getDateColumnsFromTable(tabelaName),
       detectEncoding(filePath, { headBytes: 64 * 1024, fallback: "latin1" }),
     ]);
-  const encoding = encRes.encoding;
+  addInfo(`[Analyze] Encoding detectado: ${encRes.encoding}`, contexto);
 
-  const delimiter = await detectDelimiter(filePath, encoding, {
+  const delimiter = await detectDelimiter(filePath, encRes.encoding, {
     minHeadBytes: 64 * 1024,
     maxHeadBytes: 1024 * 1024,
     head: encRes.head,
   });
+  addInfo(`[Analyze] Delimitador detectado: "${delimiter}"`, contexto);
 
-
-  const rawHeaders = await readCsvHeader(filePath, encoding, delimiter, {
+  const rawHeaders = await readCsvHeader(filePath, encRes.encoding, delimiter, {
     highWaterMark: 64 * 1024,
     fastMode: true
   });
+  addInfo(`[Analyze] Cabeçalhos lidos (${rawHeaders.length} colunas)`, contexto);
+
   const { headers: headersNorm, duplicates } = normalizeHeadersOnce(rawHeaders);
   if (duplicates.size) {
-    addAviso(
-      `[CSV] Cabeçalhos duplicados renomeados: ${[...duplicates].join(", ")}`,
-      contexto
-    );
+    addAviso(`[CSV] Cabeçalhos duplicados renomeados: ${[...duplicates].join(", ")}`, contexto);
   }
 
+  // … resto da lógica …
 
-  const headersLen = headersNorm.length;
-  const idxData = colunaDataEsperada ? headersNorm.indexOf(colunaDataEsperada) : -1;
-  const tipoBruto = idxData >= 0 ? tiposEsperados[colunaDataEsperada] : undefined;
-  const tipoData =
-    tipoBruto === "date" || tipoBruto === "datetime" ? tipoBruto : "date";
-  const datePrefixRe = /^\d{4}-\d{2}-\d{2}/;
-
-
-  const { forHash, forParse } = createFileTee(filePath, { highWaterMark: 1024 * 1024 });
-  const pHash = hashBytes(forHash); // começa já
-
-  const input =
-    encoding === "latin1"
-      ? forParse.pipe(iconv.decodeStream("latin1"))
-      : (forParse.setEncoding("utf8"), forParse);
-
-  const parser = Papa.parse(Papa.NODE_STREAM_INPUT, {
-    header: false,
-    delimiter,
-    skipEmptyLines: "greedy",
-    dynamicTyping: false,
-    bom: true,
-  });
-  const stream = input.pipe(parser);
-
-  const datasCsv = new Set();
   let totalLinhas = 0;
-
-
   let isFirstRow = true;
   for await (const rowArray of stream) {
-    const rowArr = Array.isArray(rowArray) ? rowArray : rowArray?.data || [];
     if (isFirstRow) { isFirstRow = false; continue; }
+    totalLinhas++;
 
-    if (idxData >= 0) {
-  const rawVal = rowArr[idxData];
-  if (rawVal != null && rawVal !== "") {
-    if (typeof rawVal === "string" && datePrefixRe.test(rawVal)) {
-      datasCsv.add(rawVal.slice(0, 10));
-    } else {
-      const valorData = sanitizeValue(rawVal, tipoData);
-      if (typeof valorData === "string" && datePrefixRe.test(valorData)) {
-        datasCsv.add(valorData.slice(0, 10));
-      }
+    if (totalLinhas % 10000 === 0) {
+      addInfo(`[Analyze] ${totalLinhas} linhas processadas até agora...`, contexto);
     }
   }
-}
-    totalLinhas++;
-  }
 
-  const hashHex = await pHash; 
-  addInfo(`[Analyze] - ${totalLinhas} linhas válidas extraídas de ${filePath}`, contexto);
+  const hashHex = await pHash;
+  addInfo(`[Analyze] Finalizado: ${totalLinhas} linhas válidas, hash ${hashHex}`, contexto);
 
   return {
-    hash: hashHex,                 // agora é SHA-256 dos BYTES do arquivo
-    encoding,
+    hash: hashHex,
+    encoding: encRes.encoding,
     delimiter,
     colunas_json: headersNorm,
     tipos_esperados: tiposEsperados,

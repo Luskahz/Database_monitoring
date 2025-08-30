@@ -108,12 +108,12 @@ export async function createLoggerController(filePath) {
   }
 
   const logPath = path.join(logDir, `Logger_${name}.txt`);
-  const stamp = dtfBR.format(new Date()); // mesmo efeito do toLocaleString('pt-BR')
+  const stamp = dtfBR.format(new Date()); 
 
-  await fs.appendFile(logPath, `\n==== BEGIN ${stamp} ====\n`, "utf8");
+  // agora é overwrite em vez de append
+  await fs.writeFile(logPath, `==== BEGIN ${stamp} ====\n`, "utf8");
 
   registerLogFile(filePath, logPath);
-  // zera o dedupe para este contexto ao iniciar novo BEGIN
   lastSnapshotHash.delete(filePath);
 }
 

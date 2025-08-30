@@ -2,6 +2,7 @@ import fs from "fs/promises";
 import { createReadStream } from "fs";
 import chardet from "chardet";
 import iconv from "iconv-lite";
+import { addInfo, addAviso } from "../middleware/errorHandler.js"; // <-- já usa no resto
 
 async function readHead(filePath, bytes) {
   const fh = await fs.open(filePath, "r");
@@ -15,68 +16,75 @@ async function readHead(filePath, bytes) {
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
-/* 1) DETECTAR ENCODING (lendo apenas um pedaço do início)                    */
+/* 1) DETECTAR ENCODING                                                       */
 /* ────────────────────────────────────────────────────────────────────────── */
 export async function detectEncoding(
   filePath,
   { headBytes = 64 * 1024, fallback = "latin1" } = {}
 ) {
+  addInfo(`[Analyze] Detectando encoding...`, filePath);
+
   const head = await readHead(filePath, headBytes).catch(() => null);
   const guess = head ? chardet.detect(head) : null;
   const s = (guess || "").toUpperCase();
 
-  if (s.includes("UTF-8")) return { encoding: "utf8", head };
-  if (
+  let encoding;
+  if (s.includes("UTF-8")) encoding = "utf8";
+  else if (
     s.includes("ISO-8859") ||
     s.includes("WINDOWS-1252") ||
     s.includes("CP1252") ||
     s.includes("WIN-1252")
-  ) {
-    return { encoding: "latin1", head };
+  ) encoding = "latin1";
+  else encoding = fallback;
+
+  if (!guess) {
+    addAviso(`[Analyze] Encoding não detectado, aplicando fallback: ${encoding}`, filePath);
+  } else {
+    addInfo(`[Analyze] Encoding detectado: ${encoding} (chardet="${s}")`, filePath);
   }
-  
-  return { encoding: fallback, head };
+
+  return { encoding, head };
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
-/* 2) CRIAR STREAM DECODIFICADO COM highWaterMark AJUSTÁVEL                   */
+/* 2) CRIAR STREAM DECODIFICADO                                               */
 /* ────────────────────────────────────────────────────────────────────────── */
 export async function createDecodedStream(
   filePath,
-  encoding /* 'utf8' | 'latin1' */,
-  { highWaterMark = 1024 * 1024, start, end } = {} 
+  encoding,
+  { highWaterMark = 1024 * 1024, start, end } = {}
 ) {
-  const rs = createReadStream(filePath, {
-    highWaterMark,
-    start,               
-    end,                 
-  });
+  addInfo(`[Analyze] Criando stream decodificado (${encoding})`, filePath);
+
+  const rs = createReadStream(filePath, { highWaterMark, start, end });
 
   if (encoding === "latin1") {
-  
-    return rs.pipe(iconv.decodeStream("latin1")); 
+    return rs.pipe(iconv.decodeStream("latin1"));
   }
   rs.setEncoding("utf8");
   return rs;
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
-/* 3) DETECTAR DELIMITADOR (robusto p/ headers longos, 80 colunas)            */
+/* 3) DETECTAR DELIMITADOR                                                    */
 /* ────────────────────────────────────────────────────────────────────────── */
 export async function detectDelimiter(
   filePath,
-  encoding /* 'utf8' | 'latin1' */,
+  encoding,
   {
-    minHeadBytes = 64 * 1024,   
-    maxHeadBytes = 1024 * 1024, 
+    minHeadBytes = 64 * 1024,
+    maxHeadBytes = 1024 * 1024,
     head: preHead,
   } = {}
 ) {
+  addInfo(`[Analyze] Detectando delimitador...`, filePath);
+
   let head = preHead ?? (await readHead(filePath, minHeadBytes));
   let text =
     encoding === "latin1" ? iconv.decode(head, "latin1") : head.toString("utf8");
 
-  const hasNewline = text.indexOf("\n") !== -1 || text.indexOf("\r") !== -1;
+  const hasNewline = text.includes("\n") || text.includes("\r");
   if (!hasNewline && head.length < maxHeadBytes) {
     const bigger = Math.min(head.length * 4, maxHeadBytes);
     head = await readHead(filePath, bigger);
@@ -87,24 +95,20 @@ export async function detectDelimiter(
   }
 
   let firstLine = "";
-  const lines = text.split(/\r?\n/);
-  for (let i = 0; i < lines.length; i++) {
-    const l = lines[i].trim();
-    if (l) { firstLine = l; break; }
+  for (const l of text.split(/\r?\n/)) {
+    if (l.trim()) { firstLine = l.trim(); break; }
   }
 
   const candidates = [";", ",", "\t", "|"];
   let bestDelim = ";";
   let bestCount = -1;
 
-  for (let k = 0; k < candidates.length; k++) {
-    const d = candidates[k];
-    let cnt = 0;
-    for (let i = 0; i < firstLine.length; i++) {
-      if (firstLine[i] === d) cnt++;
-    }
+  for (const d of candidates) {
+    const cnt = firstLine.split(d).length - 1;
     if (cnt > bestCount) { bestCount = cnt; bestDelim = d; }
   }
+
+  addInfo(`[Analyze] Delimitador detectado: "${bestDelim}" (colunas: ${bestCount + 1})`, filePath);
 
   return bestDelim;
 }
