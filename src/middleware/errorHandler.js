@@ -1,23 +1,14 @@
-import { appendLine } from "./logger.js";
+import { appendLine, fmtTimeNow } from "./logger.js";
 
 const contextoDeMensagens = new Map();
-
-/* ─────────────────────────────── */
-/* Formatter único para timestamp  */
-/* ─────────────────────────────── */
-function formatNow() {
-  // local time com timezone fixo (BR)
-  return new Date().toLocaleString("pt-BR", {
-    timeZone: "America/Sao_Paulo",
-    hour12: false,               
-  });
-}
 
 /* ─────────────────────────────── */
 /* Função central de log           */
 /* ─────────────────────────────── */
 async function safeAppendToLog(contexto, tipo, msg) {
-  const line = `[${formatNow()}] [${tipo.toUpperCase()}] [${contexto}] ${msg}\n`;
+  const t = fmtTimeNow();
+  
+  const line = `[${t}][${tipo.toUpperCase()}][${contexto}] ${msg}\n`;
 
   return appendLine(contexto, line).catch((e) => {
     console.error(`[Logger] Falha ao gravar log (${contexto}):`, e.message);
@@ -60,11 +51,9 @@ export function getAllErrors(contexto = "__global") {
     contextoDeMensagens.get(contexto) || { erros: [], infos: [], avisos: [] }
   );
 }
-
 export function clearAllErrors(contexto = "__global") {
   contextoDeMensagens.set(contexto, { erros: [], infos: [], avisos: [] });
 }
-
 export function clearAllContexts() {
   contextoDeMensagens.clear();
 }
