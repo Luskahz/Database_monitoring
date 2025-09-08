@@ -1,15 +1,19 @@
 // monitoring/monitoring.js
 import chokidar from "chokidar";
 import pLimit from "p-limit";
-import path from "path";
-import { dirname } from "path";
+import path, { dirname } from "path";
 import { fileURLToPath } from "url";
-import isCsvFile from "./utils/isCsvFile.js";
+
 import createdHandler from "./controller/Handlers/createdHandler.js";
 import deletedHandler from "./controller/Handlers/deletedHandler.js";
 import { addErro } from "./middleware/errorHandler.js";
+import isCsvFile from "./utils/isCsvFile.js";
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Limita concorrência global e serializa eventos por arquivo
 const limit = pLimit(50);
+const filaPorArquivo = new Map();
 
 export async function startMonitoring() {
   const monitorPath = path.resolve(
@@ -23,10 +27,6 @@ export async function startMonitoring() {
     usePolling: true,
     interval: 500,
     depth: 10,
-    awaitWriteFinish: {
-      stabilityThreshold: 10000,
-      pollInterval: 500,
-    },
     ignored: /[\\\/]database_monitoring[\\\/]/,
     awaitWriteFinish: {
       stabilityThreshold: 300,
@@ -34,36 +34,38 @@ export async function startMonitoring() {
     },
   });
 
+  function enfileirar(filePath, acao, handler) {
+    if (!isCsvFile(filePath)) return;
+
+    const prev = filaPorArquivo.get(filePath) || Promise.resolve();
+    const exec = prev
+      .catch(() => {})
+      .then(() =>
+        limit(() => handler(filePath, acao)).catch((e) => {
+          console.log(
+            `[monitoramento] Erro ao processar arquivo cujo path é: ${filePath}, erro: ${e.message}`
+          );
+        })
+      )
+      .finally(() => {
+        if (filaPorArquivo.get(filePath) === exec) filaPorArquivo.delete(filePath);
+      });
+
+    filaPorArquivo.set(filePath, exec);
+  }
+
   watcher
-    .on("add", async (filePath) => {
-      if (isCsvFile(filePath)) {
-        console.log(`🟢 Arquivo adicionado: ${filePath}`);
-        limit(() => createdHandler(filePath, "created")).catch((e) => {
-          console.log(
-            `[monitoramento] Erro ao inserir arquivo cujo path é: ${filePath}, erro: ${e.message}`
-          );
-        });
-      }
+    .on("add", (filePath) => {
+      console.log(`🟢 Arquivo adicionado: ${filePath}`);
+      enfileirar(filePath, "created", createdHandler);
     })
-    .on("change", async (filePath) => {
-      if (isCsvFile(filePath)) {
-        console.log(`🟡 Arquivo modificado: ${filePath}`);
-        limit(() => createdHandler(filePath, "modified")).catch((e) => {
-          console.log(
-            `[monitoramento] Erro ao modificar arquivo cujo path é: ${filePath}, erro: ${e.message}`
-          );
-        });
-      }
+    .on("change", (filePath) => {
+      console.log(`🟡 Arquivo modificado: ${filePath}`);
+      enfileirar(filePath, "modified", createdHandler);
     })
-    .on("unlink", async (filePath) => {
-      if (isCsvFile(filePath)) {
-        console.log(`🔴 Arquivo removido: ${filePath}`);
-        limit(() => deletedHandler(filePath, "deleted")).catch((e) => {
-          console.log(
-            `[monitoramento] Erro ao apagar arquivo cujo path é: ${filePath}, erro: ${e.message}`
-          );
-        });
-      }
+    .on("unlink", (filePath) => {
+      console.log(`🔴 Arquivo removido: ${filePath}`);
+      enfileirar(filePath, "deleted", deletedHandler);
     })
     .on("error", (error) => {
       console.error(`❌ Erro no monitoramento: ${error}`);
