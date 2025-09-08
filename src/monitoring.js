@@ -27,7 +27,15 @@ export async function startMonitoring() {
     usePolling: true,
     interval: 500,
     depth: 10,
-    ignored: /[\\\/]database_monitoring[\\\/]/,
+    ignored: (fp) => {
+      const lower = fp.toLowerCase();
+      return (
+        lower.includes("database_monitoring") ||
+        lower.includes("\\loggers\\") ||
+        lower.includes("/loggers/") ||
+        lower.endsWith(".txt")
+      );
+    },
     awaitWriteFinish: {
       stabilityThreshold: 300,
       pollInterval: 100,
@@ -56,14 +64,17 @@ export async function startMonitoring() {
 
   watcher
     .on("add", (filePath) => {
+      if (!isCsvFile(filePath)) return;
       console.log(`🟢 Arquivo adicionado: ${filePath}`);
       enfileirar(filePath, "created", createdHandler);
     })
     .on("change", (filePath) => {
+      if (!isCsvFile(filePath)) return;
       console.log(`🟡 Arquivo modificado: ${filePath}`);
       enfileirar(filePath, "modified", createdHandler);
     })
     .on("unlink", (filePath) => {
+      if (!isCsvFile(filePath)) return;
       console.log(`🔴 Arquivo removido: ${filePath}`);
       enfileirar(filePath, "deleted", deletedHandler);
     })

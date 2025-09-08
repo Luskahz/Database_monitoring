@@ -20,25 +20,38 @@ async function safeAppendToLog(contexto, tipo, msg) {
 /* ─────────────────────────────── */
 function ensureContext(contexto) {
   if (!contextoDeMensagens.has(contexto)) {
-    contextoDeMensagens.set(contexto, { erros: [], infos: [], avisos: [] });
+    contextoDeMensagens.set(contexto, {
+      erros: [],
+      infos: [],
+      avisos: [],
+      lastErro: null,
+      lastInfo: null,
+      lastAviso: null,
+    });
   }
   return contextoDeMensagens.get(contexto);
 }
 
 export function addErro(msg, contexto = "__global") {
   const bag = ensureContext(contexto);
+  if (bag.lastErro === msg) return;
+  bag.lastErro = msg;
   bag.erros.push(msg);
   void safeAppendToLog(contexto, "erro", msg);
 }
 
 export function addInfo(msg, contexto = "__global") {
   const bag = ensureContext(contexto);
+  if (bag.lastInfo === msg) return;
+  bag.lastInfo = msg;
   bag.infos.push(msg);
   void safeAppendToLog(contexto, "info", msg);
 }
 
 export function addAviso(msg, contexto = "__global") {
   const bag = ensureContext(contexto);
+  if (bag.lastAviso === msg) return;
+  bag.lastAviso = msg;
   bag.avisos.push(msg);
   void safeAppendToLog(contexto, "aviso", msg);
 }
@@ -47,12 +60,27 @@ export function addAviso(msg, contexto = "__global") {
 /* Utilitários                     */
 /* ─────────────────────────────── */
 export function getAllErrors(contexto = "__global") {
-  return (
-    contextoDeMensagens.get(contexto) || { erros: [], infos: [], avisos: [] }
-  );
+  const bag =
+    contextoDeMensagens.get(contexto) ||
+    {
+      erros: [],
+      infos: [],
+      avisos: [],
+      lastErro: null,
+      lastInfo: null,
+      lastAviso: null,
+    };
+  return { erros: bag.erros, infos: bag.infos, avisos: bag.avisos };
 }
 export function clearAllErrors(contexto = "__global") {
-  contextoDeMensagens.set(contexto, { erros: [], infos: [], avisos: [] });
+  contextoDeMensagens.set(contexto, {
+    erros: [],
+    infos: [],
+    avisos: [],
+    lastErro: null,
+    lastInfo: null,
+    lastAviso: null,
+  });
 }
 export function clearAllContexts() {
   contextoDeMensagens.clear();
