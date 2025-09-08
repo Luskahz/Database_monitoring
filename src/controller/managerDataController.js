@@ -48,15 +48,26 @@ export async function manageInsertController(metadados) {
 
   try {
     // -------- Fase 1: preparação --------
-    publish(0.1, "Detectando encoding...");
-    let { encoding } = metadados;
-    if (!encoding) encoding = (await detectEncoding(contexto)).encoding;
+    let { encoding, delimiter } = metadados;
 
-    publish(0.4, `Encoding: ${encoding} | Detectando delimitador...`);
-    let { delimiter } = metadados;
-    if (!delimiter) delimiter = await detectDelimiter(contexto, encoding);
+    publish(0.1, encoding ? `Encoding: ${encoding}` : "Detectando encoding...");
+    if (!encoding) {
+      ({ encoding } = await detectEncoding(contexto));
+    }
+
+    publish(
+      0.4,
+      delimiter
+        ? `Encoding: ${encoding} | Delimitador: ${delimiter}`
+        : `Encoding: ${encoding} | Detectando delimitador...`,
+    );
+    if (!delimiter) {
+      delimiter = await detectDelimiter(contexto, encoding);
+    }
 
     publish(0.8, `Delimitador: ${delimiter}`);
+    metadados.encoding = encoding;
+    metadados.delimiter = delimiter;
     const headersNorm = metadados.colunas_json;
 
     // Tipos esperados (schema + overrides)
