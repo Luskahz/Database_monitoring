@@ -22,12 +22,23 @@ export default async function deletedHandler(filePath, acao) {
   try {
     const destino = destinoByFilePath(filePath);
     try {
-      logData = await getLogWithFilePath(filePath);
-      if (!logData) { addErro( `Nenhum registro de log encontrado para ${filePath} logica de exclusão travada`, filePath ); return; }
+      const fromDb = await getLogWithFilePath(filePath);
+      if (!fromDb) {
+        addErro(
+          `Nenhum registro de log encontrado para ${filePath} logica de exclusão travada`,
+          filePath
+        );
+        return;
+      }
+      // Mescla informações extraídas do caminho com o log salvo no banco
+      logData = { ...destino, ...fromDb };
     } catch (e) {
-      addErro( `Erro ao extrair o logdata do banco, verifique o banco`, filePath );
+      addErro(
+        `Erro ao extrair o logdata do banco, verifique o banco`,
+        filePath
+      );
     } finally {
-      await updateLoggerController( getLoggerContext({}, logData, filePath), filePath );
+      await updateLoggerController(getLoggerContext({}, logData, filePath), filePath);
     }
     if (acao) {
       logData.acao = acao;
