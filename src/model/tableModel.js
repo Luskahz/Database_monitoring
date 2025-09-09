@@ -72,6 +72,26 @@ function computeDateRange({ ano, mes, dia }) {
   return [i, f];
 }
 
+export async function existsAnyDataInRange(metadados) {
+  const { tabela, coluna_data, ano, mes, dia } = metadados;
+  if (!tabela || !coluna_data) return null;
+  const range = computeDateRange({ ano, mes, dia });
+  if (!range) return null;
+  const [inicio, fim] = range;
+  const sql = `
+      SELECT 1
+      FROM \`${schema}\`.\`${tabela}\`
+      WHERE \`${coluna_data}\` >= ? AND \`${coluna_data}\` < ?
+      LIMIT 1
+    `;
+  try {
+    const [rows] = await db.query(sql, [inicio, fim]);
+    return rows.length > 0;
+  } catch (e) {
+    throw new Error(`[model exists range] Erro ao consultar range de datas: ${e.message}`);
+  }
+}
+
 /** Gera "(?, ?, ...)" repetido N vezes e o array achatado de valores. */
 function buildMultiValuesPlaceholders(rows, cols) {
   const perRow = `(${cols.map(() => "?").join(",")})`;

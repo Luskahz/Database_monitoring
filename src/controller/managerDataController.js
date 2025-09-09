@@ -1,4 +1,4 @@
-import { deleteFromTable } from "../model/tableModel.js";
+import { deleteFromTable, existsAnyDataInRange, existsAnyCsvDateInTable } from "../model/tableModel.js";
 import {
   iniciarBarra,
   atualizarBarra,
@@ -16,7 +16,7 @@ import {
   loadDecimalProfilesFromSchema,
   expandTiposWithSchema,
 } from "../model/tableModel.js";
-import { existsAnyCsvDateInTable } from "../model/tableModel.js";
+import { PIPELINE_FAST_PATH } from "../utils/config.js";
 
 export async function manageInsertController(metadados) {
   const contexto = metadados.caminho_original;
@@ -79,17 +79,12 @@ export async function manageInsertController(metadados) {
 
     // -------- Valida dados e ação --------
     const total = metadados.total_linhas || 0;
-    if (total === 0) {
-      addAviso("Nenhuma linha disponível para inserção.", contexto);
-      publish(1.0, "Nada a fazer");
-      setPhase("insert");
-      publish(1.0, "Sem inserções necessárias");
-      return { erro: false, total: 0, inseridos: 0, falhas: 0, mensagem: "Arquivo vazio" };
-    }
 
     let validator;
     try {
-      const overlap = await existsAnyCsvDateInTable(metadados); // true/false/null
+      const overlap = PIPELINE_FAST_PATH
+        ? await existsAnyDataInRange(metadados)
+        : await existsAnyCsvDateInTable(metadados); // true/false/null
       if (overlap === null) {
         // Sem coluna_data → segue sua regra original
         validator = "cadastro";
@@ -124,8 +119,8 @@ export async function manageInsertController(metadados) {
 
     try {
       const resultado = await streamPipeline(metadados, tiposFinal, {
-        publishRead: (lidas) => publish(lidas / total, "Montando lote..."),
-        publishInsert: (inseridos) => publish(inseridos / total, `Inseridos: ${inseridos}/${total}`),
+        publishRead: (lidas) => publish(total ? lidas / total : 0, "Montando lote..."),
+        publishInsert: (inseridos) => publish(total ? inseridos / total : 0, `Inseridos: ${inseridos}/${total}`),
         onInsertStart: () => setPhase("insert"),
         onFlush: () => atualizarBarra(barraId, 0, "Enviando lote..."),
       });

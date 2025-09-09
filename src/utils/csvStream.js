@@ -27,7 +27,7 @@ function rate(lins, msElapsed){
 }
 
 /* ────────────────────────── tee p/ hash e parse ───────────────────────── */
-function createFileTee(filePath, { highWaterMark = 1024 * 1024 } = {}) {
+export function createFileTee(filePath, { highWaterMark = 1024 * 1024 } = {}) {
   const src = createReadStream(filePath, { highWaterMark }); // bytes
   const a = new PassThrough({ highWaterMark });
   const b = new PassThrough({ highWaterMark });

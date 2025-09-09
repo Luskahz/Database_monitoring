@@ -1,11 +1,35 @@
 import { addErro, addInfo } from "../middleware/errorHandler.js";
-import { updateLoggerController } from "../middleware/logger.js";
 import { getLogByData, getAllHashesFromTable } from "../model/logModel.js";
+import { existsAnyDataInRange } from "../model/tableModel.js";
+import { PIPELINE_FAST_PATH } from "../utils/config.js";
 
 export default async function fluxoValidatorController(metadados, logData) {
   const contexto = metadados.caminho_original;
   const nome = metadados.nome_arquivo;
   const tabela = metadados.tabela;
+
+  if (PIPELINE_FAST_PATH) {
+    try {
+      const overlap = await existsAnyDataInRange(metadados);
+      if (overlap) {
+        addInfo(
+          `[ARQUIVO MODIFICADO] [${nome}] já existia, mas foi alterado. Reprocessando.`,
+          contexto
+        );
+        console.log(
+          `[🟡 MODIFICADO] [${nome}] sera inserido na tabela [${tabela}]`
+        );
+        return "reprocessar";
+      }
+    } catch (e) {
+      addErro(`Erro ao verificar dados existentes: ${e.message}`, contexto);
+    }
+
+    addInfo(`[NOVO ARQUIVO] [${nome}] será processado.`, contexto);
+    console.log(`[🟢 NOVO] [${nome}] sera inserido na tabela [${tabela}]`);
+    return "inserir";
+  }
+
   const hash = logData?.hash_arquivo;
 
   if (!hash) {
@@ -22,7 +46,7 @@ export default async function fluxoValidatorController(metadados, logData) {
         .then((rows) => {
           if (!rows || rows.length === 0) return false;
           for (let i = 0; i < rows.length; i++) {
-            if (rows[i] && rows[i].hash_arquivo === hash) return true; 
+            if (rows[i] && rows[i].hash_arquivo === hash) return true;
           }
           return false;
         })
@@ -33,7 +57,6 @@ export default async function fluxoValidatorController(metadados, logData) {
     : Promise.resolve(false);
 
   const [logs, hashJaExiste] = await Promise.all([pLogs, pHashExiste]);
-
 
   if (hashJaExiste) {
     addInfo(
