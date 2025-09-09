@@ -11,12 +11,37 @@ const lastSnapshotHash = new Map(); // dedupe STATUS
 const ensuredLogDirs = new Set();
 
 // Metadados do contexto para output compacto
-// ctx -> { fullPath, shortTag, tabela?, createdAt }
+// key(ctx) -> { fullPath, shortTag, tabela?, createdAt }
 const ctxMeta = new Map();
+
+// Dedupe do bloco de HEADERS por contexto
+const lastHeadersSig = new Map();
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /* Helpers                                                                    */
 /* ────────────────────────────────────────────────────────────────────────── */
+
+// Normaliza um caminho de FS preservando prefixo UNC (\\servidor\share)
+function normalizeFsPath(p) {
+  if (!p) return "";
+  let s = String(p);
+  const isUNC = s.startsWith("\\\\") || s.startsWith("//");
+  s = s.replace(/^[\\/]+/, "");      // tira barras do começo
+  s = s.replace(/[\\/]+/g, "\\");    // colapsa para "\"
+  return (isUNC ? "\\\\" : "") + s;
+}
+
+// Extrai o contexto bruto (prioriza string passada; senão, dos dados logger)
+function rawContext(contexto, dadosLogger) {
+  if (typeof contexto === "string" && contexto) return contexto;
+  return dadosLogger?.caminho_original || dadosLogger?.filePath || "__global";
+}
+
+// Chave estável para Maps internos: caminho normalizado + lower-case
+function ctxKey(contexto, dadosLogger) {
+  const base = rawContext(contexto, dadosLogger);
+  return normalizeFsPath(base).toLowerCase();
+}
 
 // Ex.: \\...\\cadastros\\01_11\\2025\\setembro.csv -> \01_11\2025\setembro.csv
 function makeShortTag(filePath, tail = 3) {
@@ -65,31 +90,34 @@ function shrinkMessage(msg, meta) {
 /* API pública                                                                */
 /* ────────────────────────────────────────────────────────────────────────── */
 export function registerLogFile(contexto, logPath) {
-  logPathsByContext.set(contexto, logPath);
+  const key = ctxKey(contexto);
+  logPathsByContext.set(key, logPath);
 }
 export function getLogFile(contexto) {
-  return logPathsByContext.get(contexto);
+  const key = ctxKey(contexto);
+  return logPathsByContext.get(key);
 }
 
 export async function appendLine(contexto, line) {
-  const logFile = getLogFile(contexto);
+  const key = ctxKey(contexto);
+  const logFile = logPathsByContext.get(key);
   if (!logFile) return;
 
-  const meta = ctxMeta.get(contexto);
+  const meta = ctxMeta.get(key);
   const out = meta ? shrinkMessage(line, meta) : line;
 
-  const prev = writeQueues.get(contexto) || Promise.resolve();
+  const prev = writeQueues.get(key) || Promise.resolve();
   const next = prev
     .then(() => fs.appendFile(logFile, out, "utf8"))
     .catch(() => {
       /* não propaga erro de IO do log */
     });
 
-  writeQueues.set(contexto, next);
+  writeQueues.set(key, next);
   try {
     await next;
   } finally {
-    if (writeQueues.get(contexto) === next) writeQueues.delete(contexto);
+    if (writeQueues.get(key) === next) writeQueues.delete(key);
   }
 }
 
@@ -97,26 +125,29 @@ export async function appendLine(contexto, line) {
  * STATUS UPDATE compacto (1 linha) com dedupe por snapshot.
  */
 export async function updateLoggerController(dadosLogger, contexto) {
-  const ctx =
-    typeof contexto === "string"
-      ? contexto
-      : dadosLogger?.caminho_original || dadosLogger?.filePath || "__global";
+  const key = ctxKey(contexto, dadosLogger);
+  const meta = ctxMeta.get(key) || {};
 
-  const meta = ctxMeta.get(ctx) || {};
+  // Coerção de tipos para snapshot estável (evita "2025" vs 2025)
   const nome =
     (dadosLogger?.nome_arquivo ?? path.parse(meta.fullPath || "").base) || "—";
   const tabela =
     dadosLogger?.tabela ?? dadosLogger?.tabela_destino ?? meta.tabela ?? "—";
-  const ano = dadosLogger?.ano ?? "—";
-  const mes = dadosLogger?.mes ?? "—";
-  const dia = dadosLogger?.dia ?? "—";
-  const acao = dadosLogger?.acao ?? "—";
-  const hash = dadosLogger?.hash ?? dadosLogger?.hash_arquivo ?? "—";
+  const ano = dadosLogger?.ano != null ? String(dadosLogger.ano) : "—";
+  const mes = dadosLogger?.mes != null ? String(dadosLogger.mes) : "—";
+  const dia = dadosLogger?.dia != null ? String(dadosLogger.dia) : "—";
+  const acao = dadosLogger?.acao != null ? String(dadosLogger.acao) : "—";
+  const hash =
+    dadosLogger?.hash != null
+      ? String(dadosLogger.hash)
+      : dadosLogger?.hash_arquivo != null
+      ? String(dadosLogger.hash_arquivo)
+      : "—";
 
   // chave de dedupe enxuta
   const snapshot = `nome=${nome}|tabela=${tabela}|data=${ano}-${mes}-${dia}|acao=${acao}|hash=${hash}`;
-  if (lastSnapshotHash.get(ctx) === snapshot) return;
-  lastSnapshotHash.set(ctx, snapshot);
+  if (lastSnapshotHash.get(key) === snapshot) return;
+  lastSnapshotHash.set(key, snapshot);
 
   const now = fmtFullNow();
   const blocoStatus = `---------------- STATUS UPDATE ${now} ----------------
@@ -127,10 +158,21 @@ Acao   : ${acao}
 Hash   : ${hash}
 -----------------------------------------------------\n`;
 
-  await appendLine(ctx, blocoStatus);
+  await appendLine(key, blocoStatus);
 }
 
 export async function createLoggerController(filePath, tabela = undefined) {
+  // Usa a mesma chave estável para todo o ciclo
+  const key = ctxKey(filePath);
+
+  // Se já inicializado neste run, não reescreve o BEGIN
+  if (ctxMeta.has(key)) {
+    // Atualiza tabela se vier agora e ainda não houver no meta
+    const meta = ctxMeta.get(key);
+    if (meta && tabela && !meta.tabela) meta.tabela = tabela;
+    return;
+  }
+
   const dir = path.dirname(filePath);
   const { base: nome } = path.parse(filePath);
   const logDir = path.join(dir, "loggers");
@@ -144,14 +186,15 @@ export async function createLoggerController(filePath, tabela = undefined) {
 
   // registra metadados p/ shrink
   const meta = {
-    fullPath: filePath,
-    shortTag: makeShortTag(filePath, 3), // \03_05_30_cliente\2025\agosto.csv
+    fullPath: filePath,                 // mantém original para shrink
+    shortTag: makeShortTag(filePath, 3),
     tabela,
     createdAt: new Date(),
   };
-  ctxMeta.set(filePath, meta);
-  registerLogFile(filePath, logPath);
-  lastSnapshotHash.delete(filePath);
+  ctxMeta.set(key, meta);
+  registerLogFile(key, logPath);
+  lastSnapshotHash.delete(key);
+  lastHeadersSig.delete(key);
 
   // BEGIN no formato "STATUS UPDATE" antigo
   const now = fmtFullNow();
@@ -163,24 +206,31 @@ Acao   : analyze
 Hash   : —
 -----------------------------------------------------\n`;
 
+  // cria/zera arquivo e escreve o BEGIN
   await fs.writeFile(logPath, blocoBegin, "utf8");
 }
 
 export function getLoggerContext(metadados = {}, logData = {}, filePath) {
   // opcionalmente já persistimos a tabela pra aparecer no BEGIN
   const t = logData?.tabela ?? logData?.tabela_destino ?? metadados?.tabela;
-  const meta = ctxMeta.get(filePath);
+
+  const key = ctxKey(filePath || metadados?.caminho_original || logData?.caminho_original);
+  const meta = ctxMeta.get(key);
   if (meta && t && !meta.tabela) meta.tabela = t;
 
   return {
     ...metadados,
     ...logData,
-    caminho_original: filePath ?? metadados?.caminho_original ?? "—",
+    caminho_original:
+      filePath ??
+      metadados?.caminho_original ??
+      logData?.caminho_original ??
+      "—",
   };
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
-/* Relatório de headers (mantido, mas sem verborragia nos prefixos)           */
+/* Relatório de headers (mantido, com dedupe por assinatura do conteúdo)      */
 /* ────────────────────────────────────────────────────────────────────────── */
 
 const DEFAULT_IGNORE = ["id", "created_at", "updated_at", "hash_arquivo"];
@@ -193,6 +243,7 @@ export async function logCsvVsTableHeaders({
   colunasTabela,
   ignore = DEFAULT_IGNORE,
 }) {
+  const key = ctxKey(contexto);
   const ig =
     ignore === DEFAULT_IGNORE
       ? DEFAULT_IGNORE_SET
@@ -219,6 +270,13 @@ export async function logCsvVsTableHeaders({
       if (c.length > widthRight) widthRight = c.length;
     }
   }
+
+  // Dedupe do bloco de HEADERS por assinatura (impede duplicados no mesmo run)
+  const headersSig = `${tabela}|csv:${csv.join(",")}||tbl:${tbl.join(",")}`;
+  if (lastHeadersSig.get(key) === headersSig) {
+    return { extrasNoCsv: [], faltandoNoCsv: [] };
+  }
+  lastHeadersSig.set(key, headersSig);
 
   const inTbl = Object.create(null);
   for (let i = 0; i < tbl.length; i++) inTbl[tbl[i]] = 1;
@@ -261,7 +319,7 @@ Faltando no CSV (${faltandoNoCsv.length}): ${
   }
 -----------------------------------------------------\n`;
 
-  await appendLine(contexto, header + rows + diffs);
+  await appendLine(key, header + rows + diffs);
 
   if (extrasNoCsv.length || faltandoNoCsv.length) {
     addAviso(
@@ -283,15 +341,14 @@ Faltando no CSV (${faltandoNoCsv.length}): ${
 }
 
 export async function finalLoggerController(dadosLogger, contexto) {
-  const ctx = typeof contexto === "string"
-    ? contexto
-    : dadosLogger?.caminho_original || dadosLogger?.filePath || "__global";
+  const key = ctxKey(contexto, dadosLogger);
 
   const now = fmtFullNow();
-  await appendLine(ctx, `==== FINAL ${now} ====\n`);
+  await appendLine(key, `==== FINAL ${now} ====\n`);
 
-  logPathsByContext.delete(ctx);
-  lastSnapshotHash.delete(ctx);
-  writeQueues.delete(ctx);
-  ctxMeta.delete(ctx);
+  logPathsByContext.delete(key);
+  lastSnapshotHash.delete(key);
+  lastHeadersSig.delete(key);
+  writeQueues.delete(key);
+  ctxMeta.delete(key);
 }

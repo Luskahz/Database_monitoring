@@ -34,7 +34,6 @@ export default async function fluxoValidatorController(metadados, logData) {
 
   const [logs, hashJaExiste] = await Promise.all([pLogs, pHashExiste]);
 
-  void updateLoggerController(metadados, contexto);
 
   if (hashJaExiste) {
     addInfo(
@@ -44,14 +43,12 @@ export default async function fluxoValidatorController(metadados, logData) {
     console.log(
       `[🟠 DUPLICADO] [${nome}] não sera inserido na tabela [${tabela}]`
     );
-    void updateLoggerController(metadados, contexto);
     return "ignorar";
   }
 
   if (!logs || logs.length === 0) {
     addInfo(`[NOVO ARQUIVO] [${nome}] será processado.`, contexto);
     console.log(`[🟢 NOVO] [${nome}] sera inserido na tabela [${tabela}]`);
-    void updateLoggerController(metadados, contexto);
     return "inserir";
   }
 
@@ -62,6 +59,5 @@ export default async function fluxoValidatorController(metadados, logData) {
   console.log(
     `[🟡 MODIFICADO] [${nome}] sera inserido na tabela [${tabela}], validar lógica de atualização para o tipo do arquivo`
   );
-  void updateLoggerController(metadados, contexto);
   return "reprocessar";
 }

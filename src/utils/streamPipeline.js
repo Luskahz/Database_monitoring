@@ -2,8 +2,7 @@ import pLimit from "p-limit";
 import { streamCsvRows } from "./csvStream.js";
 import sanitizeRow from "./sanitizeValue.js";
 import { insertBatchInTable, insertRegisterinTable } from "../model/tableModel.js";
-import { addAviso, addErro } from "../middleware/errorHandler.js";
-import { updateLoggerController } from "../middleware/logger.js";
+import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
 import {
   BATCH_SIZE,
   MAX_CONCURRENT_INSERTS,
@@ -18,6 +17,7 @@ import {
  * @param {object} opts Callbacks de progresso.
  */
 export async function streamPipeline(metadados, tiposFinal, opts = {}) {
+  console.log("[DEBUG] streamPipeline chamado")
   const {
     publishRead,
     publishInsert,
@@ -92,7 +92,7 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}) {
       }
       publishInsert?.(inseridosAteAgora, total);
     } finally {
-      await updateLoggerController(metadados, contexto);
+      addInfo(`[BATCH] Inseridos ${lote.length} linhas (até agora: ${inseridosAteAgora}/${total}).`, contexto);
     }
   }
 

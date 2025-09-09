@@ -26,8 +26,6 @@ export default async function deletedHandler(filePath, acao) {
       if (!logData) { addErro( `Nenhum registro de log encontrado para ${filePath} logica de exclusão travada`, filePath ); return; }
     } catch (e) {
       addErro( `Erro ao extrair o logdata do banco, verifique o banco`, filePath );
-    } finally {
-      await updateLoggerController( getLoggerContext({}, logData, filePath), filePath );
     }
     if (acao) {
       logData.acao = acao;
@@ -44,13 +42,12 @@ export default async function deletedHandler(filePath, acao) {
     } catch (e) {
       addErro( `problema ao apagar o hash do banco, erro: ${e.message}`, filePath );
       return;
-    } finally {
-      await updateLoggerController( getLoggerContext({}, logData, filePath), filePath );
     }
   } catch (e) {
     addErro(`Erro no deletedHandler, erro: ${e.message}, ${e.stack}`, filePath);
     return;
   } finally {
+    await updateLoggerController( getLoggerContext({}, logData, filePath), filePath );
     await finalLoggerController(getLoggerContext({}, logData, filePath), filePath );
   }
 }
