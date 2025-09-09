@@ -10,10 +10,14 @@ import { insertLog } from "../../model/logModel.js";
 import createDataController from "../createDataController.js";
 import fluxoValidatorController from "../fluxoValidatorController.js";
 import { manageInsertController } from "../managerDataController.js";
+import { PIPELINE_FAST_PATH } from "../../utils/config.js";
 
 
 
 export default async function createdHandler(filePath, action) {
+
+  // read fast-path flag (unused but kept for clarity)
+  const useFastPath = PIPELINE_FAST_PATH;
 
   if (!filePath) { addErro("caminho do arquivo não definido no handler, sem como identificar qual arquivo deu erro...", contexto); return; }
   let metadados, logData;
@@ -38,12 +42,15 @@ export default async function createdHandler(filePath, action) {
 
     if (fluxo !== "inserir" && fluxo !== "reprocessar") {
       addInfo(`[ARQUIVO IGNORADO] ${metadados.nome_arquivo} já existe e não foi modificado.`, filePath);
+      await insertLog(logData);
+      return;
     }
 
     try {
       const resultado = await manageInsertController(metadados);
       logData.sucesso = !resultado?.erro;
       logData.mensagem_erro = resultado?.mensagem || null;
+      logData.hash_arquivo = metadados.hash;
 
       if (resultado?.erro) addErro(logData.mensagem_erro, filePath);
     } catch (e) {

@@ -1,6 +1,9 @@
 import path from "path";
-import { analyzeCsv } from "../utils/csvStream.js";
+import { analyzeCsv, readCsvHeader, normalizeHeadersOnce } from "../utils/csvStream.js";
 import { addAviso, addErro } from "../middleware/errorHandler.js";
+import { detectEncoding, detectDelimiter } from "../utils/prepareStreamByFilepath.js";
+import { getColumnsFromTable, getTiposFromTable, getDateColumnsFromTable } from "../model/tableModel.js";
+import { PIPELINE_FAST_PATH } from "../utils/config.js";
 
 
 
@@ -98,8 +101,43 @@ export async function createFundamentalDocsController(filePath, action, contexto
 
 export async function createMetadadosController(filePath, action) {
   const destino = destinoByFilePath(filePath);
-  const analise = await analyzeCsv(filePath, destino.tabela_destino);
   const caminho_truncado = truncarFilepath(filePath);
+
+  if (PIPELINE_FAST_PATH) {
+    const { encoding } = await detectEncoding(filePath, { headBytes: 64 * 1024, fallback: "latin1" });
+    const delimiter = await detectDelimiter(filePath, encoding, { minHeadBytes: 64 * 1024, maxHeadBytes: 64 * 1024 });
+    const rawHeaders = await readCsvHeader(filePath, encoding, delimiter, { highWaterMark: 64 * 1024, fastMode: true });
+    const { headers: headersNorm } = normalizeHeadersOnce(rawHeaders);
+    const [colunasTabela, tiposEsperados, colunaData] = await Promise.all([
+      getColumnsFromTable(destino.tabela_destino),
+      getTiposFromTable(destino.tabela_destino),
+      getDateColumnsFromTable(destino.tabela_destino),
+    ]);
+
+    return {
+      nome_arquivo: destino.nome_arquivo,
+      ano: destino.ano,
+      mes: destino.mes,
+      dia: destino.dia,
+      tabela: destino.tabela_destino,
+
+      hash: null,
+      encoding,
+      delimiter,
+      coluna_data: colunaData,
+      acao: action,
+      colunas_tabela: colunasTabela,
+      colunas_json: headersNorm,
+      tipos_esperados: tiposEsperados,
+      datas_csv: null,
+      total_linhas: 0,
+
+      caminho_original: filePath,
+      caminho_truncado,
+    };
+  }
+
+  const analise = await analyzeCsv(filePath, destino.tabela_destino);
 
   return {
     nome_arquivo: destino.nome_arquivo,
@@ -116,11 +154,11 @@ export async function createMetadadosController(filePath, action) {
     colunas_tabela: analise.colunas_tabela,
     colunas_json: analise.colunas_json,
     tipos_esperados: analise.tipos_esperados,
-    datas_csv: analise.datas_csv, 
+    datas_csv: analise.datas_csv,
     total_linhas: analise.total_linhas,
 
     caminho_original: filePath,
-    caminho_truncado, // evita recalcular no log
+    caminho_truncado,
   };
 }
 

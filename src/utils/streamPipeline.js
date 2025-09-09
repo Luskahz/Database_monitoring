@@ -1,5 +1,8 @@
 import pLimit from "p-limit";
-import { streamCsvRows } from "./csvStream.js";
+import Papa from "papaparse";
+import iconv from "iconv-lite";
+import crypto from "crypto";
+import { createFileTee } from "./csvStream.js";
 import sanitizeRow from "./sanitizeValue.js";
 import { insertBatchInTable, insertRegisterinTable } from "../model/tableModel.js";
 import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
@@ -16,14 +19,9 @@ import {
  * @param {object} tiposFinal Tipos normalizados das colunas.
  * @param {object} opts Callbacks de progresso.
  */
-export async function streamPipeline(metadados, tiposFinal, opts = {}) {
-  console.log("[DEBUG] streamPipeline chamado")
-  const {
-    publishRead,
-    publishInsert,
-    onInsertStart,
-    onFlush,
-  } = opts;
+export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineOpts = {}) {
+  const { publishRead, publishInsert, onInsertStart, onFlush } = opts;
+  const { computeHash = true } = pipelineOpts;
 
   const {
     caminho_original: contexto,
@@ -32,7 +30,6 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}) {
     colunas_tabela: cols,
     encoding,
     delimiter,
-    total_linhas: total,
   } = metadados;
 
   const BATCH_ROWS_CAP = BATCH_SIZE;
@@ -75,7 +72,7 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}) {
     try {
       await insertBatchInTable(tabela, lote, cols, { skipUpdateClause: true });
       inseridosAteAgora += lote.length;
-      publishInsert?.(inseridosAteAgora, total);
+      publishInsert?.(inseridosAteAgora);
     } catch (e) {
       addAviso(
         `[BATCH] Falha no lote (${lote.length}). Fallback linha-a-linha. Motivo: ${e.message}`,
@@ -90,9 +87,9 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}) {
           fail++; addErro(`Erro ao inserir linha ${inseridosAteAgora + 1}: ${err.message}`, contexto);
         }
       }
-      publishInsert?.(inseridosAteAgora, total);
+      publishInsert?.(inseridosAteAgora);
     } finally {
-      addInfo(`[BATCH] Inseridos ${lote.length} linhas (até agora: ${inseridosAteAgora}/${total}).`, contexto);
+      addInfo(`[BATCH] Inseridos ${lote.length} linhas (até agora: ${inseridosAteAgora}).`, contexto);
     }
   }
 
@@ -107,14 +104,41 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}) {
     p.finally(() => inflight.delete(p));
   }
 
-  for await (const linhaOriginal of streamCsvRows(
-    contexto,
-    headersNorm,
-    encoding,
+  const { forHash, forParse } = createFileTee(contexto, { highWaterMark: HWM });
+  let hash;
+  if (computeHash) {
+    hash = crypto.createHash("sha256");
+    forHash.on("data", (chunk) => hash.update(chunk));
+  } else {
+    forHash.resume();
+  }
+
+  const input =
+    encoding === "latin1"
+      ? forParse.pipe(iconv.decodeStream("latin1"))
+      : (forParse.setEncoding("utf8"), forParse);
+  const parser = Papa.parse(Papa.NODE_STREAM_INPUT, {
+    header: false,
     delimiter,
-    { highWaterMark: HWM },
-  )) {
-    const linhaTipada = sanitizeRow(linhaOriginal, tiposFinal, contexto);
+    skipEmptyLines: "greedy",
+    dynamicTyping: false,
+  });
+  const stream = input.pipe(parser);
+  const headersLen = headersNorm.length;
+  let isFirstRow = true;
+
+  for await (const rowArray of stream) {
+    const row = Array.isArray(rowArray) ? rowArray : rowArray?.data || [];
+    if (isFirstRow) { isFirstRow = false; continue; }
+
+    const obj = {};
+    for (let i = 0; i < headersLen; i++) {
+      const h = headersNorm[i];
+      const v = row[i];
+      obj[h] = v == null ? null : typeof v === "string" ? v.trim() : v;
+    }
+
+    const linhaTipada = sanitizeRow(obj, tiposFinal, contexto);
     const rowBytes = approxRowBytes(linhaTipada);
 
     if (batch.length > 0 && (batch.length >= BATCH_ROWS_CAP || (batchBytes + rowBytes) > MAX_BATCH_BYTES)) {
@@ -130,17 +154,22 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}) {
     batch.push(linhaTipada);
     batchBytes += rowBytes;
     lidas++;
-    publishRead?.(lidas, total, batch.length);
+    publishRead?.(lidas);
   }
 
   await flushBatch();
   await Promise.all(inflight);
 
+  metadados.total_linhas = lidas;
+  if (computeHash && hash) {
+    metadados.hash = hash.digest("hex");
+  }
+
   return {
     erro: false,
-    total,
+    total: lidas,
     inseridos: inseridosAteAgora,
-    falhas: Math.max(0, total - inseridosAteAgora),
+    falhas: Math.max(0, lidas - inseridosAteAgora),
     mensagem: null,
   };
 }
