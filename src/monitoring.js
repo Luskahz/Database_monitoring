@@ -49,8 +49,8 @@ export async function startMonitoring() {
     persistent: true,
     ignoreInitial: true,
     usePolling: true,
-    interval: 500,
-    depth: 2,
+    interval: 2000,
+    depth: 10,
     ignored: [
       /[\\\/]database_monitoring[\\\/]/, // sua pasta do projeto
       /[\\\/]loggers[\\\/]/, // qualquer pasta "loggers"

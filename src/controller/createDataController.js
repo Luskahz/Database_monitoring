@@ -1,12 +1,21 @@
 import path from "path";
 import { stat } from "fs/promises";
-import { analyzeCsv, readCsvHeader, normalizeHeadersOnce } from "../utils/csvStream.js";
+import {
+  analyzeCsv,
+  readCsvHeader,
+  normalizeHeadersOnce,
+} from "../utils/csvStream.js";
 import { addAviso, addErro } from "../middleware/errorHandler.js";
-import { detectEncoding, detectDelimiter } from "../utils/prepareStreamByFilepath.js";
-import { getColumnsFromTable, getTiposFromTable, getDateColumnsFromTable } from "../model/tableModel.js";
+import {
+  detectEncoding,
+  detectDelimiter,
+} from "../utils/prepareStreamByFilepath.js";
+import {
+  getColumnsFromTable,
+  getTiposFromTable,
+  getDateColumnsFromTable,
+} from "../model/tableModel.js";
 import { PIPELINE_FAST_PATH } from "../../config/index.js";
-
-
 
 /* ---------- hot helpers ---------- */
 function isAllDigits(s) {
@@ -81,28 +90,50 @@ export function truncarFilepath(fullpath) {
 /* ---------- controllers ---------- */
 
 export default async function createDataController(filePath, action) {
-
   return createFundamentalDocsController(filePath, action, filePath)
     .then((result) => {
       const m = result?.metadados;
-      if (!m || m.total_linhas === 0) { addAviso("CSV vazio, validar se está válido", filePath); return null; }
-      return result; // evita alocar novo { metadados, logData }
+      if (!m) {
+        addAviso("Falha ao gerar metadados", filePath);
+        return null;
+      }
+      // No fast-path, total_linhas pode ser 0 mesmo com arquivo válido.
+      const hasHeaders =
+        Array.isArray(m.colunas_json) && m.colunas_json.length > 0;
+      const fileHasBytes = (m.file_size_bytes ?? 0) > 0;
+      const isReallyEmpty = !hasHeaders && !fileHasBytes; // bem conservador
+      if (isReallyEmpty) {
+        addAviso("CSV vazio, validar se está válido", filePath);
+        return null;
+      }
+      return result;
     })
-    .catch((e) => { addErro("Erro ao gerar metadados e logData: " + e.message, filePath); throw e; });
+    .catch((e) => {
+      addErro("Erro ao gerar metadados e logData: " + e.message, filePath);
+      throw e;
+    });
 }
 
-export async function createFundamentalDocsController(filePath, action, contexto) {
+export async function createFundamentalDocsController(
+  filePath,
+  action,
+  contexto
+) {
   try {
     const metadados = await createMetadadosController(filePath, action);
     const { size } = await stat(filePath);
     metadados.file_size_bytes = size;
     // total_linhas já preenchido em createMetadadosController
-    const logData = createLogDataController(metadados, /*now*/ null);
+    const logData = createLogDataController(metadados, null);
     logData.file_size_bytes = metadados.file_size_bytes;
     logData.total_linhas = metadados.total_linhas;
     return { metadados, logData };
   } catch (e) {
-    addErro("Erro ao gerar os objetos fundamentais, metadados e logdata, erro: " + e.message, contexto);
+    addErro(
+      "Erro ao gerar os objetos fundamentais, metadados e logdata, erro: " +
+        e.message,
+      contexto
+    );
     throw e;
   }
 }
@@ -112,9 +143,18 @@ export async function createMetadadosController(filePath, action) {
   const caminho_truncado = truncarFilepath(filePath);
 
   if (PIPELINE_FAST_PATH) {
-    const { encoding } = await detectEncoding(filePath, { headBytes: 64 * 1024, fallback: "latin1" });
-    const delimiter = await detectDelimiter(filePath, encoding, { minHeadBytes: 64 * 1024, maxHeadBytes: 64 * 1024 });
-    const rawHeaders = await readCsvHeader(filePath, encoding, delimiter, { highWaterMark: 64 * 1024, fastMode: true });
+    const { encoding } = await detectEncoding(filePath, {
+      headBytes: 64 * 1024,
+      fallback: "latin1",
+    });
+    const delimiter = await detectDelimiter(filePath, encoding, {
+      minHeadBytes: 64 * 1024,
+      maxHeadBytes: 64 * 1024,
+    });
+    const rawHeaders = await readCsvHeader(filePath, encoding, delimiter, {
+      highWaterMark: 64 * 1024,
+      fastMode: true,
+    });
     const { headers: headersNorm } = normalizeHeadersOnce(rawHeaders);
     const [colunasTabela, tiposEsperados, colunaData] = await Promise.all([
       getColumnsFromTable(destino.tabela_destino),
@@ -138,7 +178,7 @@ export async function createMetadadosController(filePath, action) {
       colunas_json: headersNorm,
       tipos_esperados: tiposEsperados,
       datas_csv: null,
-      total_linhas: 0,
+      total_linhas: -1,
 
       caminho_original: filePath,
       caminho_truncado,
@@ -189,10 +229,3 @@ export function createLogDataController(m, now) {
     mensagem_erro: null,
   };
 }
-
-
-
-
-
-
-
