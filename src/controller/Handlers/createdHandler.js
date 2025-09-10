@@ -19,7 +19,13 @@ export default async function createdHandler(filePath, action) {
   // read fast-path flag (unused but kept for clarity)
   const useFastPath = PIPELINE_FAST_PATH;
 
-  if (!filePath) { addErro("caminho do arquivo não definido no handler, sem como identificar qual arquivo deu erro...", contexto); return; }
+  if (!filePath) {
+    addErro(
+      "caminho do arquivo não definido no handler, sem como identificar qual arquivo deu erro...",
+      filePath
+    );
+    return;
+  }
   let metadados, logData;
 
   try {
