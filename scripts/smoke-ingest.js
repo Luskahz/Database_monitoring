@@ -2,8 +2,8 @@ import fs from "fs/promises";
 import path from "path";
 import {
   BATCH_SIZE,
-  QUEUE_HIGH_WATERMARK,
-  QUEUE_LOW_WATERMARK,
+  HIGH_WATERMARK_DEFAULT,
+  LOW_WATERMARK_DEFAULT,
 } from "../config/index.js";
 import streamPipeline, {
   INSERT_MAX_CONCURRENT,
@@ -40,7 +40,7 @@ async function runFile(filePath) {
 
 async function main() {
   console.log(
-    `[smoke] INSERT_MAX_CONCURRENT=${INSERT_MAX_CONCURRENT} FILES_MAX_CONCURRENT=${FILES_MAX_CONCURRENT} BATCH_SIZE=${BATCH_SIZE} BQ_HWM=${QUEUE_HIGH_WATERMARK} BQ_LWM=${QUEUE_LOW_WATERMARK}`
+    `[smoke] INSERT_MAX_CONCURRENT=${INSERT_MAX_CONCURRENT} FILES_MAX_CONCURRENT=${FILES_MAX_CONCURRENT} BATCH_SIZE=${BATCH_SIZE} BQ_HWM=${HIGH_WATERMARK_DEFAULT} BQ_LWM=${LOW_WATERMARK_DEFAULT}`
   );
   const tmpDir = path.join(process.cwd(), "tmp-smoke");
   await fs.mkdir(tmpDir, { recursive: true });

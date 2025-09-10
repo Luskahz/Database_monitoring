@@ -8,24 +8,22 @@ import sanitizeRow from "./sanitizeValue.js";
 import { insertBatchInTable, insertRegisterinTable } from "../model/tableModel.js";
 import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
 import { getPool } from "../infra/dbPool.js";
+import { memoryGuard } from "./memoryGuard.js";
 import {
   BATCH_SIZE,
-  QUEUE_HIGH_WATERMARK,
-  QUEUE_LOW_WATERMARK,
+  ADAPTIVE_RAM_GUARD,
+  MAX_BATCH_BYTES_DEFAULT,
+  MAX_BATCH_BYTES_WHEN_HIGH,
+  MAX_CONCURRENT_INSERTS_DEFAULT,
+  HIGH_WATERMARK_DEFAULT,
+  LOW_WATERMARK_DEFAULT,
 } from "../../config/index.js";
 
 const CPU = Math.max(1, os.cpus()?.length ?? 1);
 const pool = await getPool();
 export const POOL_MAX = pool.pool?.max ?? 10;
 
-export const INSERT_MAX_CONCURRENT = Math.max(
-  1,
-  Math.min(
-    Number(process.env.INSERT_MAX_CONCURRENT ?? 2),
-    Math.max(1, Math.floor(POOL_MAX * 0.6))
-  )
-);
-
+export const INSERT_MAX_CONCURRENT = MAX_CONCURRENT_INSERTS_DEFAULT;
 export const FILES_MAX_CONCURRENT = Math.max(
   1,
   Number(process.env.FILES_MAX_CONCURRENT ?? Math.min(4, Math.floor(POOL_MAX / INSERT_MAX_CONCURRENT)))
@@ -55,9 +53,29 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
     encoding,
     delimiter,
   } = metadados;
+  
+  memoryGuard.start();
+
+  let dynamicAllowedInserts = MAX_CONCURRENT_INSERTS_DEFAULT;
+  let dynamicHighWatermark = HIGH_WATERMARK_DEFAULT;
+  let dynamicLowWatermark = LOW_WATERMARK_DEFAULT;
+  let dynamicMaxBatchBytes = MAX_BATCH_BYTES_DEFAULT;
+
+  memoryGuard.onChange((state) => {
+    if (state === 'HIGH') {
+      dynamicAllowedInserts = 1;
+      dynamicHighWatermark = Math.min(dynamicHighWatermark, 1);
+      dynamicMaxBatchBytes = Math.min(dynamicMaxBatchBytes, MAX_BATCH_BYTES_WHEN_HIGH);
+      addInfo('[RAM] HIGH: reduzindo concorrência para 1, HIGH_WATERMARK=1, maxBatchBytes=' + dynamicMaxBatchBytes, contexto);
+    } else {
+      dynamicAllowedInserts = MAX_CONCURRENT_INSERTS_DEFAULT;
+      dynamicHighWatermark = HIGH_WATERMARK_DEFAULT;
+      dynamicMaxBatchBytes = MAX_BATCH_BYTES_DEFAULT;
+      addInfo('[RAM] NORMAL: restaurando concorrência=' + dynamicAllowedInserts + ', HIGH_WATERMARK=' + dynamicHighWatermark + ', maxBatchBytes=' + dynamicMaxBatchBytes, contexto);
+    }
+  });
 
   const BATCH_ROWS_CAP = BATCH_SIZE;
-  const MAX_BATCH_BYTES = 48 * 1024 * 1024;
   const HWM = 1024 * 1024;
 
   const order = cols.map((c) => c.name || c);
@@ -90,6 +108,12 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
   let lidas = 0;
   let inseridosAteAgora = 0;
   let insertPhaseStarted = false;
+
+  async function awaitSlotForInsert() {
+    while (inflight.size >= dynamicAllowedInserts) {
+      await new Promise((r) => setTimeout(r, 50));
+    }
+  }
 
   async function doInsert(lote) {
     if (!insertPhaseStarted) {
@@ -128,6 +152,7 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
     batchBytes = 0;
     onFlush?.(lote.length);
     const start = Date.now();
+    await awaitSlotForInsert();
     const p = limit(() => doInsert(lote));
     inflight.add(p);
     if (inflight.size > maxInflight) maxInflight = inflight.size;
@@ -170,6 +195,10 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
     const row = Array.isArray(rowArray) ? rowArray : rowArray?.data || [];
     if (isFirstRow) { isFirstRow = false; continue; }
 
+    if (memoryGuard.isHigh()) {
+      await memoryGuard.waitForNormal();
+    }
+
     const obj = {};
     for (let i = 0; i < headersLen; i++) {
       const h = headersNorm[i];
@@ -180,12 +209,12 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
     const linhaTipada = sanitizeRow(obj, tiposFinal, contexto);
     const rowBytes = approxRowBytes(linhaTipada);
 
-    if (batch.length > 0 && (batch.length >= BATCH_ROWS_CAP || (batchBytes + rowBytes) > MAX_BATCH_BYTES)) {
+    if (batch.length > 0 && (batch.length >= BATCH_ROWS_CAP || (batchBytes + rowBytes) > dynamicMaxBatchBytes)) {
       await flushBatch();
-      while (inflight.size >= QUEUE_HIGH_WATERMARK) {
+      while (inflight.size >= dynamicHighWatermark) {
         await Promise.race(inflight);
       }
-      while (inflight.size > QUEUE_LOW_WATERMARK) {
+      while (inflight.size > dynamicLowWatermark) {
         await Promise.race(inflight);
       }
     }
