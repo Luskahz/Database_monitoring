@@ -1,15 +1,17 @@
 // monitoring/monitoring.js
 import chokidar from "chokidar";
 import pLimit from "p-limit";
-import path from "path";
-import { dirname } from "path";
+import path, { dirname } from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 import isCsvFile from "./utils/isCsvFile.js";
 import createdHandler from "./controller/Handlers/createdHandler.js";
 import deletedHandler from "./controller/Handlers/deletedHandler.js";
 import { addErro } from "./middleware/errorHandler.js";
+import { FILES_CONCURRENCY } from "./config/index.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const limit = pLimit(50);
+const limit = pLimit(FILES_CONCURRENCY);
+const bigLimit = pLimit(Math.min(FILES_CONCURRENCY, 4));
 
 const debounceTimers = new Map();
 
@@ -20,7 +22,15 @@ function runWithDebounce(filePath, acao, handler) {
   debounceTimers.set(
     filePath,
     setTimeout(() => {
-      limit(() => handler(filePath, acao)).catch((e) => {
+      let chosen = limit;
+      try {
+        const stats = fs.statSync(filePath);
+        const fileSizeMB = stats.size / (1024 * 1024);
+        if (fileSizeMB >= 200) {
+          chosen = bigLimit;
+        }
+      } catch {}
+      chosen(() => handler(filePath, acao)).catch((e) => {
         console.log(
           `[monitoramento] Erro ao processar arquivo cujo path é: ${filePath}, erro: ${e.message}`
         );

@@ -8,10 +8,10 @@ import { insertBatchInTable, insertRegisterinTable } from "../model/tableModel.j
 import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
 import {
   BATCH_SIZE,
-  MAX_CONCURRENT_INSERTS,
-  QUEUE_HIGH_WATERMARK,
-  QUEUE_LOW_WATERMARK,
-} from "./config.js";
+  INSERT_CONCURRENCY,
+  BATCH_QUEUE_HIGH_WATERMARK,
+  BATCH_QUEUE_LOW_WATERMARK,
+} from "../config/index.js";
 
 /**
  * Executa a ingestão de um CSV em modo streaming.
@@ -21,7 +21,11 @@ import {
  */
 export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineOpts = {}) {
   const { publishRead, publishInsert, onInsertStart, onFlush } = opts;
-  const { computeHash = true } = pipelineOpts;
+  const {
+    computeHash = true,
+    insertBatchFn = insertBatchInTable,
+    insertRegisterFn = insertRegisterinTable,
+  } = pipelineOpts;
 
   const {
     caminho_original: contexto,
@@ -55,8 +59,11 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
     return bytes + 1;
   }
 
-  const limit = pLimit(MAX_CONCURRENT_INSERTS);
+  const limit = pLimit(INSERT_CONCURRENCY);
   const inflight = new Set();
+  let maxInflight = 0;
+  let totalInsertTime = 0;
+  let insertCount = 0;
 
   let batch = [];
   let batchBytes = 0;
@@ -70,7 +77,7 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
       insertPhaseStarted = true;
     }
     try {
-      await insertBatchInTable(tabela, lote, cols, { skipUpdateClause: true });
+      await insertBatchFn(tabela, lote, cols, { skipUpdateClause: true });
       inseridosAteAgora += lote.length;
       publishInsert?.(inseridosAteAgora);
     } catch (e) {
@@ -81,7 +88,7 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
       let ok = 0, fail = 0;
       for (const row of lote) {
         try {
-          await insertRegisterinTable(tabela, row, cols);
+          await insertRegisterFn(tabela, row, cols);
           ok++; inseridosAteAgora++;
         } catch (err) {
           fail++; addErro(`Erro ao inserir linha ${inseridosAteAgora + 1}: ${err.message}`, contexto);
@@ -96,12 +103,24 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
   async function flushBatch() {
     if (batch.length === 0) return;
     const lote = batch;
+    const loteBytes = batchBytes;
     batch = [];
     batchBytes = 0;
     onFlush?.(lote.length);
+    const start = Date.now();
     const p = limit(() => doInsert(lote));
     inflight.add(p);
-    p.finally(() => inflight.delete(p));
+    if (inflight.size > maxInflight) maxInflight = inflight.size;
+    p
+      .then(() => {
+        totalInsertTime += Date.now() - start;
+        insertCount++;
+      })
+      .finally(() => inflight.delete(p));
+    addInfo(
+      `[FLUSH] inflight_inserts=${inflight.size}, batch_len=${lote.length}, approx_bytes=${loteBytes}`,
+      contexto,
+    );
   }
 
   const { forHash, forParse } = createFileTee(contexto, { highWaterMark: HWM });
@@ -143,10 +162,10 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
 
     if (batch.length > 0 && (batch.length >= BATCH_ROWS_CAP || (batchBytes + rowBytes) > MAX_BATCH_BYTES)) {
       await flushBatch();
-      while (inflight.size >= QUEUE_HIGH_WATERMARK) {
+      while (inflight.size >= BATCH_QUEUE_HIGH_WATERMARK) {
         await Promise.race(inflight);
       }
-      while (inflight.size > QUEUE_LOW_WATERMARK) {
+      while (inflight.size > BATCH_QUEUE_LOW_WATERMARK) {
         await Promise.race(inflight);
       }
     }
@@ -159,6 +178,12 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
 
   await flushBatch();
   await Promise.all(inflight);
+
+  const avgMs = insertCount ? totalInsertTime / insertCount : 0;
+  addInfo(
+    `[STATS] tempo_medio_lote=${avgMs.toFixed(2)}ms, pico_inflight=${maxInflight}`,
+    contexto,
+  );
 
   metadados.total_linhas = lidas;
   if (computeHash && hash) {
