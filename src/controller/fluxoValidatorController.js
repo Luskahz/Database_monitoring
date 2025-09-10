@@ -1,7 +1,7 @@
 import { addErro, addInfo } from "../middleware/errorHandler.js";
 import { getLogByData, getAllHashesFromTable } from "../model/logModel.js";
 import { existsAnyDataInRange } from "../model/tableModel.js";
-import { PIPELINE_FAST_PATH } from "../config/index.js";
+import { PIPELINE_FAST_PATH } from "../../config/index.js";
 
 export default async function fluxoValidatorController(metadados, logData) {
   const contexto = metadados.caminho_original;

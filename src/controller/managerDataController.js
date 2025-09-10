@@ -23,7 +23,7 @@ import {
   BATCH_SIZE,
   BATCH_QUEUE_HIGH_WATERMARK,
   BATCH_QUEUE_LOW_WATERMARK,
-} from "../config/index.js";
+} from "../../config/index.js";
 
 export async function manageInsertController(metadados) {
   const contexto = metadados.caminho_original;

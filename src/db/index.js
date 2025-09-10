@@ -1,5 +1,5 @@
 import mysql from "mysql2/promise";
-import { INSERT_CONCURRENCY, FILES_CONCURRENCY } from "../config/index.js";
+import { INSERT_CONCURRENCY, FILES_CONCURRENCY } from "../../config/index.js";
 
 export const schema = process.env.DB_NAME || process.env.DB_SCHEMA;
 

@@ -11,7 +11,7 @@ import {
   INSERT_CONCURRENCY,
   BATCH_QUEUE_HIGH_WATERMARK,
   BATCH_QUEUE_LOW_WATERMARK,
-} from "../config/index.js";
+} from "../../config/index.js";
 
 /**
  * Executa a ingestão de um CSV em modo streaming.

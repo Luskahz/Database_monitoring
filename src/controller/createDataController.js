@@ -3,7 +3,7 @@ import { analyzeCsv, readCsvHeader, normalizeHeadersOnce } from "../utils/csvStr
 import { addAviso, addErro } from "../middleware/errorHandler.js";
 import { detectEncoding, detectDelimiter } from "../utils/prepareStreamByFilepath.js";
 import { getColumnsFromTable, getTiposFromTable, getDateColumnsFromTable } from "../model/tableModel.js";
-import { PIPELINE_FAST_PATH } from "../config/index.js";
+import { PIPELINE_FAST_PATH } from "../../config/index.js";
 
 
 

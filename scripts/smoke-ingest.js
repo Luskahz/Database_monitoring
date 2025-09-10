@@ -6,7 +6,7 @@ import {
   BATCH_SIZE,
   BATCH_QUEUE_HIGH_WATERMARK,
   BATCH_QUEUE_LOW_WATERMARK,
-} from "../src/config/index.js";
+} from "../config/index.js";
 import streamPipeline from "../src/utils/streamPipeline.js";
 
 async function createCsv(file) {

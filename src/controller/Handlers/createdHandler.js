@@ -10,7 +10,7 @@ import { insertLog } from "../../model/logModel.js";
 import createDataController from "../createDataController.js";
 import fluxoValidatorController from "../fluxoValidatorController.js";
 import { manageInsertController } from "../managerDataController.js";
-import { PIPELINE_FAST_PATH } from "../../config/index.js";
+import { PIPELINE_FAST_PATH } from "../../../config/index.js";
 
 
 
