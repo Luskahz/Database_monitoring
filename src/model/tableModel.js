@@ -1,4 +1,5 @@
-import db, { schema } from "../db/index.js";
+import { query } from "../infra/dbPool.js";
+import { schema } from "../../config/index.js";
 import mapearTipo from "../utils/mapearTipos.js";
 
 /* -------------------- Caches de metadados -------------------- */
@@ -85,7 +86,7 @@ export async function existsAnyDataInRange(metadados) {
       LIMIT 1
     `;
   try {
-    const [rows] = await db.query(sql, [inicio, fim]);
+    const rows = await query(sql, [inicio, fim]);
     return rows.length > 0;
   } catch (e) {
     throw new Error(`[model exists range] Erro ao consultar range de datas: ${e.message}`);
@@ -112,7 +113,7 @@ function buildMultiValuesPlaceholders(rows, cols) {
 
 export async function getAllRegistersFromTable(tabela) {
   try {
-    const [result] = await db.query(`SELECT * FROM \`${schema}\`.\`${tabela}\``);
+    const result = await query(`SELECT * FROM \`${schema}\`.\`${tabela}\``);
     return result;
   } catch (e) {
     throw new Error(
@@ -125,7 +126,7 @@ export async function getDateColumnsFromTable(tabela) {
   const key = `${schema}.${tabela}`;
   if (dateColCache.has(key)) return dateColCache.get(key);
   try {
-    const [results] = await db.query(
+    const results = await query(
       `
       SELECT COLUMN_NAME
       FROM INFORMATION_SCHEMA.COLUMNS
@@ -149,7 +150,7 @@ export async function getColumnsFromTable(tabela) {
   const key = `${schema}.${tabela}`;
   if (columnsCache.has(key)) return columnsCache.get(key);
   try {
-    const [results] = await db.query(
+    const results = await query(
       `
       SELECT COLUMN_NAME
       FROM INFORMATION_SCHEMA.COLUMNS
@@ -189,7 +190,7 @@ export async function insertRegisterinTable(tabela, linhaTipada, colunas) {
   `;
 
   try {
-    const [result] = await db.query(sql, valores);
+    const result = await query(sql, valores);
     return { result, linhaTipada };
   } catch (e) {
     throw new Error(`[model insert] erro ao realizar a query de inserção do registro, erro: ${e.message}`);
@@ -229,7 +230,7 @@ export async function existsAnyCsvDateInTable(metadados, opts = {}) {
       WHERE \`${coluna_data}\` >= ? AND \`${coluna_data}\` < ?
       LIMIT 1
     `;
-    const [r] = await db.query(sqlRange, [min, maxEx]);
+    const r = await query(sqlRange, [min, maxEx]);
     if (r.length === 0) return false; // nada no intervalo => certeza de não haver interseção
   }
 
@@ -244,7 +245,7 @@ export async function existsAnyCsvDateInTable(metadados, opts = {}) {
       WHERE \`${coluna_data}\` IN (${placeholders})
       LIMIT 1
     `;
-    const [rows] = await db.query(sql, part);
+    const rows = await query(sql, part);
     if (rows.length > 0) return true;
   }
   return false;
@@ -263,7 +264,7 @@ export async function deleteFromTable(opcoes) {
   if (!coluna_data) {
     const sql = `DELETE FROM \`${schema}\`.\`${nomeTabela}\``;
     try {
-      const [result] = await db.query(sql);
+      const result = await query(sql);
       return result;
     } catch (e) {
       throw new Error(
@@ -288,7 +289,7 @@ export async function deleteFromTable(opcoes) {
         ORDER BY \`${coluna_data}\`
         LIMIT ${CHUNK}
       `;
-      const [res] = await db.query(sql, [inicio, fim]);
+      const res = await query(sql, [inicio, fim]);
       const aff = res?.affectedRows || 0;
       totalAff += aff;
       if (aff < CHUNK) break; // esvaziou o range
@@ -300,7 +301,7 @@ export async function deleteFromTable(opcoes) {
         DELETE FROM \`${schema}\`.\`${nomeTabela}\`
         WHERE \`${coluna_data}\` >= ? AND \`${coluna_data}\` < ?
       `;
-      const [res] = await db.query(sql, [inicio, fim]);
+      const res = await query(sql, [inicio, fim]);
       return res;
     } catch (e) {
       throw new Error(
@@ -317,7 +318,7 @@ export async function getTiposFromTable(tabela) {
 
   let results;
   try {
-    [results] = await db.query(
+    results = await query(
       `
       SELECT COLUMN_NAME, DATA_TYPE
       FROM INFORMATION_SCHEMA.COLUMNS
@@ -380,7 +381,7 @@ export async function insertBatchInTable(tabela, linhasTipadas, colunas, opts = 
   `;
 
   try {
-    const [result] = await db.query(sql, flat);
+    const result = await query(sql, flat);
     return { result, linhasTipadas };
   } catch (e) {
     throw new Error(`[model insert batch] erro ao realizar a query de inserção do lote, erro: ${e.message}`);
@@ -398,7 +399,7 @@ export async function loadDecimalProfilesFromSchema(tableName) {
     SELECT COLUMN_NAME, DATA_TYPE, NUMERIC_SCALE
     FROM INFORMATION_SCHEMA.COLUMNS
     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?`;
-  const [rows] = await db.query(sql, [schemaName, tableName]);
+  const rows = await query(sql, [schemaName, tableName]);
 
   const map = new Map();
   for (const r of rows) {

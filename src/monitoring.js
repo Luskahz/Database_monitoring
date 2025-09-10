@@ -8,10 +8,10 @@ import isCsvFile from "./utils/isCsvFile.js";
 import createdHandler from "./controller/Handlers/createdHandler.js";
 import deletedHandler from "./controller/Handlers/deletedHandler.js";
 import { addErro } from "./middleware/errorHandler.js";
-import { FILES_CONCURRENCY } from "./../config/index.js";
+import { FILES_MAX_CONCURRENT } from "./utils/streamPipeline.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const limit = pLimit(FILES_CONCURRENCY);
-const bigLimit = pLimit(Math.min(FILES_CONCURRENCY, 4));
+const limit = pLimit(FILES_MAX_CONCURRENT);
+const bigLimit = pLimit(Math.min(FILES_MAX_CONCURRENT, 4));
 
 const debounceTimers = new Map();
 

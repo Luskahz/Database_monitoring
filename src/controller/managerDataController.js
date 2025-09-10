@@ -7,7 +7,11 @@ import {
 
 import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
 import { updateLoggerController } from "../middleware/logger.js";
-import streamPipeline from "../utils/streamPipeline.js";
+import streamPipeline, {
+  POOL_MAX,
+  INSERT_MAX_CONCURRENT,
+  FILES_MAX_CONCURRENT,
+} from "../utils/streamPipeline.js";
 import {
   detectDelimiter,
   detectEncoding,
@@ -18,11 +22,9 @@ import {
 } from "../model/tableModel.js";
 import {
   PIPELINE_FAST_PATH,
-  INSERT_CONCURRENCY,
-  FILES_CONCURRENCY,
   BATCH_SIZE,
-  BATCH_QUEUE_HIGH_WATERMARK,
-  BATCH_QUEUE_LOW_WATERMARK,
+  QUEUE_HIGH_WATERMARK,
+  QUEUE_LOW_WATERMARK,
 } from "../../config/index.js";
 
 export async function manageInsertController(metadados) {
@@ -30,8 +32,9 @@ export async function manageInsertController(metadados) {
   const nomeArquivo = metadados.nome_arquivo ?? "arquivo-desconhecido";
   const barraId = `${nomeArquivo}::${metadados.ano ?? "-"}::${metadados.tabela}`;
 
+  console.log(`[DB] Using pool limit=${POOL_MAX} | insert_concurrency=${INSERT_MAX_CONCURRENT} | files_concurrency=${FILES_MAX_CONCURRENT}`);
   addInfo(
-    `Configuração: INSERT_CONCURRENCY=${INSERT_CONCURRENCY}, FILES_CONCURRENCY=${FILES_CONCURRENCY}, BATCH_SIZE=${BATCH_SIZE}, BATCH_QUEUE_HIGH_WATERMARK=${BATCH_QUEUE_HIGH_WATERMARK}, BATCH_QUEUE_LOW_WATERMARK=${BATCH_QUEUE_LOW_WATERMARK}`,
+    `Configuração: INSERT_MAX_CONCURRENT=${INSERT_MAX_CONCURRENT}, FILES_MAX_CONCURRENT=${FILES_MAX_CONCURRENT}, BATCH_SIZE=${BATCH_SIZE}, QUEUE_HIGH_WATERMARK=${QUEUE_HIGH_WATERMARK}, QUEUE_LOW_WATERMARK=${QUEUE_LOW_WATERMARK}`,
     contexto,
   );
 
