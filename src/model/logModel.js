@@ -1,15 +1,17 @@
-import db, { schema } from "../db/index.js";
+import { query as dbQuery, execute as dbExecute, getPool } from "../infra/dbPool.js";
+import { schema } from "../../config/index.js";
 import { truncarFilepath } from "../controller/createDataController.js";
 
 // -----------------------------------------------------
 // infra de prepared statements (reutilizáveis)
 // -----------------------------------------------------
-const exec = db.execute ? db.execute.bind(db) : db.query.bind(db);
+const exec = dbExecute || dbQuery;
 const prepared = new Map(); // name -> Promise<PreparedStatement>
+const pool = await getPool();
 
 function getStmt(name, sql) {
-  if (!db.prepare) return null;                     // driver sem prepare
-  if (!prepared.has(name)) prepared.set(name, db.prepare(sql));
+  if (!pool.prepare) return null;                     // driver sem prepare
+  if (!prepared.has(name)) prepared.set(name, pool.prepare(sql));
   return prepared.get(name);                        // Promise
 }
 
@@ -32,10 +34,9 @@ export async function getLogByData(metadados) {
     if (stmt) {
       const ps = await stmt;
       const [rows] = await ps.execute([tabela, nome_arquivo, ano]);
-      // mantém contrato antigo (array)
       return rows && rows.length ? rows : [];
     }
-    const [rows] = await exec(GET_LOG_BY_DATA_SQL, [tabela, nome_arquivo, ano]);
+    const rows = await exec(GET_LOG_BY_DATA_SQL, [tabela, nome_arquivo, ano]);
     return rows || [];
   } catch (e) {
     throw new Error(
@@ -62,7 +63,7 @@ export async function existsHashInLog(tabela_destino, hash_arquivo) {
       const [rows] = await ps.execute([tabela_destino, hash_arquivo]);
       return rows.length > 0;
     }
-    const [rows] = await exec(EXISTS_HASH_SQL, [tabela_destino, hash_arquivo]);
+    const rows = await exec(EXISTS_HASH_SQL, [tabela_destino, hash_arquivo]);
     return rows.length > 0;
   } catch (e) {
     throw new Error(`[model exists hash] Falha ao checar hash no log: ${e.message}`);
@@ -88,7 +89,7 @@ export async function getAllHashesFromTable(metadados) {
       const [rows] = await ps.execute([tabela]);
       return rows || [];
     }
-    const [rows] = await exec(GET_HASHES_SQL, [tabela]);
+    const rows = await exec(GET_HASHES_SQL, [tabela]);
     return rows || [];
   } catch (e) {
     throw new Error(`[model puxar hashs banco] Erro ao puxar os hashs: ${e.message}`);
@@ -186,7 +187,7 @@ export async function getLogWithFilePath(filePath) {
       return rows[0];
     }
 
-    const [rows] = await exec(GET_BY_PATH_SQL, params);
+    const rows = await exec(GET_BY_PATH_SQL, params);
     if (!rows || rows.length === 0) return null;
     return rows[0];
   } catch (e) {
@@ -218,7 +219,7 @@ export async function findLogByFileMeta({ tabela_destino, file_size_bytes, total
       const [rows] = await ps.execute(params);
       return rows && rows.length ? rows[0] : null;
     }
-    const [rows] = await exec(FIND_BY_META_SQL, params);
+    const rows = await exec(FIND_BY_META_SQL, params);
     return rows && rows.length ? rows[0] : null;
   } catch (e) {
     throw new Error(`[model find log meta] Erro ao buscar log por metadados: ${e.message}`);

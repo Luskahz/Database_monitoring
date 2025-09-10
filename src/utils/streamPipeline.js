@@ -1,3 +1,4 @@
+import os from "node:os";
 import pLimit from "p-limit";
 import Papa from "papaparse";
 import iconv from "iconv-lite";
@@ -6,12 +7,31 @@ import { createFileTee } from "./csvStream.js";
 import sanitizeRow from "./sanitizeValue.js";
 import { insertBatchInTable, insertRegisterinTable } from "../model/tableModel.js";
 import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
+import { getPool } from "../infra/dbPool.js";
 import {
   BATCH_SIZE,
-  INSERT_CONCURRENCY,
-  BATCH_QUEUE_HIGH_WATERMARK,
-  BATCH_QUEUE_LOW_WATERMARK,
+  QUEUE_HIGH_WATERMARK,
+  QUEUE_LOW_WATERMARK,
 } from "../../config/index.js";
+
+const CPU = Math.max(1, os.cpus()?.length ?? 1);
+const pool = await getPool();
+export const POOL_MAX = pool.pool?.max ?? 10;
+
+export const INSERT_MAX_CONCURRENT = Math.max(
+  1,
+  Math.min(
+    Number(process.env.INSERT_MAX_CONCURRENT ?? 2),
+    Math.max(1, Math.floor(POOL_MAX * 0.6))
+  )
+);
+
+export const FILES_MAX_CONCURRENT = Math.max(
+  1,
+  Number(process.env.FILES_MAX_CONCURRENT ?? Math.min(4, Math.floor(POOL_MAX / INSERT_MAX_CONCURRENT)))
+);
+
+console.log(`[Inserts] concurrency=${INSERT_MAX_CONCURRENT} | files=${FILES_MAX_CONCURRENT} | pool=${POOL_MAX}`);
 
 /**
  * Executa a ingestão de um CSV em modo streaming.
@@ -59,7 +79,7 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
     return bytes + 1;
   }
 
-  const limit = pLimit(INSERT_CONCURRENCY);
+  const limit = pLimit(INSERT_MAX_CONCURRENT);
   const inflight = new Set();
   let maxInflight = 0;
   let totalInsertTime = 0;
@@ -162,10 +182,10 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
 
     if (batch.length > 0 && (batch.length >= BATCH_ROWS_CAP || (batchBytes + rowBytes) > MAX_BATCH_BYTES)) {
       await flushBatch();
-      while (inflight.size >= BATCH_QUEUE_HIGH_WATERMARK) {
+      while (inflight.size >= QUEUE_HIGH_WATERMARK) {
         await Promise.race(inflight);
       }
-      while (inflight.size > BATCH_QUEUE_LOW_WATERMARK) {
+      while (inflight.size > QUEUE_LOW_WATERMARK) {
         await Promise.race(inflight);
       }
     }

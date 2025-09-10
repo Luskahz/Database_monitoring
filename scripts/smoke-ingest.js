@@ -1,13 +1,14 @@
 import fs from "fs/promises";
 import path from "path";
 import {
-  INSERT_CONCURRENCY,
-  FILES_CONCURRENCY,
   BATCH_SIZE,
-  BATCH_QUEUE_HIGH_WATERMARK,
-  BATCH_QUEUE_LOW_WATERMARK,
+  QUEUE_HIGH_WATERMARK,
+  QUEUE_LOW_WATERMARK,
 } from "../config/index.js";
-import streamPipeline from "../src/utils/streamPipeline.js";
+import streamPipeline, {
+  INSERT_MAX_CONCURRENT,
+  FILES_MAX_CONCURRENT,
+} from "../src/utils/streamPipeline.js";
 
 async function createCsv(file) {
   const content = "col1,col2\n1,2\n3,4\n";
@@ -39,7 +40,7 @@ async function runFile(filePath) {
 
 async function main() {
   console.log(
-    `[smoke] INSERT_CONCURRENCY=${INSERT_CONCURRENCY} FILES_CONCURRENCY=${FILES_CONCURRENCY} BATCH_SIZE=${BATCH_SIZE} BQ_HWM=${BATCH_QUEUE_HIGH_WATERMARK} BQ_LWM=${BATCH_QUEUE_LOW_WATERMARK}`
+    `[smoke] INSERT_MAX_CONCURRENT=${INSERT_MAX_CONCURRENT} FILES_MAX_CONCURRENT=${FILES_MAX_CONCURRENT} BATCH_SIZE=${BATCH_SIZE} BQ_HWM=${QUEUE_HIGH_WATERMARK} BQ_LWM=${QUEUE_LOW_WATERMARK}`
   );
   const tmpDir = path.join(process.cwd(), "tmp-smoke");
   await fs.mkdir(tmpDir, { recursive: true });
