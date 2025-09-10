@@ -100,8 +100,8 @@ export async function getAllHashesFromTable(metadados) {
 // -----------------------------------------------------
 const INSERT_LOG_SQL = `
   INSERT INTO \`${schema}\`.log_ingestao
-  (tabela_destino, nome_arquivo, ano, mes, dia, coluna_data, data_upload, hash_arquivo, sucesso, mensagem_erro, caminho)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  (tabela_destino, nome_arquivo, ano, mes, dia, coluna_data, data_upload, hash_arquivo, file_size_bytes, total_linhas, sucesso, mensagem_erro, caminho)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 export async function insertLog(logData) {
@@ -114,6 +114,8 @@ export async function insertLog(logData) {
     logData.coluna_data ?? null,
     logData.data_upload ?? new Date(),
     logData.hash_arquivo ?? null,
+    logData.file_size_bytes ?? null,
+    logData.total_linhas != null ? Number(logData.total_linhas) : null,
     logData.sucesso ? 1 : 0,
     logData.mensagem_erro ?? null,
     logData.caminho_original ?? null,
@@ -191,5 +193,34 @@ export async function getLogWithFilePath(filePath) {
     throw new Error(
       `[model get From banco] Erro ao encontrar log com base no caminho: ${e.message}`
     );
+  }
+}
+
+// -----------------------------------------------------
+// 7) Busca log por metadados básicos (tamanho + linhas)
+// -----------------------------------------------------
+const FIND_BY_META_SQL = `
+  SELECT id
+    FROM \`${schema}\`.log_ingestao
+   WHERE tabela_destino = ?
+     AND file_size_bytes <=> ?
+     AND total_linhas <=> ?
+   ORDER BY id DESC
+   LIMIT 1
+`;
+
+export async function findLogByFileMeta({ tabela_destino, file_size_bytes, total_linhas }) {
+  const params = [tabela_destino, file_size_bytes ?? null, total_linhas ?? null];
+  try {
+    const stmt = getStmt("FIND_BY_META", FIND_BY_META_SQL);
+    if (stmt) {
+      const ps = await stmt;
+      const [rows] = await ps.execute(params);
+      return rows && rows.length ? rows[0] : null;
+    }
+    const [rows] = await exec(FIND_BY_META_SQL, params);
+    return rows && rows.length ? rows[0] : null;
+  } catch (e) {
+    throw new Error(`[model find log meta] Erro ao buscar log por metadados: ${e.message}`);
   }
 }

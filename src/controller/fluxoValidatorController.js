@@ -1,5 +1,5 @@
 import { addErro, addInfo } from "../middleware/errorHandler.js";
-import { getLogByData, getAllHashesFromTable } from "../model/logModel.js";
+import { getLogByData, getAllHashesFromTable, findLogByFileMeta } from "../model/logModel.js";
 import { existsAnyDataInRange } from "../model/tableModel.js";
 import { PIPELINE_FAST_PATH } from "../../config/index.js";
 
@@ -34,6 +34,24 @@ export default async function fluxoValidatorController(metadados, logData) {
 
   if (!hash) {
     addErro("Hash do arquivo não foi passado ao validador do fluxo.", contexto);
+  }
+
+  if (metadados?.file_size_bytes != null && metadados?.total_linhas != null) {
+    try {
+      const similar = await findLogByFileMeta({
+        tabela_destino: metadados.tabela,
+        file_size_bytes: metadados.file_size_bytes,
+        total_linhas: metadados.total_linhas,
+      });
+      if (similar) {
+        addInfo(
+          "[Validator] Meta match (size+lines) encontrado — provável duplicado; seguir com verificação por hash.",
+          contexto
+        );
+      }
+    } catch (e) {
+      addErro(`Erro ao buscar log por metadados: ${e.message}`, contexto);
+    }
   }
 
   const pLogs = getLogByData(metadados).catch((e) => {

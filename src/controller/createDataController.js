@@ -1,4 +1,5 @@
 import path from "path";
+import { stat } from "fs/promises";
 import { analyzeCsv, readCsvHeader, normalizeHeadersOnce } from "../utils/csvStream.js";
 import { addAviso, addErro } from "../middleware/errorHandler.js";
 import { detectEncoding, detectDelimiter } from "../utils/prepareStreamByFilepath.js";
@@ -91,12 +92,19 @@ export default async function createDataController(filePath, action) {
 }
 
 export async function createFundamentalDocsController(filePath, action, contexto) {
-  return createMetadadosController(filePath, action)
-    .then((metadados) => {
-      const logData = createLogDataController(metadados, /*now*/ null);
-      return { metadados, logData };
-    })
-    .catch((e) => { addErro("Erro ao gerar os objetos fundamentais, metadados e logdata, erro: " + e.message, contexto ); throw e; });
+  try {
+    const metadados = await createMetadadosController(filePath, action);
+    const { size } = await stat(filePath);
+    metadados.file_size_bytes = size;
+    // total_linhas já preenchido em createMetadadosController
+    const logData = createLogDataController(metadados, /*now*/ null);
+    logData.file_size_bytes = metadados.file_size_bytes;
+    logData.total_linhas = metadados.total_linhas;
+    return { metadados, logData };
+  } catch (e) {
+    addErro("Erro ao gerar os objetos fundamentais, metadados e logdata, erro: " + e.message, contexto);
+    throw e;
+  }
 }
 
 export async function createMetadadosController(filePath, action) {
@@ -174,6 +182,8 @@ export function createLogDataController(m, now) {
     coluna_data: m.coluna_data,
     data_upload: now || new Date(), // reuse se vier de fora
     hash_arquivo: m.hash,
+    file_size_bytes: m.file_size_bytes ?? null,
+    total_linhas: m.total_linhas ?? null,
     caminho_original: m.caminho_truncado || truncarFilepath(m.caminho_original),
     sucesso: true,
     mensagem_erro: null,
