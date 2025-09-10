@@ -1,4 +1,4 @@
-import db, { schema } from "../../config/db.js";
+import db, { schema } from "../db/index.js";
 import { truncarFilepath } from "../controller/createDataController.js";
 
 // -----------------------------------------------------

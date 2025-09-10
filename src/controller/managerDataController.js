@@ -16,12 +16,24 @@ import {
   loadDecimalProfilesFromSchema,
   expandTiposWithSchema,
 } from "../model/tableModel.js";
-import { PIPELINE_FAST_PATH } from "../utils/config.js";
+import {
+  PIPELINE_FAST_PATH,
+  INSERT_CONCURRENCY,
+  FILES_CONCURRENCY,
+  BATCH_SIZE,
+  BATCH_QUEUE_HIGH_WATERMARK,
+  BATCH_QUEUE_LOW_WATERMARK,
+} from "../config/index.js";
 
 export async function manageInsertController(metadados) {
   const contexto = metadados.caminho_original;
   const nomeArquivo = metadados.nome_arquivo ?? "arquivo-desconhecido";
   const barraId = `${nomeArquivo}::${metadados.ano ?? "-"}::${metadados.tabela}`;
+
+  addInfo(
+    `Configuração: INSERT_CONCURRENCY=${INSERT_CONCURRENCY}, FILES_CONCURRENCY=${FILES_CONCURRENCY}, BATCH_SIZE=${BATCH_SIZE}, BATCH_QUEUE_HIGH_WATERMARK=${BATCH_QUEUE_HIGH_WATERMARK}, BATCH_QUEUE_LOW_WATERMARK=${BATCH_QUEUE_LOW_WATERMARK}`,
+    contexto,
+  );
 
   // -------- Barra global: 0..100 (3 fases) --------
   const PHASES = { prep: 15, read: 45, insert: 40 }; // soma 100
