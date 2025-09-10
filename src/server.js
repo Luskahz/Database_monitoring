@@ -1,3 +1,4 @@
+import "dotenv/config";              // <- precisa ser a primeira linha
 import "../src/utils/bootStrapLogs.js";
 import express from "express";
 import { startMonitoring } from "./monitoring.js";
@@ -8,19 +9,22 @@ const port = 3000;
 
 (async () => {
   try {
-    const version = await query('SELECT VERSION() AS v');
-    const packet  = await query('SELECT @@max_allowed_packet AS p');
-    console.log(`[DB] MySQL version: ${version?.[0]?.v} | max_allowed_packet: ${packet?.[0]?.p}`); // TODO: tuning no servidor
+    const version = await query("SELECT VERSION() AS v");
+    const packet  = await query("SELECT @@max_allowed_packet AS p");
+    console.log(`[DB] MySQL version: ${version?.[0]?.v} | max_allowed_packet: ${packet?.[0]?.p}`);
     const pool = await getPool();
-    console.log(`[DB] Pool => limit=${pool.pool?.max ?? 'n/a'} idleMax=${pool.pool?.maxIdle ?? 'n/a'}`);
+    console.log(`[DB] Pool => limit=${pool.pool?.max ?? "n/a"} idleMax=${pool.pool?.maxIdle ?? "n/a"}`);
   } catch (e) {
-    console.error('[DB] Falha ao consultar versão/packet:', e?.message || e);
+    console.error("[DB] Falha ao consultar versão/packet:", e?.message || e);
   }
 })();
 
-const shutdown = async () => { await shutdownPool(); process.exit(0); };
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+const shutdown = async () => { 
+  await shutdownPool(); 
+  process.exit(0); 
+};
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
 
 startMonitoring();
 
