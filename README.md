@@ -1,4 +1,3 @@
-````markdown
 # 📊 Database Monitoring
 
 > Monitore uma pasta de **CSVs** e mantenha seu **MySQL** sempre sincronizado, com **inserts**, **updates/substituições** e **deletes** automáticos — tudo em **streaming** para lidar com arquivos grandes sem estourar memória.
@@ -312,5 +311,4 @@ Agradecimentos aos mantenedores das bibliotecas open-source utilizadas (Express,
 
 **💻 Happy Monitoring!** 🚀
 
-```
 ```
