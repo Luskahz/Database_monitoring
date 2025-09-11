@@ -43,6 +43,7 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
     computeHash = true,
     insertBatchFn = insertBatchInTable,
     insertRegisterFn = insertRegisterinTable,
+    logData = null,
   } = pipelineOpts;
 
   const {
@@ -235,8 +236,14 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
   );
 
   metadados.total_linhas = lidas;
+  let hex = null;
   if (computeHash && hash) {
-    metadados.hash = hash.digest("hex");
+    hex = hash.digest("hex");
+    metadados.hash = hex;
+  }
+  if (logData) {
+    logData.total_linhas = lidas;
+    if (hex) logData.hash_arquivo = hex;
   }
 
   return {
