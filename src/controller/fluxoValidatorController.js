@@ -8,7 +8,15 @@ export default async function fluxoValidatorController(metadados, logData) {
   const nome = metadados.nome_arquivo;
   const tabela = metadados.tabela;
 
-  if (PIPELINE_FAST_PATH) {
+  const fastPath = PIPELINE_FAST_PATH === "true";
+
+  if (fastPath) {
+    if (!logData?.hash_arquivo) {
+      addInfo(
+        "[Validator] FAST_PATH: hash indisponível nesta etapa — validação seguirá por range.",
+        contexto
+      );
+    }
     try {
       const overlap = await existsAnyDataInRange(metadados);
       if (overlap) {

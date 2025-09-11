@@ -27,7 +27,7 @@ import {
   LOW_WATERMARK_DEFAULT,
 } from "../../config/index.js";
 
-export async function manageInsertController(metadados) {
+export async function manageInsertController(metadados, logData) {
   const contexto = metadados.caminho_original;
   const nomeArquivo = metadados.nome_arquivo ?? "arquivo-desconhecido";
   const barraId = `${nomeArquivo}::${metadados.ano ?? "-"}::${metadados.tabela}`;
@@ -133,12 +133,18 @@ export async function manageInsertController(metadados) {
     addInfo("Iniciando leitura e montagem de lotes...", contexto);
 
     try {
-      const resultado = await streamPipeline(metadados, tiposFinal, {
-        publishRead: (lidas) => publish(total ? lidas / total : 0, "Montando lote..."),
-        publishInsert: (inseridos) => publish(total ? inseridos / total : 0, `Inseridos: ${inseridos}/${total}`),
-        onInsertStart: () => setPhase("insert"),
-        onFlush: () => atualizarBarra(barraId, 0, "Enviando lote..."),
-      });
+      const resultado = await streamPipeline(
+        metadados,
+        tiposFinal,
+        {
+          publishRead: (lidas) => publish(total ? lidas / total : 0, "Montando lote..."),
+          publishInsert: (inseridos) =>
+            publish(total ? inseridos / total : 0, `Inseridos: ${inseridos}/${total}`),
+          onInsertStart: () => setPhase("insert"),
+          onFlush: () => atualizarBarra(barraId, 0, "Enviando lote..."),
+        },
+        { logData }
+      );
 
       // finaliza em 100%
       if (lastPctAbs < 100) {

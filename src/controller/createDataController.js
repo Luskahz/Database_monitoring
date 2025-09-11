@@ -94,17 +94,14 @@ export default async function createDataController(filePath, action) {
     .then((result) => {
       const m = result?.metadados;
       if (!m) {
-        addAviso("Falha ao gerar metadados", filePath);
+        addErro("Falha ao gerar metadados do CSV.", filePath);
         return null;
       }
-      // No fast-path, total_linhas pode ser 0 mesmo com arquivo válido.
-      const hasHeaders =
-        Array.isArray(m.colunas_json) && m.colunas_json.length > 0;
-      const fileHasBytes = (m.file_size_bytes ?? 0) > 0;
-      const isReallyEmpty = !hasHeaders && !fileHasBytes; // bem conservador
-      if (isReallyEmpty) {
-        addAviso("CSV vazio, validar se está válido", filePath);
-        return null;
+      if (m.total_linhas === 0) {
+        addAviso(
+          "CSV sem registros (apenas cabeçalho ou vazio). Prosseguindo no FAST_PATH.",
+          filePath
+        );
       }
       return result;
     })

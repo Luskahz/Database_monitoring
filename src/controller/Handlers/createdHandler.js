@@ -72,10 +72,11 @@ export default async function createdHandler(filePath, action) {
     }
 
     try {
-      const resultado = await manageInsertController(metadados);
+      const resultado = await manageInsertController(metadados, logData);
       logData.sucesso = !resultado?.erro;
       logData.mensagem_erro = resultado?.mensagem || null;
       logData.hash_arquivo = metadados.hash;
+      logData.total_linhas = metadados.total_linhas;
 
       if (resultado?.erro) addErro(logData.mensagem_erro, filePath);
     } catch (e) {
