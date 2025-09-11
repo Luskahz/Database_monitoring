@@ -16,7 +16,6 @@ const bigLimit = pLimit(Math.min(FILES_MAX_CONCURRENT, 4));
 const debounceTimers = new Map();
 
 function runWithDebounce(filePath, acao, handler) {
-  if (!isCsvFile(filePath)) return;
 
   clearTimeout(debounceTimers.get(filePath));
   debounceTimers.set(
@@ -45,7 +44,8 @@ export async function startMonitoring() {
     __dirname,
     "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL"
   );
-  const watcher = chokidar.watch(`${monitorPath}/**/*.csv`, {
+
+  const watcher = chokidar.watch(monitorPath, {
     persistent: true,
     ignoreInitial: true,
     usePolling: true,
@@ -53,7 +53,7 @@ export async function startMonitoring() {
     depth: 10,
     ignored: [
       /[\\\/]database_monitoring[\\\/]/, 
-      /[\\\/]loggers[\\\/]/, 
+      /[\\\/]loggers[\\\/]/,            
       /\.txt$/, 
     ],
     awaitWriteFinish: {
@@ -62,16 +62,23 @@ export async function startMonitoring() {
     },
   });
 
+  function isCsv(filePath) {
+    return filePath.toLowerCase().endsWith(".csv");
+  }
+
   watcher
     .on("add", (filePath) => {
+      if (!isCsv(filePath)) return;
       console.log(`🟢 Arquivo adicionado: ${filePath}`);
       runWithDebounce(filePath, "created", createdHandler);
     })
     .on("change", (filePath) => {
+      if (!isCsv(filePath)) return;
       console.log(`🟡 Arquivo modificado: ${filePath}`);
       runWithDebounce(filePath, "modified", createdHandler);
     })
     .on("unlink", (filePath) => {
+      if (!isCsv(filePath)) return;
       console.log(`🔴 Arquivo removido: ${filePath}`);
       runWithDebounce(filePath, "deleted", deletedHandler);
     })
@@ -83,3 +90,4 @@ export async function startMonitoring() {
       console.log(`✅ Pronto! Monitorando alterações em: ${monitorPath}`);
     });
 }
+
