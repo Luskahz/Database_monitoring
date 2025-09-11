@@ -45,19 +45,19 @@ export async function startMonitoring() {
     __dirname,
     "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL"
   );
-  const watcher = chokidar.watch(monitorPath, {
+  const watcher = chokidar.watch(`${monitorPath}/**/*.csv`, {
     persistent: true,
     ignoreInitial: true,
     usePolling: true,
     interval: 2000,
     depth: 10,
     ignored: [
-      /[\\\/]database_monitoring[\\\/]/, // sua pasta do projeto
-      /[\\\/]loggers[\\\/]/, // qualquer pasta "loggers"
-      /\.txt$/, // todos arquivos .txt
+      /[\\\/]database_monitoring[\\\/]/, 
+      /[\\\/]loggers[\\\/]/, 
+      /\.txt$/, 
     ],
     awaitWriteFinish: {
-      stabilityThreshold: 500, // pode ser menos agressivo agora
+      stabilityThreshold: 500,
       pollInterval: 100,
     },
   });
