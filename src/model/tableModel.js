@@ -1,4 +1,4 @@
-import { query } from "../infra/dbPool.js";
+import { query } from "../../config/dbPool.js";
 import { schema } from "../../config/index.js";
 import mapearTipo from "../utils/mapearTipos.js";
 

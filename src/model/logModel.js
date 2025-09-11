@@ -1,4 +1,4 @@
-import { query as dbQuery, execute as dbExecute, getPool } from "../infra/dbPool.js";
+import { query as dbQuery, execute as dbExecute, getPool } from "../../config/dbPool.js";
 import { schema } from "../../config/index.js";
 import { truncarFilepath } from "../controller/createDataController.js";
 

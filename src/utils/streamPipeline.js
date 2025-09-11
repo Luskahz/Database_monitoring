@@ -7,7 +7,7 @@ import { createFileTee } from "./csvStream.js";
 import sanitizeRow from "./sanitizeValue.js";
 import { insertBatchInTable, insertRegisterinTable } from "../model/tableModel.js";
 import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
-import { getPool } from "../infra/dbPool.js";
+import { getPool } from "../../config/dbPool.js";
 import { memoryGuard } from "./memoryGuard.js";
 import {
   BATCH_SIZE,

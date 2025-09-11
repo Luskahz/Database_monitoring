@@ -2,7 +2,7 @@ import "dotenv/config";              // <- precisa ser a primeira linha
 import "../src/utils/bootStrapLogs.js";
 import express from "express";
 import { startMonitoring } from "./monitoring.js";
-import { getPool, query, shutdownPool } from "./infra/dbPool.js";
+import { getPool, query, shutdownPool } from "../config/dbPool.js";
 
 const app = express();
 const port = 3000;
@@ -11,8 +11,9 @@ const port = 3000;
   try {
     const version = await query("SELECT VERSION() AS v");
     const packet  = await query("SELECT @@max_allowed_packet AS p");
-    console.log(`[DB] MySQL version: ${version?.[0]?.v} | max_allowed_packet: ${packet?.[0]?.p}`);
     const pool = await getPool();
+    
+    console.log(`[DB] MySQL version: ${version?.[0]?.v} | max_allowed_packet: ${packet?.[0]?.p}`);
     console.log(`[DB] Pool => limit=${pool.pool?.max ?? "n/a"} idleMax=${pool.pool?.maxIdle ?? "n/a"}`);
   } catch (e) {
     console.error("[DB] Falha ao consultar versão/packet:", e?.message || e);
