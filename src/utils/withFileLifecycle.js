@@ -14,9 +14,14 @@ export async function withFileLifecycle(filePath, fn) {
   try {
     await fn();
   } finally {
-    await endLogger(filePath);
-    off();
-    clearAllErrors(filePath);
-    activeFiles.delete(filePath);
+    try {
+      await endLogger(filePath);
+    } catch (err) {
+      console.error(`[logger] Falha ao finalizar logger de ${filePath}:`, err?.message || err);
+    } finally {
+      off();
+      clearAllErrors(filePath);
+      activeFiles.delete(filePath);
+    }
   }
 }
