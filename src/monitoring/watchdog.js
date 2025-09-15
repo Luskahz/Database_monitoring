@@ -1,11 +1,23 @@
-import { logLine } from "../middleware/logger.js";
+import { logActivity } from "../middleware/logger.js";
+import { updateMetrics as updateQueueMetrics, updateMemoryGuardListeners } from "../utils/queueTracker.js";
 
 export function startWatchdog(getMetrics, intervalMs = 60000, stallMs = Number(process.env.STALL_MS || 5 * 60 * 1000)) {
   const interval = setInterval(() => {
     const m = getMetrics();
-    logLine("__global", "info", `[watchdog] files=${m.activeFiles} pending=${m.pendingBatches} inflight=${m.inFlightInserts} debounce=${m.debounceTimersSize} listeners=${m.memoryGuardListeners}`);
-    if (Date.now() - m.lastProgressTs > stallMs && m.inFlightInserts > 0) {
-      logLine("__global", "warn", "[watchdog] possível stall detectado");
+    updateQueueMetrics({
+      pendingBatches: m.pendingBatches,
+      inFlightInserts: m.inFlightInserts,
+      lastProgressTs: m.lastProgressTs,
+      activeFiles: m.activeFiles,
+      filesMaxConcurrent: m.filesMaxConcurrent,
+    });
+    updateMemoryGuardListeners(m.memoryGuardListeners);
+
+    if (Date.now() - m.lastProgressTs > stallMs && (m.pendingBatches > 0 || m.inFlightInserts > 0)) {
+      void logActivity(
+        "warn",
+        `Watchdog: possível stall detectado (pending=${m.pendingBatches}, inflight=${m.inFlightInserts})`
+      );
     }
   }, intervalMs);
   interval.unref?.();

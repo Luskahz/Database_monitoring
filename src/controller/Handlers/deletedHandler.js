@@ -4,13 +4,15 @@ import { destinoByFilePath } from "../createDataController.js";
 import { managerDeleterController } from "../managerDataController.js";
 import { withFileLifecycle } from "../../utils/withFileLifecycle.js";
 
-export default async function deletedHandler(filePath, acao) {
-  await withFileLifecycle(filePath, async () => {
-    let logData = {};
-    try {
-      const destino = destinoByFilePath(filePath);
+export default async function deletedHandler(filePath, acao, job) {
+  await withFileLifecycle(
+    filePath,
+    async () => {
+      let logData = {};
       try {
-        logData = await getLogWithFilePath(filePath);
+        const destino = destinoByFilePath(filePath);
+        try {
+          logData = await getLogWithFilePath(filePath);
         if (!logData) {
           addErro(`Nenhum registro de log encontrado para ${filePath} logica de exclusão travada`, filePath);
           return;
@@ -37,5 +39,7 @@ export default async function deletedHandler(filePath, acao) {
     } catch (e) {
       addErro(`Erro no deletedHandler, erro: ${e.message}, ${e.stack}`, filePath);
     }
-  });
+    },
+    { job, action: acao }
+  );
 }

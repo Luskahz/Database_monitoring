@@ -18,6 +18,8 @@ import {
   HIGH_WATERMARK_DEFAULT,
   LOW_WATERMARK_DEFAULT,
 } from "../../config/index.js";
+import { logActivity } from "../middleware/logger.js";
+import { updateActiveJob } from "./queueTracker.js";
 
 const CPU = Math.max(1, os.cpus()?.length ?? 1);
 const pool = await getPool();
@@ -127,17 +129,22 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
     if (!insertPhaseStarted) {
       onInsertStart?.();
       insertPhaseStarted = true;
+      updateActiveJob(contexto, { stage: "inserção", detail: "Inserções iniciadas" });
     }
+    void logActivity("info", `Inserindo lote (${lote.length} linhas)`, { filePath: contexto });
+    updateActiveJob(contexto, { detail: `Inserindo lote (${lote.length})` });
     try {
       await insertBatchFn(tabela, lote, cols, { skipUpdateClause: true });
       inseridosAteAgora += lote.length;
       publishInsert?.(inseridosAteAgora);
       metrics.lastProgressTs = Date.now();
+      void logActivity("info", `Lote concluído (${lote.length} linhas)`, { filePath: contexto });
     } catch (e) {
       addAviso(
         `[BATCH] Falha no lote (${lote.length}). Fallback linha-a-linha. Motivo: ${e.message}`,
         contexto,
       );
+      void logActivity("warn", `Fallback para inserção linha-a-linha: ${e.message}`, { filePath: contexto });
       let ok = 0, fail = 0;
       for (const row of lote) {
         try {
@@ -147,6 +154,7 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
           fail++; addErro(`Erro ao inserir linha ${inseridosAteAgora + 1}: ${err.message}`, contexto);
         }
       }
+      updateActiveJob(contexto, { detail: `Fallback linha-a-linha (ok=${ok}, fail=${fail})` });
       publishInsert?.(inseridosAteAgora);
       metrics.lastProgressTs = Date.now();
     } finally {
@@ -178,11 +186,13 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
         inflight.delete(p);
         metrics.pendingBatches--;
         metrics.inFlightInserts = inflight.size;
+        updateActiveJob(contexto, { detail: `Lotes em voo: ${inflight.size}` });
       });
     addInfo(
       `[FLUSH] inflight_inserts=${inflight.size}, batch_len=${lote.length}, approx_bytes=${loteBytes}`,
       contexto,
     );
+    updateActiveJob(contexto, { detail: `Enviando lote (${lote.length} linhas)` });
   }
 
   const { forHash, forParse } = createFileTee(contexto, { highWaterMark: HWM });
@@ -251,6 +261,9 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
     `[STATS] tempo_medio_lote=${avgMs.toFixed(2)}ms, pico_inflight=${maxInflight}`,
     contexto,
   );
+  void logActivity("info", `[STATS] tempo_medio_lote=${avgMs.toFixed(2)}ms, pico_inflight=${maxInflight}`, {
+    filePath: contexto,
+  });
 
   metadados.total_linhas = lidas;
   let hex = null;

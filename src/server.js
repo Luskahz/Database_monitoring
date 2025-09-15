@@ -3,6 +3,31 @@ import "../src/utils/bootStrapLogs.js";
 import express from "express";
 import { startMonitoring } from "./monitoring.js";
 import { getPool, query, shutdownPool } from "../config/dbPool.js";
+import { logActivity } from "./middleware/logger.js";
+
+function describeError(err) {
+  if (err instanceof Error) {
+    return err.stack || err.message;
+  }
+  if (typeof err === "object") {
+    try {
+      return JSON.stringify(err);
+    } catch {}
+  }
+  return String(err);
+}
+
+process.on("unhandledRejection", (reason) => {
+  const detail = describeError(reason);
+  console.error("[process] Unhandled rejection:", detail);
+  void logActivity("error", `Unhandled rejection: ${detail}`);
+});
+
+process.on("uncaughtException", (err) => {
+  const detail = describeError(err);
+  console.error("[process] Uncaught exception:", detail);
+  void logActivity("error", `Uncaught exception: ${detail}`);
+});
 
 const app = express();
 const port = 3000;
