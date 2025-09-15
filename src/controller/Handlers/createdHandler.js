@@ -1,21 +1,13 @@
 import { addErro, addInfo } from "../../middleware/errorHandler.js";
-import {
-  createLoggerController,
-  finalLoggerController,
-  getLoggerContext,
-  updateLoggerController,
-  logCsvVsTableHeaders,
-} from "../../middleware/logger.js";
 import { insertLog } from "../../model/logModel.js";
 import createDataController from "../createDataController.js";
 import fluxoValidatorController from "../fluxoValidatorController.js";
 import { manageInsertController } from "../managerDataController.js";
 import { PIPELINE_FAST_PATH } from "../../../config/index.js";
+import { withFileLifecycle } from "../../utils/withFileLifecycle.js";
 
 export default async function createdHandler(filePath, action) {
-  // read fast-path flag (unused but kept for clarity)
-  const useFastPath = PIPELINE_FAST_PATH;
-
+  const useFastPath = PIPELINE_FAST_PATH; // kept for compatibility
   if (!filePath) {
     addErro(
       "caminho do arquivo não definido no handler, sem como identificar qual arquivo deu erro...",
@@ -23,34 +15,19 @@ export default async function createdHandler(filePath, action) {
     );
     return;
   }
-  let metadados, logData;
 
-  try {
-    await createLoggerController(filePath);
+  await withFileLifecycle(filePath, async () => {
+    let metadados, logData;
     try {
       const result = await createDataController(filePath, action);
       ({ metadados, logData } = result || {});
-      await logCsvVsTableHeaders({
-        contexto: filePath,
-        tabela: metadados?.tabela,
-        colunasCsv: metadados?.colunas_json || [],
-        colunasTabela: metadados?.colunas_tabela || [],
-      });
     } catch (e) {
-      addErro(
-        `erro ao gerar os dados fundamentais, erro:${e.message}`,
-        filePath
-      );
+      addErro(`erro ao gerar os dados fundamentais, erro:${e.message}`, filePath);
       return;
     }
 
     if (!metadados || !logData) {
       addErro("metadados ou logData não foram gerados corretamente", filePath);
-      // encerra cedo para não acessar propriedades de undefined
-      await finalLoggerController(
-        getLoggerContext(metadados, logData, filePath),
-        filePath
-      );
       return;
     }
 
@@ -77,24 +54,13 @@ export default async function createdHandler(filePath, action) {
       logData.mensagem_erro = resultado?.mensagem || null;
       logData.hash_arquivo = metadados.hash;
       logData.total_linhas = metadados.total_linhas;
-
       if (resultado?.erro) addErro(logData.mensagem_erro, filePath);
     } catch (e) {
       logData.sucesso = false;
       logData.mensagem_erro = `Erro durante execução do managerDataController: ${e.message}`;
       addErro(logData.mensagem_erro, filePath);
     } finally {
-      await Promise.all([insertLog(logData)]);
+      await insertLog(logData);
     }
-  } catch (e) {
-    addErro(
-      `erro no createdHandler, erro: ${e.message}, caminho do erro: ${e.stack}`,
-      filePath
-    );
-    return;
-  } finally {
-    const ctx = getLoggerContext(metadados, logData, filePath); // implemente fallback para usar filePath se metadados/logData vierem nulos
-    await updateLoggerController(ctx, filePath);
-    await finalLoggerController(ctx, filePath);
-  }
+  });
 }

@@ -1,5 +1,4 @@
 import { addAviso } from "../middleware/errorHandler.js";
-import { getLoggerContext, updateLoggerController } from "../middleware/logger.js";
 
 /**
  * @param {Array} list  // pode ser array de objetos (coluna_data) OU array de strings (YYYY-MM-DD)
@@ -14,7 +13,6 @@ export async function insertValidator(list, metadados) {
   const datasCsv = Array.isArray(metadados.datas_csv) ? metadados.datas_csv : [];
   if (datasCsv.length === 0) {
     addAviso("[Controller insersão] CSV sem dados válidos para coluna de data.", contexto);
-    void updateLoggerController(getLoggerContext(metadados, {}, contexto), contexto);
     return null;
   }
 
@@ -31,7 +29,6 @@ export async function insertValidator(list, metadados) {
           "[Controller insersão] Conflito detectado: datas do CSV já existem na base. Os dados serão reprocessados.",
           contexto
         );
-        void updateLoggerController(metadados, contexto);
         return "substituir";
       }
     }
@@ -56,7 +53,6 @@ export async function insertValidator(list, metadados) {
         "[Controller insersão] Conflito detectado: datas do CSV já existem na base. Os dados serão reprocessados.",
         contexto
       );
-      void updateLoggerController(metadados, contexto);
       return "substituir";
     }
   }
