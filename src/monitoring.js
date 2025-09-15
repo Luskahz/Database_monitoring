@@ -13,6 +13,11 @@ import { startWatchdog } from "./monitoring/watchdog.js";
 import { setupGracefulShutdown } from "./utils/gracefulShutdown.js";
 import { endAllLoggers } from "./middleware/logger.js";
 import { shutdownPool } from "../config/dbPool.js";
+import {
+  enqueueFileJob,
+  updateDebounceSize,
+  updateMetrics as updateQueueMetrics,
+} from "./utils/queueTracker.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const limit = pLimit(FILES_MAX_CONCURRENT);
@@ -30,12 +35,15 @@ function runWithDebounce(filePath, acao, handler) {
       const fileSizeMB = stats.size / (1024 * 1024);
       if (fileSizeMB >= 200) chosen = bigLimit;
     } catch {}
-    chosen(() => handler(filePath, acao)).catch((e) => {
+    const job = enqueueFileJob(filePath, acao);
+    chosen(() => handler(filePath, acao, job)).catch((e) => {
       console.log(`[monitoramento] Erro ao processar arquivo cujo path é: ${filePath}, erro: ${e.message}`);
     });
     debounceTimers.delete(filePath);
+    updateDebounceSize(debounceTimers.size);
   }, 500);
   debounceTimers.set(filePath, { timer, ts: Date.now() });
+  updateDebounceSize(debounceTimers.size);
 }
 
 function purgeDebounceTimers() {
@@ -46,6 +54,7 @@ function purgeDebounceTimers() {
       debounceTimers.delete(fp);
     }
   }
+  updateDebounceSize(debounceTimers.size);
 }
 const purgeInterval = setInterval(purgeDebounceTimers, 10 * 60 * 1000);
 purgeInterval.unref?.();
@@ -101,7 +110,10 @@ export async function startMonitoring() {
     debounceTimersSize: debounceTimers.size,
     memoryGuardListeners: memoryGuard.listenerCount(),
     lastProgressTs: pipelineMetrics.lastProgressTs,
+    filesMaxConcurrent: FILES_MAX_CONCURRENT,
   }));
+
+  updateQueueMetrics({ filesMaxConcurrent: FILES_MAX_CONCURRENT });
 
   setupGracefulShutdown({
     watcher,

@@ -5,23 +5,29 @@ import fluxoValidatorController from "../fluxoValidatorController.js";
 import { manageInsertController } from "../managerDataController.js";
 import { PIPELINE_FAST_PATH } from "../../../config/index.js";
 import { withFileLifecycle } from "../../utils/withFileLifecycle.js";
+import { markJobComplete } from "../../utils/queueTracker.js";
 
-export default async function createdHandler(filePath, action) {
+export default async function createdHandler(filePath, action, job) {
   const useFastPath = PIPELINE_FAST_PATH; // kept for compatibility
   if (!filePath) {
     addErro(
       "caminho do arquivo não definido no handler, sem como identificar qual arquivo deu erro...",
       filePath
     );
+    if (job) {
+      markJobComplete(job, { success: false, message: "FilePath indefinido" });
+    }
     return;
   }
 
-  await withFileLifecycle(filePath, async () => {
-    let metadados, logData;
-    try {
-      const result = await createDataController(filePath, action);
-      ({ metadados, logData } = result || {});
-    } catch (e) {
+  await withFileLifecycle(
+    filePath,
+    async () => {
+      let metadados, logData;
+      try {
+        const result = await createDataController(filePath, action);
+        ({ metadados, logData } = result || {});
+      } catch (e) {
       addErro(`erro ao gerar os dados fundamentais, erro:${e.message}`, filePath);
       return;
     }
@@ -62,5 +68,7 @@ export default async function createdHandler(filePath, action) {
     } finally {
       await insertLog(logData);
     }
-  });
+    },
+    { job, action }
+  );
 }
