@@ -6,7 +6,6 @@ import {
 } from "../utils/progressBar.js";
 
 import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
-import { updateLoggerController } from "../middleware/logger.js";
 import streamPipeline, {
   POOL_MAX,
   INSERT_MAX_CONCURRENT,
@@ -108,7 +107,6 @@ export async function manageInsertController(metadados, logData) {
       }
     } catch (e) {
       addErro(`Erro ao validar datas no banco: ${e.message}`, contexto);
-      void updateLoggerController(metadados, contexto);
       throw e;
     }
 
@@ -121,12 +119,10 @@ export async function manageInsertController(metadados, logData) {
         addInfo(msg, contexto);
       } catch (e) {
         addErro(`Erro ao deletar antes da reinserção: ${e.message}`, contexto);
-        void updateLoggerController(metadados, contexto);
         throw e;
       }
     } else if (validator === null) {
       addErro("Validação nula (dados inválidos ou sem coluna de data).", contexto);
-      void updateLoggerController(metadados, contexto);
       return { erro: true, total, inseridos: 0, falhas: total, mensagem: "Validação nula" };
     }
 
@@ -157,7 +153,6 @@ export async function manageInsertController(metadados, logData) {
       return resultado;
     } catch (e) {
       addErro(`Falha no pipeline de leitura/inserção: ${e.message}`, contexto);
-      void updateLoggerController(metadados, contexto);
       throw e;
     }
   } finally {
@@ -173,11 +168,9 @@ export async function managerDeleterController(logData) {
     const res = await deleteFromTable(logData);
     const removidos = res?.affectedRows ?? res?.affected_rows ?? 0;
     addInfo( `[DELETE] Removidos ${removidos} registros de ${logData.tabela || logData.tabela_destino}.`, contexto );
-    void updateLoggerController(logData, contexto);
     return { erro: false, removidos };
   } catch (e) {
     addErro( `Erro ao deletar período no banco pós exclusão do arquivo, erro: ${e.message}`, contexto);
-    void updateLoggerController(logData, contexto);
     return { erro: true, mensagem: e.message };
   }
 }

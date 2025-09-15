@@ -23,6 +23,12 @@ const CPU = Math.max(1, os.cpus()?.length ?? 1);
 const pool = await getPool();
 export const POOL_MAX = pool.pool?.max ?? 10;
 
+export const metrics = {
+  pendingBatches: 0,
+  inFlightInserts: 0,
+  lastProgressTs: Date.now(),
+};
+
 export const INSERT_MAX_CONCURRENT = MAX_CONCURRENT_INSERTS_DEFAULT;
 export const FILES_MAX_CONCURRENT = Math.max(
   1,
@@ -62,7 +68,7 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
   let dynamicLowWatermark = LOW_WATERMARK_DEFAULT;
   let dynamicMaxBatchBytes = MAX_BATCH_BYTES_DEFAULT;
 
-  memoryGuard.onChange((state) => {
+  const offMem = memoryGuard.onChange((state) => {
     if (state === 'HIGH') {
       dynamicAllowedInserts = 1;
       dynamicHighWatermark = Math.min(dynamicHighWatermark, 1);
@@ -75,6 +81,7 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
       addInfo('[RAM] NORMAL: restaurando concorrência=' + dynamicAllowedInserts + ', HIGH_WATERMARK=' + dynamicHighWatermark + ', maxBatchBytes=' + dynamicMaxBatchBytes, contexto);
     }
   });
+
 
   const BATCH_ROWS_CAP = BATCH_SIZE;
   const HWM = 1024 * 1024;
@@ -125,6 +132,7 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
       await insertBatchFn(tabela, lote, cols, { skipUpdateClause: true });
       inseridosAteAgora += lote.length;
       publishInsert?.(inseridosAteAgora);
+      metrics.lastProgressTs = Date.now();
     } catch (e) {
       addAviso(
         `[BATCH] Falha no lote (${lote.length}). Fallback linha-a-linha. Motivo: ${e.message}`,
@@ -140,6 +148,7 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
         }
       }
       publishInsert?.(inseridosAteAgora);
+      metrics.lastProgressTs = Date.now();
     } finally {
       addInfo(`[BATCH] Inseridos ${lote.length} linhas (até agora: ${inseridosAteAgora}).`, contexto);
     }
@@ -156,13 +165,20 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
     await awaitSlotForInsert();
     const p = limit(() => doInsert(lote));
     inflight.add(p);
+    metrics.pendingBatches++;
     if (inflight.size > maxInflight) maxInflight = inflight.size;
+    metrics.inFlightInserts = inflight.size;
     p
       .then(() => {
         totalInsertTime += Date.now() - start;
         insertCount++;
+        metrics.lastProgressTs = Date.now();
       })
-      .finally(() => inflight.delete(p));
+      .finally(() => {
+        inflight.delete(p);
+        metrics.pendingBatches--;
+        metrics.inFlightInserts = inflight.size;
+      });
     addInfo(
       `[FLUSH] inflight_inserts=${inflight.size}, batch_len=${lote.length}, approx_bytes=${loteBytes}`,
       contexto,
@@ -224,6 +240,7 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
     batchBytes += rowBytes;
     lidas++;
     publishRead?.(lidas);
+    metrics.lastProgressTs = Date.now();
   }
 
   await flushBatch();
@@ -245,6 +262,7 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
     logData.total_linhas = lidas;
     if (hex) logData.hash_arquivo = hex;
   }
+  offMem();
 
   return {
     erro: false,

@@ -1,4 +1,4 @@
-import { appendLine, fmtTimeNow } from "./logger.js";
+import { logLine, fmtTimeNow } from "./logger.js";
 
 const contextoDeMensagens = new Map();
 
@@ -7,10 +7,7 @@ const contextoDeMensagens = new Map();
 /* ─────────────────────────────── */
 async function safeAppendToLog(contexto, tipo, msg) {
   const t = fmtTimeNow();
-  
-  const line = `[${t}][${tipo.toUpperCase()}][${contexto}] ${msg}\n`;
-
-  return appendLine(contexto, line).catch((e) => {
+  return logLine(contexto, tipo, `[${contexto}] ${msg}`).catch((e) => {
     console.error(`[Logger] Falha ao gravar log (${contexto}):`, e.message);
   });
 }

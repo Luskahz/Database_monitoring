@@ -81,6 +81,9 @@ INSERT_MAX_CONCURRENT=2      # Nº máx. de lotes inseridos em paralelo por arqu
 FILES_MAX_CONCURRENT=4       # Nº máx. de arquivos processados simultaneamente
 QUEUE_HIGH_WATERMARK=4       # Lotes "em voo" para pausar leitura (backpressure)
 QUEUE_LOW_WATERMARK=2        # Lotes pendentes para retomar leitura após pausa
+AWF_STABILITY_MS=1500        # awaitWriteFinish: estabilidade ao gravar CSV (ms)
+AWF_POLL_MS=100              # awaitWriteFinish: intervalo de polling (ms)
+DB_QUERY_TIMEOUT_MS=120000   # timeout padrão das queries MySQL (ms)
 ```
 
 **Explicação rápida**
@@ -90,6 +93,11 @@ QUEUE_LOW_WATERMARK=2        # Lotes pendentes para retomar leitura após pausa
 * `INSERT_MAX_CONCURRENT`: nº de INSERTs de lotes em paralelo **por arquivo**.
 * `FILES_MAX_CONCURRENT`: nº de **arquivos** processados em paralelo.
 * `QUEUE_HIGH_WATERMARK` / `QUEUE_LOW_WATERMARK`: controlam **backpressure** na leitura em streaming.
+* `AWF_STABILITY_MS` / `AWF_POLL_MS`: ajustes do `awaitWriteFinish` para cenários de rede lenta.
+* `DB_QUERY_TIMEOUT_MS`: tempo máximo de espera para cada query MySQL.
+
+> Para **DELETE por período**, certifique-se de que a coluna de data possua **índice**. Caso contrário, o sistema apenas registrará
+> um aviso com o comando sugerido `CREATE INDEX idx_<tabela>_data ON <tabela>(<coluna_data>)`.
 
 > 💡 **Dica:** Comece com os valores padrão. Monitore CPU/IO do banco durante a ingestão e ajuste para otimizar.
 
