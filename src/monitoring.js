@@ -62,23 +62,19 @@ export async function startMonitoring() {
     },
   });
 
-  function isCsv(filePath) {
-    return filePath.toLowerCase().endsWith(".csv");
-  }
-
   watcher
     .on("add", (filePath) => {
-      if (!isCsv(filePath)) return;
+      if (!isCsvFile(filePath)) return;
       console.log(`🟢 Arquivo adicionado: ${filePath}`);
       runWithDebounce(filePath, "created", createdHandler);
     })
     .on("change", (filePath) => {
-      if (!isCsv(filePath)) return;
+      if (!isCsvFile(filePath)) return;
       console.log(`🟡 Arquivo modificado: ${filePath}`);
       runWithDebounce(filePath, "modified", createdHandler);
     })
     .on("unlink", (filePath) => {
-      if (!isCsv(filePath)) return;
+      if (!isCsvFile(filePath)) return;
       console.log(`🔴 Arquivo removido: ${filePath}`);
       runWithDebounce(filePath, "deleted", deletedHandler);
     })
