@@ -1,354 +1,341 @@
-import fs from "fs/promises";
+import fs from "fs";
 import path from "path";
-import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/* Estado                                                                     */
-/* ────────────────────────────────────────────────────────────────────────── */
-const logPathsByContext = new Map();
-const writeQueues = new Map();
-const lastSnapshotHash = new Map(); // dedupe STATUS
-const ensuredLogDirs = new Set();
+const loggers = new Map();
 
-// Metadados do contexto para output compacto
-// key(ctx) -> { fullPath, shortTag, tabela?, createdAt }
-const ctxMeta = new Map();
+const FLUSH_MS = Number(process.env.LOG_FLUSH_MS || 200);
+const FLUSH_LINES = Number(process.env.LOG_FLUSH_LINES || 100);
+const CLOSE_TIMEOUT_MS = Number(process.env.LOG_CLOSE_TIMEOUT_MS || 5000);
 
-// Dedupe do bloco de HEADERS por contexto
-const lastHeadersSig = new Map();
+const LOG_ROOT = path.resolve(process.cwd(), "logs");
+const ACTIVITY_LOG_KEY = "__activity__";
+const ACTIVITY_LOG_PATH = path.join(LOG_ROOT, "_activity.txt");
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/* Helpers                                                                    */
-/* ────────────────────────────────────────────────────────────────────────── */
+fs.mkdirSync(LOG_ROOT, { recursive: true });
 
-// Normaliza um caminho de FS preservando prefixo UNC (\\servidor\share)
-function normalizeFsPath(p) {
-  if (!p) return "";
-  let s = String(p);
-  const isUNC = s.startsWith("\\\\") || s.startsWith("//");
-  s = s.replace(/^[\\/]+/, "");      // tira barras do começo
-  s = s.replace(/[\\/]+/g, "\\");    // colapsa para "\"
-  return (isUNC ? "\\\\" : "") + s;
-}
-
-// Extrai o contexto bruto (prioriza string passada; senão, dos dados logger)
-function rawContext(contexto, dadosLogger) {
-  if (typeof contexto === "string" && contexto) return contexto;
-  return dadosLogger?.caminho_original || dadosLogger?.filePath || "__global";
-}
-
-// Chave estável para Maps internos: caminho normalizado + lower-case
-function ctxKey(contexto, dadosLogger) {
-  const base = rawContext(contexto, dadosLogger);
-  return normalizeFsPath(base).toLowerCase();
-}
-
-// Ex.: \\...\\cadastros\\01_11\\2025\\setembro.csv -> \01_11\2025\setembro.csv
-function makeShortTag(filePath, tail = 3) {
-  if (!filePath) return "—";
-  const norm = String(filePath).replace(/[/\\]+/g, "\\");
-  const parts = norm.split("\\").filter(Boolean);
-  const take = parts.slice(-tail);
-  return "\\" + take.join("\\");
-}
-
-const dtfFullBR = new Intl.DateTimeFormat("pt-BR", {
-  dateStyle: "short",
-  timeStyle: "medium",
-  hour12: false,
-  timeZone: "America/Sao_Paulo",
-});
-const dtfTimeBR = new Intl.DateTimeFormat("pt-BR", {
-  timeStyle: "medium",
-  hour12: false,
-  timeZone: "America/Sao_Paulo",
-});
-function fmtFullNow() {
-  return dtfFullBR.format(new Date());
-}
 export function fmtTimeNow() {
-  return dtfTimeBR.format(new Date());
+  return new Date().toISOString();
 }
 
-function escRegex(s) {
-  return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function formatLine(level, msg) {
+  return `[${fmtTimeNow()}][${String(level ?? "info").toUpperCase()}] ${msg}\n`;
 }
 
-function shrinkMessage(msg, meta) {
-  if (!meta?.fullPath || !meta?.shortTag) return msg;
-  let out = String(msg);
-  const re1 = new RegExp(escRegex(meta.fullPath), "g");
-  const re2 = new RegExp(escRegex(JSON.stringify(meta.fullPath)), "g");
-  // troca caminho absoluto pelo TAG curto
-  out = out
-    .replace(re1, meta.shortTag)
-    .replace(re2, JSON.stringify(meta.shortTag));
-  return out;
+function getEntry(filePath) {
+  return loggers.get(filePath);
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/* API pública                                                                */
-/* ────────────────────────────────────────────────────────────────────────── */
-export function registerLogFile(contexto, logPath) {
-  const key = ctxKey(contexto);
-  logPathsByContext.set(key, logPath);
+function waitForDrain(stream) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const cleanup = () => {
+      stream.off("drain", onDrain);
+      stream.off("error", onError);
+      stream.off("close", onClose);
+    };
+    const onDrain = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve();
+    };
+    const onClose = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve();
+    };
+    const onError = (err) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(err);
+    };
+
+    stream.once("drain", onDrain);
+    stream.once("error", onError);
+    stream.once("close", onClose);
+  });
 }
-export function getLogFile(contexto) {
-  const key = ctxKey(contexto);
-  return logPathsByContext.get(key);
+
+function defaultLogPath(filePath) {
+  const dir = path.join(path.dirname(filePath), "loggers");
+  const base = path.parse(filePath).name || path.basename(filePath) || "log";
+  fs.mkdirSync(dir, { recursive: true });
+  return path.join(dir, `Logger_${base}.txt`);
 }
 
-export async function appendLine(contexto, line) {
-  const key = ctxKey(contexto);
-  const logFile = logPathsByContext.get(key);
-  if (!logFile) return;
+function waitForStreamToEnd(stream) {
+  let settled = false;
+  let cleanup = () => {};
+  let timeoutId;
 
-  const meta = ctxMeta.get(key);
-  const out = meta ? shrinkMessage(line, meta) : line;
+  const eventsPromise = new Promise((resolve) => {
+    const settle = (value) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(value);
+    };
 
-  const prev = writeQueues.get(key) || Promise.resolve();
-  const next = prev
-    .then(() => fs.appendFile(logFile, out, "utf8"))
-    .catch(() => {
-      /* não propaga erro de IO do log */
-    });
+    const onFinish = () => settle({ status: "finish" });
+    const onClose = () => settle({ status: "close" });
+    const onError = (error) => settle({ status: "error", error });
 
-  writeQueues.set(key, next);
-  try {
-    await next;
-  } finally {
-    if (writeQueues.get(key) === next) writeQueues.delete(key);
+    cleanup = () => {
+      stream.off("finish", onFinish);
+      stream.off("close", onClose);
+      stream.off("error", onError);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+
+    stream.once("finish", onFinish);
+    stream.once("close", onClose);
+    stream.once("error", onError);
+  });
+
+  const timeoutPromise = new Promise((resolve) => {
+    timeoutId = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve({ status: "timeout" });
+    }, CLOSE_TIMEOUT_MS);
+    timeoutId.unref?.();
+  });
+
+  return Promise.race([eventsPromise, timeoutPromise]);
+}
+
+export function startLogger(filePath, options = {}) {
+  if (!filePath) return null;
+  if (loggers.has(filePath)) return loggers.get(filePath);
+
+  const {
+    logPath: forcedPath,
+    flushIntervalMs = FLUSH_MS,
+    highWaterMark = 1024 * 256,
+    disableBeginLine = false,
+    displayName,
+  } = options;
+
+  const logPath = forcedPath || defaultLogPath(filePath);
+  fs.mkdirSync(path.dirname(logPath), { recursive: true });
+
+  const stream = fs.createWriteStream(logPath, {
+    flags: "a",
+    highWaterMark,
+  });
+
+  const entry = {
+    filePath,
+    logPath,
+    stream,
+    buffer: [],
+    timer: null,
+    inFlush: false,
+    flushPromise: null,
+    closing: false,
+    ended: false,
+    endPromise: null,
+    displayName: displayName || path.basename(filePath) || filePath,
+  };
+
+  stream.on("error", (err) => {
+    if (!entry.ended) {
+      entry.ended = true;
+      console.error(`[logger] erro no stream (${entry.displayName}):`, err?.message || err);
+    }
+  });
+
+  stream.on("close", () => {
+    entry.ended = true;
+  });
+
+  if (flushIntervalMs > 0) {
+    const timer = setInterval(() => {
+      flush(filePath).catch((err) => {
+        console.error(`[logger] flush falhou (${entry.displayName}):`, err?.message || err);
+      });
+    }, flushIntervalMs);
+    timer.unref?.();
+    entry.timer = timer;
   }
+
+  loggers.set(filePath, entry);
+
+  if (!disableBeginLine) {
+    void logLine(filePath, "info", `==== BEGIN ${entry.displayName} ====`);
+  }
+
+  return entry;
 }
 
-/**
- * STATUS UPDATE compacto (1 linha) com dedupe por snapshot.
- */
-export async function updateLoggerController(dadosLogger, contexto) {
-  const key = ctxKey(contexto, dadosLogger);
-  const meta = ctxMeta.get(key) || {};
+export async function logLine(filePath, level, msg) {
+  const entry = getEntry(filePath);
+  if (!entry || entry.closing || entry.ended) return false;
 
-  // Coerção de tipos para snapshot estável (evita "2025" vs 2025)
-  const nome =
-    (dadosLogger?.nome_arquivo ?? path.parse(meta.fullPath || "").base) || "—";
-  const tabela =
-    dadosLogger?.tabela ?? dadosLogger?.tabela_destino ?? meta.tabela ?? "—";
-  const ano = dadosLogger?.ano != null ? String(dadosLogger.ano) : "—";
-  const mes = dadosLogger?.mes != null ? String(dadosLogger.mes) : "—";
-  const dia = dadosLogger?.dia != null ? String(dadosLogger.dia) : "—";
-  const acao = dadosLogger?.acao != null ? String(dadosLogger.acao) : "—";
-  const hash =
-    dadosLogger?.hash != null
-      ? String(dadosLogger.hash)
-      : dadosLogger?.hash_arquivo != null
-      ? String(dadosLogger.hash_arquivo)
-      : "—";
-
-  // chave de dedupe enxuta
-  const snapshot = `nome=${nome}|tabela=${tabela}|data=${ano}-${mes}-${dia}|acao=${acao}|hash=${hash}`;
-  if (lastSnapshotHash.get(key) === snapshot) return;
-  lastSnapshotHash.set(key, snapshot);
-
-  const now = fmtFullNow();
-  const blocoStatus = `---------------- STATUS UPDATE ${now} ----------------
-Arquivo: ${nome}
-Tabela : ${tabela}
-Data   : ${ano}-${mes}-${dia}
-Acao   : ${acao}
-Hash   : ${hash}
------------------------------------------------------\n`;
-
-  await appendLine(key, blocoStatus);
+  entry.buffer.push(formatLine(level, msg));
+  if (entry.buffer.length >= FLUSH_LINES) {
+    await flush(filePath);
+  }
+  return true;
 }
 
-export async function createLoggerController(filePath, tabela = undefined) {
-  // Usa a mesma chave estável para todo o ciclo
-  const key = ctxKey(filePath);
+export async function flush(filePath) {
+  const entry = getEntry(filePath);
+  if (!entry) return;
 
-  // Se já inicializado neste run, não reescreve o BEGIN
-  if (ctxMeta.has(key)) {
-    // Atualiza tabela se vier agora e ainda não houver no meta
-    const meta = ctxMeta.get(key);
-    if (meta && tabela && !meta.tabela) meta.tabela = tabela;
+  if (entry.ended || entry.stream.destroyed) {
+    entry.buffer.length = 0;
     return;
   }
 
-  const dir = path.dirname(filePath);
-  const { base: nome } = path.parse(filePath);
-  const logDir = path.join(dir, "loggers");
-
-  if (!ensuredLogDirs.has(logDir)) {
-    await fs.mkdir(logDir, { recursive: true });
-    ensuredLogDirs.add(logDir);
+  if (entry.inFlush && entry.flushPromise) {
+    try {
+      await entry.flushPromise;
+    } catch {}
+    if (!entry.buffer.length) return;
   }
 
-  const logPath = path.join(logDir, `Logger_${path.parse(filePath).name}.txt`);
+  if (entry.buffer.length === 0) return;
 
-  // registra metadados p/ shrink
-  const meta = {
-    fullPath: filePath,                 // mantém original para shrink
-    shortTag: makeShortTag(filePath, 3),
-    tabela,
-    createdAt: new Date(),
-  };
-  ctxMeta.set(key, meta);
-  registerLogFile(key, logPath);
-  lastSnapshotHash.delete(key);
-  lastHeadersSig.delete(key);
+  const chunk = entry.buffer.join("");
+  entry.buffer.length = 0;
 
-  // BEGIN no formato "STATUS UPDATE" antigo
-  const now = fmtFullNow();
-  const blocoBegin = `---------------- BEGIN FILE ${now} ----------------
-Arquivo: ${nome || "—"}
-Tabela : ${tabela || "—"}
-Data   : —-—-—
-Acao   : analyze
-Hash   : —
------------------------------------------------------\n`;
+  entry.inFlush = true;
+  const flushPromise = (async () => {
+    try {
+      if (!entry.stream.writable || entry.stream.destroyed || entry.ended) return;
+      if (!entry.stream.write(chunk)) {
+        await waitForDrain(entry.stream);
+      }
+    } catch (err) {
+      console.error(`[logger] erro ao escrever (${entry.displayName}):`, err?.message || err);
+      try {
+        entry.stream.destroy?.(err);
+      } catch {}
+      entry.ended = true;
+    } finally {
+      entry.inFlush = false;
+      if (entry.flushPromise === flushPromise) {
+        entry.flushPromise = null;
+      }
+    }
+  })();
 
-  // cria/zera arquivo e escreve o BEGIN
-  await fs.writeFile(logPath, blocoBegin, "utf8");
+  entry.flushPromise = flushPromise;
+  await flushPromise;
 }
 
-export function getLoggerContext(metadados = {}, logData = {}, filePath) {
-  // opcionalmente já persistimos a tabela pra aparecer no BEGIN
-  const t = logData?.tabela ?? logData?.tabela_destino ?? metadados?.tabela;
+async function finalizeStream(entry) {
+  if (!entry || entry.ended || entry.stream.destroyed) {
+    entry.ended = true;
+    return;
+  }
 
-  const key = ctxKey(filePath || metadados?.caminho_original || logData?.caminho_original);
-  const meta = ctxMeta.get(key);
-  if (meta && t && !meta.tabela) meta.tabela = t;
+  try {
+    entry.stream.end();
+  } catch (err) {
+    console.error(`[logger] stream.end falhou (${entry.displayName}):`, err?.message || err);
+    entry.ended = true;
+    return;
+  }
 
-  return {
-    ...metadados,
-    ...logData,
-    caminho_original:
-      filePath ??
-      metadados?.caminho_original ??
-      logData?.caminho_original ??
-      "—",
-  };
+  const result = await waitForStreamToEnd(entry.stream);
+  if (result.status === "error") {
+    console.error(`[logger] erro ao finalizar stream (${entry.displayName}):`, result.error?.message || result.error);
+  } else if (result.status === "timeout") {
+    console.error(`[logger] timeout ao finalizar stream (${entry.displayName})`);
+    try {
+      entry.stream.destroy?.();
+    } catch {}
+  }
+
+  entry.ended = true;
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/* Relatório de headers (mantido, com dedupe por assinatura do conteúdo)      */
-/* ────────────────────────────────────────────────────────────────────────── */
+export async function endLogger(filePath) {
+  const entry = getEntry(filePath);
+  if (!entry) return;
 
-const DEFAULT_IGNORE = ["id", "created_at", "updated_at", "hash_arquivo"];
-const DEFAULT_IGNORE_SET = new Set(DEFAULT_IGNORE.map((s) => s.toLowerCase()));
+  if (entry.endPromise) return entry.endPromise;
 
-export async function logCsvVsTableHeaders({
-  contexto,
-  tabela,
-  colunasCsv,
-  colunasTabela,
-  ignore = DEFAULT_IGNORE,
-}) {
-  const key = ctxKey(contexto);
-  const ig =
-    ignore === DEFAULT_IGNORE
-      ? DEFAULT_IGNORE_SET
-      : new Set(ignore.map((s) => (s || "").toLowerCase()));
+  entry.closing = true;
+  if (entry.timer) {
+    clearInterval(entry.timer);
+    entry.timer = null;
+  }
 
-  const csv = [];
-  const tbl = [];
-  let widthLeft = 3;
-  let widthRight = 6;
+  entry.endPromise = (async () => {
+    if (entry.inFlush && entry.flushPromise) {
+      try {
+        await entry.flushPromise;
+      } catch (err) {
+        console.error(`[logger] flush pendente falhou (${entry.displayName}):`, err?.message || err);
+      }
+    }
 
-  for (let i = 0; i < colunasCsv.length; i++) {
-    const c = colunasCsv[i] ?? "";
-    const lc = (c + "").toLowerCase();
-    if (!ig.has(lc)) {
-      csv.push(c);
-      if (c.length > widthLeft) widthLeft = c.length;
+    if (!entry.ended && !entry.stream.destroyed) {
+      entry.buffer.push(formatLine("info", `==== END ${entry.displayName} ====`));
+      try {
+        await flush(filePath);
+      } catch (err) {
+        console.error(`[logger] flush final falhou (${entry.displayName}):`, err?.message || err);
+      }
+    }
+
+    try {
+      await finalizeStream(entry);
+    } catch (err) {
+      console.error(`[logger] finalizeStream falhou (${entry.displayName}):`, err?.message || err);
+    } finally {
+      entry.ended = true;
+      loggers.delete(filePath);
+    }
+  })();
+
+  return entry.endPromise;
+}
+
+export async function endAllLoggers() {
+  for (const [filePath] of Array.from(loggers.entries())) {
+    try {
+      await endLogger(filePath);
+    } catch (err) {
+      console.error(`[logger] falha ao encerrar ${filePath}:`, err?.message || err);
     }
   }
-  for (let i = 0; i < colunasTabela.length; i++) {
-    const c = colunasTabela[i] ?? "";
-    const lc = (c + "").toLowerCase();
-    if (!ig.has(lc)) {
-      tbl.push(c);
-      if (c.length > widthRight) widthRight = c.length;
-    }
-  }
-
-  // Dedupe do bloco de HEADERS por assinatura (impede duplicados no mesmo run)
-  const headersSig = `${tabela}|csv:${csv.join(",")}||tbl:${tbl.join(",")}`;
-  if (lastHeadersSig.get(key) === headersSig) {
-    return { extrasNoCsv: [], faltandoNoCsv: [] };
-  }
-  lastHeadersSig.set(key, headersSig);
-
-  const inTbl = Object.create(null);
-  for (let i = 0; i < tbl.length; i++) inTbl[tbl[i]] = 1;
-
-  const extrasNoCsv = [];
-  for (let i = 0; i < csv.length; i++)
-    if (inTbl[csv[i]] !== 1) extrasNoCsv.push(csv[i]);
-
-  const inCsv = Object.create(null);
-  for (let i = 0; i < csv.length; i++) inCsv[csv[i]] = 1;
-
-  const faltandoNoCsv = [];
-  for (let i = 0; i < tbl.length; i++)
-    if (inCsv[tbl[i]] !== 1) faltandoNoCsv.push(tbl[i]);
-
-  const maxLen = csv.length > tbl.length ? csv.length : tbl.length;
-  const dashL = "-".repeat(widthLeft);
-  const dashR = "-".repeat(widthRight);
-
-  const header = `---------------- HEADERS CSV × TABELA ----------------
-Tabela: ${tabela}
-CSV (${csv.length}) | TABELA (${tbl.length})
-${dashL}-+-${dashR}
-`;
-
-  const rowsArr = new Array(maxLen);
-  for (let i = 0; i < maxLen; i++) {
-    const l = csv[i] ?? "";
-    const r = tbl[i] ?? "";
-    rowsArr[i] = `${l.padEnd(widthLeft)} | ${r}`;
-  }
-  const rows = rowsArr.join("\n") + "\n";
-
-  const diffs = `---------------- DIFERENÇAS ----------------
-Extras no CSV   (${extrasNoCsv.length}): ${
-    extrasNoCsv.length ? extrasNoCsv.join(", ") : "—"
-  }
-Faltando no CSV (${faltandoNoCsv.length}): ${
-    faltandoNoCsv.length ? faltandoNoCsv.join(", ") : "—"
-  }
------------------------------------------------------\n`;
-
-  await appendLine(key, header + rows + diffs);
-
-  if (extrasNoCsv.length || faltandoNoCsv.length) {
-    addAviso(
-      `[Headers] Divergências detectadas: extras no CSV (${extrasNoCsv.length}), faltando no CSV (${faltandoNoCsv.length}).`,
-      contexto
-    );
-    if (extrasNoCsv.length)
-      addAviso(`[Headers] Extras no CSV: ${extrasNoCsv.join(", ")}`, contexto);
-    if (faltandoNoCsv.length)
-      addErro(
-        `[Headers] Faltando no CSV: ${faltandoNoCsv.join(", ")}`,
-        contexto
-      );
-  } else {
-    addInfo("[Headers] CSV e tabela estão alinhados.", contexto);
-  }
-
-  return { extrasNoCsv, faltandoNoCsv };
 }
 
-export async function finalLoggerController(dadosLogger, contexto) {
-  const key = ctxKey(contexto, dadosLogger);
-
-  const now = fmtFullNow();
-  await appendLine(key, `==== FINAL ${now} ====\n`);
-
-  logPathsByContext.delete(key);
-  lastSnapshotHash.delete(key);
-  lastHeadersSig.delete(key);
-  writeQueues.delete(key);
-  ctxMeta.delete(key);
+export async function appendLine(contexto, line) {
+  await logLine(contexto, "info", line.trim());
 }
+
+function ensureActivityLogger() {
+  if (!loggers.has(ACTIVITY_LOG_KEY)) {
+    startLogger(ACTIVITY_LOG_KEY, {
+      logPath: ACTIVITY_LOG_PATH,
+      displayName: "_activity",
+    });
+  }
+}
+
+export function logActivity(level, message, { filePath, action } = {}) {
+  ensureActivityLogger();
+  const segments = [];
+  if (filePath) segments.push(path.basename(filePath));
+  if (action) segments.push(action);
+  const prefix = segments.length ? `[${segments.join(" | ")}] ` : "";
+  return logLine(ACTIVITY_LOG_KEY, level, `${prefix}${message}`);
+}
+
+export default {
+  startLogger,
+  logLine,
+  flush,
+  endLogger,
+  endAllLoggers,
+  logActivity,
+  fmtTimeNow,
+};

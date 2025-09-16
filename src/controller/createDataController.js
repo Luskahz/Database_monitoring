@@ -5,11 +5,13 @@ import {
   readCsvHeader,
   normalizeHeadersOnce,
 } from "../utils/csvStream.js";
+import iconv from "iconv-lite";
 import { addAviso, addErro } from "../middleware/errorHandler.js";
 import {
   detectEncoding,
   detectDelimiter,
 } from "../utils/prepareStreamByFilepath.js";
+import { readHeadOnce } from "../utils/readHeadOnce.js";
 import {
   getColumnsFromTable,
   getTiposFromTable,
@@ -140,13 +142,35 @@ export async function createMetadadosController(filePath, action) {
   const caminho_truncado = truncarFilepath(filePath);
 
   if (PIPELINE_FAST_PATH) {
-    const { encoding } = await detectEncoding(filePath, {
-      headBytes: 64 * 1024,
-      fallback: "latin1",
-    });
+    const { headBuf } = await readHeadOnce(filePath, 64 * 1024);
+    const headSampleBytes = headBuf?.length ?? 0;
+    let { encoding } = await detectEncoding(
+      { filePath, headBuf, sampleBytes: headSampleBytes, fallback: "latin1" }
+    );
+
+    let encodingNorm = typeof encoding === "string" ? encoding.toLowerCase() : "utf8";
+    if (encodingNorm !== "latin1" && encodingNorm !== "utf8") {
+      encodingNorm = "utf8";
+    }
+    encoding = encodingNorm;
+
+    let headForText = headBuf ?? Buffer.alloc(0);
+    if (encodingNorm === "utf8" && headForText.length >= 3) {
+      if (headForText[0] === 0xef && headForText[1] === 0xbb && headForText[2] === 0xbf) {
+        headForText = headForText.subarray(3);
+      }
+    }
+
+    const headText =
+      encodingNorm === "latin1"
+        ? iconv.decode(headForText, "latin1")
+        : headForText.toString("utf8");
+
     const delimiter = await detectDelimiter(filePath, encoding, {
-      minHeadBytes: 64 * 1024,
-      maxHeadBytes: 64 * 1024,
+      minHeadBytes: headSampleBytes,
+      maxHeadBytes: headSampleBytes,
+      headText,
+      headBytes: headSampleBytes,
     });
     const rawHeaders = await readCsvHeader(filePath, encoding, delimiter, {
       highWaterMark: 64 * 1024,

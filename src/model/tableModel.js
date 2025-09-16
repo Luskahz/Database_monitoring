@@ -1,6 +1,7 @@
 import { query } from "../../config/dbPool.js";
 import { schema } from "../../config/index.js";
 import mapearTipo from "../utils/mapearTipos.js";
+import { addAviso } from "../middleware/errorHandler.js";
 
 /* -------------------- Caches de metadados -------------------- */
 const schemaCache = new Map();
@@ -257,9 +258,9 @@ export async function deleteFromTable(opcoes) {
   const { tabela, tabela_destino, mes, ano, dia, coluna_data, chunkSize } = opcoes;
   const nomeTabela = tabela || tabela_destino;
 
-  if (!nomeTabela) {
-    throw new Error("[model delete] Nome da tabela não foi informado.");
-  }
+    if (!nomeTabela) {
+      throw new Error("[model delete] Nome da tabela não foi informado.");
+    }
 
   if (!coluna_data) {
     const sql = `DELETE FROM \`${schema}\`.\`${nomeTabela}\``;
@@ -273,11 +274,21 @@ export async function deleteFromTable(opcoes) {
     }
   }
 
-  const range = (ano && mes) ? computeDateRange({ ano, mes, dia }) : null;
-  if (!range) {
-    throw new Error(`[model delete] Mês/Ano inválidos para delete.`);
-  }
-  const [inicio, fim] = range;
+    const range = (ano && mes) ? computeDateRange({ ano, mes, dia }) : null;
+    if (!range) {
+      throw new Error(`[model delete] Mês/Ano inválidos para delete.`);
+    }
+    const [inicio, fim] = range;
+    const idx = await query(
+      `SHOW INDEX FROM \`${schema}\`.\`${nomeTabela}\` WHERE Column_name = ?`,
+      [coluna_data]
+    );
+    if (!idx || idx.length === 0) {
+      addAviso(
+        `coluna ${coluna_data} da tabela ${nomeTabela} sem índice. Sugerido: CREATE INDEX idx_${nomeTabela}_${coluna_data} ON ${nomeTabela}(${coluna_data});`,
+        nomeTabela
+      );
+    }
   const CHUNK = Number(chunkSize) > 0 ? Number(chunkSize) : 50_000;
   let totalAff = 0;
 

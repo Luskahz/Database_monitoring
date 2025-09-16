@@ -30,6 +30,9 @@ export class MemoryGuard {
     this.listeners.add(cb);
     return () => this.listeners.delete(cb);
   }
+  listenerCount() {
+    return this.listeners.size;
+  }
   _emit() {
     for (const cb of this.listeners) cb(this.state);
   }
