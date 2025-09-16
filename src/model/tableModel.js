@@ -2,6 +2,7 @@ import { query } from "../../config/dbPool.js";
 import { schema } from "../../config/index.js";
 import mapearTipo from "../utils/mapearTipos.js";
 import { addAviso } from "../middleware/errorHandler.js";
+import { existsAnyDataInRange as existsAnyDataInRangeQuery } from "./overlapQueries.js";
 
 /* -------------------- Caches de metadados -------------------- */
 const schemaCache = new Map();
@@ -49,7 +50,7 @@ function monthToNumber(m) {
 }
 
 /** Retorna [inicio, fimExclusivo] (YYYY-MM-DD) para filtros sargáveis por data. */
-function computeDateRange({ ano, mes, dia }) {
+export function computeDateRange({ ano, mes, dia }) {
   const y = Number(ano);
   if (!y || !mes) return null;
 
@@ -74,24 +75,42 @@ function computeDateRange({ ano, mes, dia }) {
   return [i, f];
 }
 
-export async function existsAnyDataInRange(metadados) {
-  const { tabela, coluna_data, ano, mes, dia } = metadados;
-  if (!tabela || !coluna_data) return null;
-  const range = computeDateRange({ ano, mes, dia });
-  if (!range) return null;
-  const [inicio, fim] = range;
-  const sql = `
-      SELECT 1
-      FROM \`${schema}\`.\`${tabela}\`
-      WHERE \`${coluna_data}\` >= ? AND \`${coluna_data}\` < ?
-      LIMIT 1
-    `;
-  try {
-    const rows = await query(sql, [inicio, fim]);
-    return rows.length > 0;
-  } catch (e) {
-    throw new Error(`[model exists range] Erro ao consultar range de datas: ${e.message}`);
+function inclusiveEndFromExclusive(endExclusive) {
+  if (!endExclusive) return null;
+  const date = new Date(`${endExclusive}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setUTCDate(date.getUTCDate() - 1);
+  return date.toISOString().slice(0, 10);
+}
+
+export function buildRangeFromMetadados(meta) {
+  if (!meta) return null;
+  const rangeTuple = computeDateRange(meta);
+  if (!rangeTuple) return null;
+  const [startIso, endExclusiveIso] = rangeTuple;
+  const inclusiveEnd = inclusiveEndFromExclusive(endExclusiveIso);
+  return {
+    start: startIso,
+    end: inclusiveEnd,
+    endExclusive: endExclusiveIso,
+  };
+}
+
+export async function existsAnyDataInRange(input) {
+  if (!input) return null;
+  if (input.table || input.dateCol || input.range || input.db) {
+    return existsAnyDataInRangeQuery(input);
   }
+  const { tabela, coluna_data } = input;
+  if (!tabela || !coluna_data) return null;
+  const rangeObj = buildRangeFromMetadados(input);
+  if (!rangeObj) return null;
+  return existsAnyDataInRangeQuery({
+    table: tabela,
+    dateCol: coluna_data,
+    range: rangeObj,
+    db: input.db,
+  });
 }
 
 /** Gera "(?, ?, ...)" repetido N vezes e o array achatado de valores. */
@@ -222,17 +241,15 @@ export async function existsAnyCsvDateInTable(metadados, opts = {}) {
   // max exclusive (+1 dia)
   const maxPlus1 = new Date(max);
   maxPlus1.setUTCDate(maxPlus1.getUTCDate() + 1);
-  const maxEx = maxPlus1.toISOString().slice(0,10);
+  const maxEx = maxPlus1.toISOString().slice(0, 10);
 
   {
-    const sqlRange = `
-      SELECT 1
-      FROM \`${schema}\`.\`${tabela}\`
-      WHERE \`${coluna_data}\` >= ? AND \`${coluna_data}\` < ?
-      LIMIT 1
-    `;
-    const r = await query(sqlRange, [min, maxEx]);
-    if (r.length === 0) return false; // nada no intervalo => certeza de não haver interseção
+    const overlap = await existsAnyDataInRangeQuery({
+      table: tabela,
+      dateCol: coluna_data,
+      range: { start: min, endExclusive: maxEx },
+    });
+    if (!overlap) return false; // nada no intervalo => certeza de não haver interseção
   }
 
   // 2) confirmação exata via IN chunked (mantém corretude)

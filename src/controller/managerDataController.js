@@ -1,4 +1,4 @@
-import { deleteFromTable, existsAnyDataInRange, existsAnyCsvDateInTable } from "../model/tableModel.js";
+import { deleteFromTable, buildRangeFromMetadados } from "../model/tableModel.js";
 import {
   iniciarBarra,
   atualizarBarra,
@@ -7,6 +7,7 @@ import {
 
 import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
 import { logActivity } from "../middleware/logger.js";
+import { decideOverlapPolicy } from "../utils/decideOverlapPolicy.js";
 import streamPipeline, {
   POOL_MAX,
   INSERT_MAX_CONCURRENT,
@@ -166,21 +167,22 @@ export async function manageInsertController(metadados, logData) {
       });
     }
 
-    let validator;
-    try {
-      const overlap = PIPELINE_FAST_PATH
-        ? await existsAnyDataInRange(metadados)
-        : await existsAnyCsvDateInTable(metadados); // true/false/null
-      if (overlap === null) {
-        // Sem coluna_data → segue sua regra original
-        validator = "cadastro";
-      } else {
-        validator = overlap ? "substituir" : "inserir";
-      }
-    } catch (e) {
-      addErro(`Erro ao validar datas no banco: ${e.message}`, contexto);
-      throw e;
-    }
+    const overlapDecision = await ensureOverlapDecision(metadados, contexto);
+    const strategy = overlapDecision?.strategy || "insert";
+    const hasOverlap = overlapDecision?.hasOverlap === true;
+    metadados.applyPreDelete = strategy === "replace";
+
+    logManageStrategy(contexto, {
+      usingStrategy: strategy,
+      hasOverlap,
+      reason: overlapDecision?.reason ?? null,
+      range: metadados.range ?? null,
+      applyPreDelete: metadados.applyPreDelete,
+    });
+
+    const validator = strategy === "replace"
+      ? metadados.coluna_data ? "substituir" : "cadastro"
+      : "inserir";
 
     if (validator === "cadastro" || validator === "substituir") {
       try {
@@ -196,16 +198,6 @@ export async function manageInsertController(metadados, logData) {
         void logActivity("error", `Falha ao deletar período: ${e.message}`, { filePath: contexto });
         throw e;
       }
-    } else if (validator === null) {
-      addErro("Validação nula (dados inválidos ou sem coluna de data).", contexto);
-      void logActivity("warn", "Validação nula: dados inválidos", { filePath: contexto });
-      return {
-        erro: true,
-        total: totalForReturn,
-        inseridos: 0,
-        falhas: totalForReturn,
-        mensagem: "Validação nula",
-      };
     }
 
     addInfo("Iniciando leitura e montagem de lotes...", contexto);
@@ -271,6 +263,59 @@ export async function manageInsertController(metadados, logData) {
     }
   } finally {
     await finalizarBarra(barraId);
+  }
+}
+
+
+async function ensureOverlapDecision(metadados, contexto) {
+  if (!metadados) return null;
+  if (metadados.overlap) {
+    if (!metadados.range) {
+      metadados.range = buildRangeFromMetadados(metadados);
+    }
+    return metadados.overlap;
+  }
+
+  addAviso(
+    "[OverlapDecision] Metadados sem decisão prévia; calculando tardiamente (manager).",
+    contexto
+  );
+  const range = metadados.range ?? buildRangeFromMetadados(metadados);
+  metadados.range = range || null;
+  const decision = await decideOverlapPolicy({
+    table: metadados.tabela,
+    dateCol: metadados.coluna_data,
+    range,
+    logger: createOverlapLogger(contexto, metadados.acao),
+  });
+  metadados.overlap = decision;
+  return decision;
+}
+
+function createOverlapLogger(contexto, action) {
+  return {
+    info(message, payload = {}) {
+      try {
+        const serialized = JSON.stringify(payload);
+        const line = `${message} ${serialized}`;
+        addInfo(line, contexto);
+        void logActivity("info", line, { filePath: contexto, action });
+      } catch (err) {
+        addInfo(`${message} ${payload ? String(payload) : ""}`, contexto);
+        void logActivity("info", message, { filePath: contexto, action });
+      }
+    },
+  };
+}
+
+function logManageStrategy(contexto, payload) {
+  try {
+    const line = `[ManageInsert] ${JSON.stringify(payload)}`;
+    addInfo(line, contexto);
+    void logActivity("info", line, { filePath: contexto });
+  } catch (err) {
+    addInfo("[ManageInsert]", contexto);
+    void logActivity("info", "[ManageInsert]", { filePath: contexto });
   }
 }
 

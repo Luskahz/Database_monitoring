@@ -6,7 +6,7 @@ import {
   normalizeHeadersOnce,
 } from "../utils/csvStream.js";
 import iconv from "iconv-lite";
-import { addAviso, addErro } from "../middleware/errorHandler.js";
+import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
 import {
   detectEncoding,
   detectDelimiter,
@@ -16,8 +16,11 @@ import {
   getColumnsFromTable,
   getTiposFromTable,
   getDateColumnsFromTable,
+  buildRangeFromMetadados,
 } from "../model/tableModel.js";
 import { PIPELINE_FAST_PATH } from "../../config/index.js";
+import { decideOverlapPolicy } from "../utils/decideOverlapPolicy.js";
+import { logActivity } from "../middleware/logger.js";
 
 /* ---------- hot helpers ---------- */
 function isAllDigits(s) {
@@ -183,7 +186,7 @@ export async function createMetadadosController(filePath, action) {
       getDateColumnsFromTable(destino.tabela_destino),
     ]);
 
-    return {
+    const metadados = {
       nome_arquivo: destino.nome_arquivo,
       ano: destino.ano,
       mes: destino.mes,
@@ -204,11 +207,14 @@ export async function createMetadadosController(filePath, action) {
       caminho_original: filePath,
       caminho_truncado,
     };
+
+    await ensureOverlapMetadata(metadados, filePath, action);
+    return metadados;
   }
 
   const analise = await analyzeCsv(filePath, destino.tabela_destino);
 
-  return {
+  const metadados = {
     nome_arquivo: destino.nome_arquivo,
     ano: destino.ano,
     mes: destino.mes,
@@ -228,6 +234,48 @@ export async function createMetadadosController(filePath, action) {
 
     caminho_original: filePath,
     caminho_truncado,
+  };
+
+  await ensureOverlapMetadata(metadados, filePath, action);
+  return metadados;
+}
+
+async function ensureOverlapMetadata(metadados, contexto, action) {
+  if (!metadados) return null;
+  if (metadados.overlap) {
+    if (!metadados.range) {
+      metadados.range = buildRangeFromMetadados(metadados);
+    }
+    return metadados.overlap;
+  }
+
+  const range = metadados.range ?? buildRangeFromMetadados(metadados);
+  metadados.range = range || null;
+
+  const logger = createOverlapLogger(contexto, action);
+  const decision = await decideOverlapPolicy({
+    table: metadados.tabela,
+    dateCol: metadados.coluna_data,
+    range,
+    logger,
+  });
+  metadados.overlap = decision;
+  return decision;
+}
+
+function createOverlapLogger(contexto, action) {
+  return {
+    info(message, payload = {}) {
+      try {
+        const serialized = JSON.stringify(payload);
+        const line = `${message} ${serialized}`;
+        addInfo(line, contexto);
+        void logActivity("info", line, { filePath: contexto, action });
+      } catch (err) {
+        addInfo(`${message} ${payload ? String(payload) : ""}`, contexto);
+        void logActivity("info", message, { filePath: contexto, action });
+      }
+    },
   };
 }
 
