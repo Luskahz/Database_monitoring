@@ -19,3 +19,10 @@ export const RAM_GUARD_INTERVAL_MS = Number(process.env.RAM_GUARD_INTERVAL_MS);
 // aliases for backwards compatibility
 export const QUEUE_HIGH_WATERMARK = HIGH_WATERMARK_DEFAULT;
 export const QUEUE_LOW_WATERMARK = LOW_WATERMARK_DEFAULT;
+
+// staging configuration (used by pipeline)
+export const STAGING_DIR = process.env.STAGING_DIR;
+export const STAGING_REUSE = process.env.STAGING_REUSE;
+export const STAGING_VERIFY = process.env.STAGING_VERIFY;
+export const STAGING_CLEANUP_ON_SUCCESS = process.env.STAGING_CLEANUP_ON_SUCCESS;
+export const STAGING_CLEANUP_TTL_MIN = process.env.STAGING_CLEANUP_TTL_MIN;
