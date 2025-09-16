@@ -27,6 +27,7 @@ import {
   LOW_WATERMARK_DEFAULT,
 } from "../../config/index.js";
 import { updateActiveJob } from "../utils/queueTracker.js";
+import { normalizeTotal } from "../utils/normalizeTotal.js";
 
 export async function manageInsertController(metadados, logData) {
   const contexto = metadados.caminho_original;
@@ -109,7 +110,61 @@ export async function manageInsertController(metadados, logData) {
     void logActivity("info", "Leitura e validação iniciadas", { filePath: contexto });
 
     // -------- Valida dados e ação --------
-    const total = metadados.total_linhas || 0;
+    let totalKnown = normalizeTotal(metadados.total_linhas);
+    let totalIsKnown = totalKnown != null;
+    let totalDisplay = totalIsKnown ? String(totalKnown) : "-";
+    let totalForReturn = totalKnown ?? 0;
+
+    const progressLogState = new Map();
+
+    function shouldLogUnknownDelta(nextValue, lastValue) {
+      if (!Number.isFinite(nextValue)) return false;
+      if (lastValue == null) return true;
+      return nextValue - lastValue >= 1000;
+    }
+
+    function logProgress(stageName, statusText, primaryLabel, primaryValue) {
+      if (!Number.isFinite(primaryValue)) return;
+
+      const state = progressLogState.get(stageName) || {
+        lastPercent: null,
+        lastValue: null,
+        logged: false,
+      };
+
+      const percentVal =
+        totalIsKnown && totalKnown
+          ? Math.max(0, Math.min(100, Math.floor((primaryValue / totalKnown) * 100)))
+          : null;
+
+      let shouldLog = !state.logged;
+      if (!shouldLog) {
+        if (percentVal != null && percentVal !== state.lastPercent) {
+          shouldLog = true;
+        } else if (!totalIsKnown && shouldLogUnknownDelta(primaryValue, state.lastValue)) {
+          shouldLog = true;
+        }
+      }
+
+      if (!shouldLog) return;
+
+      const payload = {
+        stage: stageName,
+        status: statusText || stageName,
+        total: totalDisplay,
+        totalKnown: totalIsKnown,
+        percent:
+          totalIsKnown && percentVal != null ? `${percentVal}%` : "-",
+      };
+      if (primaryLabel) payload[primaryLabel] = primaryValue;
+
+      addInfo(`[Progress] ${JSON.stringify(payload)}`, contexto);
+      progressLogState.set(stageName, {
+        lastPercent: percentVal,
+        lastValue: primaryValue,
+        logged: true,
+      });
+    }
 
     let validator;
     try {
@@ -144,7 +199,13 @@ export async function manageInsertController(metadados, logData) {
     } else if (validator === null) {
       addErro("Validação nula (dados inválidos ou sem coluna de data).", contexto);
       void logActivity("warn", "Validação nula: dados inválidos", { filePath: contexto });
-      return { erro: true, total, inseridos: 0, falhas: total, mensagem: "Validação nula" };
+      return {
+        erro: true,
+        total: totalForReturn,
+        inseridos: 0,
+        falhas: totalForReturn,
+        mensagem: "Validação nula",
+      };
     }
 
     addInfo("Iniciando leitura e montagem de lotes...", contexto);
@@ -156,14 +217,41 @@ export async function manageInsertController(metadados, logData) {
         metadados,
         tiposFinal,
         {
-          publishRead: (lidas) => publish(total ? lidas / total : 0, "Montando lote..."),
-          publishInsert: (inseridos) =>
-            publish(total ? inseridos / total : 0, `Inseridos: ${inseridos}/${total}`),
+          publishRead: (lidas) => {
+            const status = totalIsKnown
+              ? `Montando lote (${lidas}/${totalDisplay})`
+              : `Montando lote (${lidas}/-)`;
+            publish(totalIsKnown && totalKnown ? lidas / totalKnown : 0, status);
+            logProgress(currentStageName, status, "linhasLidas", lidas);
+          },
+          publishInsert: (inseridos) => {
+            const status = totalIsKnown
+              ? `Inseridos: ${inseridos}/${totalDisplay}`
+              : `Inseridos: ${inseridos}/-`;
+            publish(
+              totalIsKnown && totalKnown ? inseridos / totalKnown : 0,
+              status
+            );
+            logProgress(currentStageName, status, "inseridos", inseridos);
+          },
           onInsertStart: () => setPhase("insert"),
           onFlush: () => atualizarBarra(barraId, 0, "Enviando lote..."),
         },
         { logData }
       );
+
+      const updatedTotal = normalizeTotal(metadados.total_linhas);
+      if (updatedTotal != null) {
+        totalKnown = updatedTotal;
+        totalIsKnown = true;
+        totalDisplay = String(updatedTotal);
+        totalForReturn = updatedTotal;
+        const finalInseridos = Number.isFinite(resultado?.inseridos)
+          ? resultado.inseridos
+          : updatedTotal;
+        const finalStatus = `Inseridos: ${finalInseridos}/${totalDisplay}`;
+        logProgress(currentStageName, finalStatus, "inseridos", finalInseridos);
+      }
 
       // finaliza em 100%
       if (lastPctAbs < 100) {
