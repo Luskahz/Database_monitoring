@@ -13,6 +13,7 @@ import { startWatchdog } from "./monitoring/watchdog.js";
 import { setupGracefulShutdown } from "./utils/gracefulShutdown.js";
 import { endAllLoggers } from "./middleware/logger.js";
 import { shutdownPool } from "../config/dbPool.js";
+import isCsvFile from "./utils/isCsvFile.js";
 import {
   enqueueFileJob,
   updateDebounceSize,

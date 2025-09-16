@@ -181,7 +181,6 @@ export async function logLine(filePath, level, msg) {
   }
   return true;
 }
-
 export async function flush(filePath) {
   const entry = getEntry(filePath);
   if (!entry) return;
@@ -191,6 +190,7 @@ export async function flush(filePath) {
     return;
   }
 
+  // Se já tem flush em andamento, espera ele terminar
   if (entry.inFlush && entry.flushPromise) {
     try {
       await entry.flushPromise;
@@ -204,7 +204,8 @@ export async function flush(filePath) {
   entry.buffer.length = 0;
 
   entry.inFlush = true;
-  const flushPromise = (async () => {
+
+  const currentPromise = (async () => {
     try {
       if (!entry.stream.writable || entry.stream.destroyed || entry.ended) return;
       if (!entry.stream.write(chunk)) {
@@ -218,15 +219,17 @@ export async function flush(filePath) {
       entry.ended = true;
     } finally {
       entry.inFlush = false;
-      if (entry.flushPromise === flushPromise) {
+
+      if (entry.flushPromise === currentPromise) {
         entry.flushPromise = null;
       }
     }
   })();
 
-  entry.flushPromise = flushPromise;
-  await flushPromise;
+  entry.flushPromise = currentPromise;
+  await currentPromise;
 }
+
 
 async function finalizeStream(entry) {
   if (!entry || entry.ended || entry.stream.destroyed) {
