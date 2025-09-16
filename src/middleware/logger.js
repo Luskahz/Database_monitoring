@@ -134,7 +134,7 @@ export function startLogger(filePath, options = {}) {
     buffer: [],
     timer: null,
     inFlush: false,
-    flushPromise: null,
+    flushPromise: null, // inicializa a promise de flush para evitar acessos antes da atribuição
     closing: false,
     ended: false,
     endPromise: null,
@@ -205,7 +205,7 @@ export async function flush(filePath) {
 
   entry.inFlush = true;
 
-  const currentPromise = (async () => {
+  const runFlush = async () => {
     try {
       if (!entry.stream.writable || entry.stream.destroyed || entry.ended) return;
       if (!entry.stream.write(chunk)) {
@@ -219,14 +219,18 @@ export async function flush(filePath) {
       entry.ended = true;
     } finally {
       entry.inFlush = false;
-
-      if (entry.flushPromise === currentPromise) {
-        entry.flushPromise = null;
-      }
     }
-  })();
+  }; // executa a lógica de flush fora da IIFE para poder compartilhar a mesma promise
 
-  entry.flushPromise = currentPromise;
+  const currentPromise = runFlush();
+  entry.flushPromise = currentPromise; // garante que chamadas concorrentes compartilhem a mesma promise
+
+  currentPromise.finally(() => {
+    if (entry.flushPromise === currentPromise) {
+      entry.flushPromise = null; // limpa somente quando nenhuma chamada posterior sobrescreveu a promise
+    }
+  });
+
   await currentPromise;
 }
 
