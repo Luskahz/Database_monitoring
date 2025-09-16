@@ -18,6 +18,7 @@ import {
   updateDebounceSize,
   updateMetrics as updateQueueMetrics,
 } from "./utils/queueTracker.js";
+import { STAGING_DIR } from "../config/index.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const limit = pLimit(FILES_MAX_CONCURRENT);
@@ -68,6 +69,15 @@ export async function startMonitoring() {
   const awfStability = Number(process.env.AWF_STABILITY_MS || 1500);
   const awfPoll = Number(process.env.AWF_POLL_MS || 100);
 
+  const ignoredPatterns = [/[/\\]database_monitoring[/\\]/, /[/\\]loggers[/\\]/, /\.txt$/];
+  if (STAGING_DIR) {
+    const normalized = path.resolve(STAGING_DIR);
+    ignoredPatterns.push(normalized);
+    if (normalized.includes("\\")) {
+      ignoredPatterns.push(normalized.replace(/\\/g, "/"));
+    }
+  }
+
   const watcher = chokidar.watch(monitorPath, {
     persistent: true,
     ignoreInitial: true,
@@ -76,7 +86,7 @@ export async function startMonitoring() {
     depth: 10,
     atomic: 200,
     ignorePermissionErrors: true,
-    ignored: [/[/\\]database_monitoring[/\\]/, /[/\\]loggers[/\\]/, /\.txt$/],
+    ignored: ignoredPatterns,
     awaitWriteFinish: {
       stabilityThreshold: awfStability,
       pollInterval: awfPoll,

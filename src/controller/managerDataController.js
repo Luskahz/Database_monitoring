@@ -32,6 +32,7 @@ import { normalizeTotal } from "../utils/normalizeTotal.js";
 
 export async function manageInsertController(metadados, logData) {
   const contexto = metadados.caminho_original;
+  const workPath = metadados.paths?.work || contexto;
   const nomeArquivo = metadados.nome_arquivo ?? "arquivo-desconhecido";
   const barraId = `${nomeArquivo}::${metadados.ano ?? "-"}::${metadados.tabela}`;
 
@@ -82,7 +83,7 @@ export async function manageInsertController(metadados, logData) {
 
     publish(0.1, encoding ? `Encoding: ${encoding}` : "Detectando encoding...");
     if (!encoding) {
-      ({ encoding } = await detectEncoding(contexto));
+      ({ encoding } = await detectEncoding({ filePath: workPath }));
     }
 
     publish(
@@ -92,7 +93,7 @@ export async function manageInsertController(metadados, logData) {
         : `Encoding: ${encoding} | Detectando delimitador...`,
     );
     if (!delimiter) {
-      delimiter = await detectDelimiter(contexto, encoding);
+      delimiter = await detectDelimiter(workPath, encoding);
     }
 
     publish(0.8, `Delimitador: ${delimiter}`);

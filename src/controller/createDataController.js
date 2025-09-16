@@ -21,6 +21,7 @@ import {
 import { PIPELINE_FAST_PATH } from "../../config/index.js";
 import { decideOverlapPolicy } from "../utils/decideOverlapPolicy.js";
 import { logActivity } from "../middleware/logger.js";
+import { isRemotePath } from "../utils/ensureLocalStaging.js";
 
 /* ---------- hot helpers ---------- */
 function isAllDigits(s) {
@@ -94,8 +95,13 @@ export function truncarFilepath(fullpath) {
 
 /* ---------- controllers ---------- */
 
-export default async function createDataController(filePath, action) {
-  return createFundamentalDocsController(filePath, action, filePath)
+export default async function createDataController(filePath, action, opts = {}) {
+  const workFilePath =
+    opts && typeof opts.workFilePath === "string" ? opts.workFilePath : filePath;
+  return createFundamentalDocsController(filePath, action, filePath, {
+    workFilePath,
+    stagingInfo: opts?.stagingInfo ?? null,
+  })
     .then((result) => {
       const m = result?.metadados;
       if (!m) {
@@ -119,16 +125,36 @@ export default async function createDataController(filePath, action) {
 export async function createFundamentalDocsController(
   filePath,
   action,
-  contexto
+  contexto,
+  opts = {}
 ) {
   try {
-    const metadados = await createMetadadosController(filePath, action);
-    const { size } = await stat(filePath);
+    const workFilePath =
+      opts && typeof opts.workFilePath === "string" ? opts.workFilePath : filePath;
+    const metadados = await createMetadadosController(filePath, action, opts);
+    const { size } = await stat(workFilePath);
     metadados.file_size_bytes = size;
     // total_linhas já preenchido em createMetadadosController
     const logData = createLogDataController(metadados, null);
     logData.file_size_bytes = metadados.file_size_bytes;
     logData.total_linhas = metadados.total_linhas;
+
+    const stagingInfo = opts?.stagingInfo ?? null;
+    const isRemoteSource = stagingInfo?.isRemote ?? isRemotePath(filePath);
+    const copiedNow = Boolean(stagingInfo?.copied);
+    const reusedCopy = Boolean(stagingInfo?.reused);
+    const existingPaths =
+      metadados.paths && typeof metadados.paths === "object" ? metadados.paths : {};
+    metadados.paths = {
+      ...existingPaths,
+      source: existingPaths.source || filePath,
+      work: workFilePath,
+      isRemoteSource,
+      copiedToLocal: Boolean(copiedNow || reusedCopy),
+      copiedNow,
+      reusedLocalCopy: reusedCopy,
+      stagingDir: stagingInfo?.stagingDir ?? existingPaths.stagingDir ?? null,
+    };
     return { metadados, logData };
   } catch (e) {
     addErro(
@@ -140,15 +166,17 @@ export async function createFundamentalDocsController(
   }
 }
 
-export async function createMetadadosController(filePath, action) {
+export async function createMetadadosController(filePath, action, opts = {}) {
   const destino = destinoByFilePath(filePath);
   const caminho_truncado = truncarFilepath(filePath);
+  const workFilePath =
+    opts && typeof opts.workFilePath === "string" ? opts.workFilePath : filePath;
 
   if (PIPELINE_FAST_PATH) {
-    const { headBuf } = await readHeadOnce(filePath, 64 * 1024);
+    const { headBuf } = await readHeadOnce(workFilePath, 64 * 1024);
     const headSampleBytes = headBuf?.length ?? 0;
     let { encoding } = await detectEncoding(
-      { filePath, headBuf, sampleBytes: headSampleBytes, fallback: "latin1" }
+      { filePath: workFilePath, headBuf, sampleBytes: headSampleBytes, fallback: "latin1" }
     );
 
     let encodingNorm = typeof encoding === "string" ? encoding.toLowerCase() : "utf8";
@@ -169,13 +197,13 @@ export async function createMetadadosController(filePath, action) {
         ? iconv.decode(headForText, "latin1")
         : headForText.toString("utf8");
 
-    const delimiter = await detectDelimiter(filePath, encoding, {
+    const delimiter = await detectDelimiter(workFilePath, encoding, {
       minHeadBytes: headSampleBytes,
       maxHeadBytes: headSampleBytes,
       headText,
       headBytes: headSampleBytes,
     });
-    const rawHeaders = await readCsvHeader(filePath, encoding, delimiter, {
+    const rawHeaders = await readCsvHeader(workFilePath, encoding, delimiter, {
       highWaterMark: 64 * 1024,
       fastMode: true,
     });
@@ -212,7 +240,7 @@ export async function createMetadadosController(filePath, action) {
     return metadados;
   }
 
-  const analise = await analyzeCsv(filePath, destino.tabela_destino);
+  const analise = await analyzeCsv(workFilePath, destino.tabela_destino);
 
   const metadados = {
     nome_arquivo: destino.nome_arquivo,

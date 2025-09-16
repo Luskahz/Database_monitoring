@@ -62,6 +62,7 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
     encoding,
     delimiter,
   } = metadados;
+  const workPath = metadados.paths?.work || contexto;
   
   memoryGuard.start();
 
@@ -195,7 +196,7 @@ export async function streamPipeline(metadados, tiposFinal, opts = {}, pipelineO
     updateActiveJob(contexto, { detail: `Enviando lote (${lote.length} linhas)` });
   }
 
-  const { forHash, forParse } = createFileTee(contexto, { highWaterMark: HWM });
+  const { forHash, forParse } = createFileTee(workPath, { highWaterMark: HWM });
   let hash;
   if (computeHash) {
     hash = crypto.createHash("sha256");
