@@ -1,6 +1,8 @@
-import { addErro, addInfo } from "../middleware/errorHandler.js";
+import { addErro, addInfo, addAviso } from "../middleware/errorHandler.js";
 import { getLogByData, getAllHashesFromTable, findLogByFileMeta } from "../model/logModel.js";
-import { existsAnyDataInRange } from "../model/tableModel.js";
+import { decideOverlapPolicy } from "../utils/decideOverlapPolicy.js";
+import { buildRangeFromMetadados } from "../model/tableModel.js";
+import { logActivity } from "../middleware/logger.js";
 import { PIPELINE_FAST_PATH } from "../../config/index.js";
 
 export default async function fluxoValidatorController(metadados, logData) {
@@ -10,6 +12,18 @@ export default async function fluxoValidatorController(metadados, logData) {
 
   const fastPath = PIPELINE_FAST_PATH === "true";
 
+  const overlap = await ensureOverlapDecision(metadados, contexto);
+  const strategy = overlap?.strategy || "insert";
+  const hasOverlap = overlap?.hasOverlap === true;
+  metadados.applyPreDelete = strategy === "replace";
+
+  logOverlapUsage(contexto, {
+    strategy,
+    hasOverlap,
+    reason: overlap?.reason ?? null,
+    range: metadados.range ?? null,
+  });
+
   if (fastPath) {
     if (!logData?.hash_arquivo) {
       addInfo(
@@ -17,20 +31,15 @@ export default async function fluxoValidatorController(metadados, logData) {
         contexto
       );
     }
-    try {
-      const overlap = await existsAnyDataInRange(metadados);
-      if (overlap) {
-        addInfo(
-          `[ARQUIVO MODIFICADO] [${nome}] já existia, mas foi alterado. Reprocessando.`,
-          contexto
-        );
-        console.log(
-          `[🟡 MODIFICADO] [${nome}] sera inserido na tabela [${tabela}]`
-        );
-        return "reprocessar";
-      }
-    } catch (e) {
-      addErro(`Erro ao verificar dados existentes: ${e.message}`, contexto);
+    if (hasOverlap) {
+      addInfo(
+        `[ARQUIVO MODIFICADO] [${nome}] já existia, mas foi alterado. Reprocessando.`,
+        contexto
+      );
+      console.log(
+        `[🟡 MODIFICADO] [${nome}] sera inserido na tabela [${tabela}]`
+      );
+      return "reprocessar";
     }
 
     addInfo(`[NOVO ARQUIVO] [${nome}] será processado.`, contexto);
@@ -109,4 +118,56 @@ export default async function fluxoValidatorController(metadados, logData) {
     `[🟡 MODIFICADO] [${nome}] sera inserido na tabela [${tabela}], validar lógica de atualização para o tipo do arquivo`
   );
   return "reprocessar";
+}
+
+async function ensureOverlapDecision(metadados, contexto) {
+  if (!metadados) return null;
+  if (metadados.overlap) {
+    if (!metadados.range) {
+      metadados.range = buildRangeFromMetadados(metadados);
+    }
+    return metadados.overlap;
+  }
+
+  addAviso(
+    "[OverlapDecision] Metadados sem decisão prévia; calculando tardiamente.",
+    contexto
+  );
+  const range = metadados.range ?? buildRangeFromMetadados(metadados);
+  metadados.range = range || null;
+  const decision = await decideOverlapPolicy({
+    table: metadados.tabela,
+    dateCol: metadados.coluna_data,
+    range,
+    logger: createOverlapLogger(contexto),
+  });
+  metadados.overlap = decision;
+  return decision;
+}
+
+function createOverlapLogger(contexto) {
+  return {
+    info(message, payload = {}) {
+      try {
+        const serialized = JSON.stringify(payload);
+        const line = `${message} ${serialized}`;
+        addInfo(line, contexto);
+        void logActivity("info", line, { filePath: contexto });
+      } catch (err) {
+        addInfo(`${message} ${payload ? String(payload) : ""}`, contexto);
+        void logActivity("info", message, { filePath: contexto });
+      }
+    },
+  };
+}
+
+function logOverlapUsage(contexto, payload) {
+  try {
+    const line = `[OverlapDecision][Use] ${JSON.stringify(payload)}`;
+    addInfo(line, contexto);
+    void logActivity("info", line, { filePath: contexto });
+  } catch (err) {
+    addInfo("[OverlapDecision][Use]", contexto);
+    void logActivity("info", "[OverlapDecision][Use]", { filePath: contexto });
+  }
 }
