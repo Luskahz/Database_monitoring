@@ -1,13 +1,19 @@
-import { logLine, fmtTimeNow } from "./logger.js";
+// Error handler ajustado para usar caminho curto e mensagens higienizadas com o logger compacto.
+import { logLine, shortPath, shortenPathsInMsg } from "./logger.js";
 
 const contextoDeMensagens = new Map();
 
 /* ─────────────────────────────── */
 /* Função central de log           */
 /* ─────────────────────────────── */
+export function getShortCtx(contexto) {
+  return shortPath(contexto || "");
+}
+
 async function safeAppendToLog(contexto, tipo, msg) {
-  const t = fmtTimeNow();
-  return logLine(contexto, tipo, `[${contexto}] ${msg}`).catch((e) => {
+  const shortCtx = getShortCtx(contexto) || contexto;
+  const cleanMsg = shortenPathsInMsg(msg, shortCtx);
+  return logLine(contexto, tipo, `[${shortCtx}] ${cleanMsg}`).catch((e) => {
     console.error(`[Logger] Falha ao gravar log (${contexto}):`, e.message);
   });
 }

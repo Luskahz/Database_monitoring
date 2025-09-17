@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 
+// Logger configurado para timestamps compactos em BR, caminhos truncados e sobrescrita por execução.
 const loggers = new Map();
 
 const FLUSH_MS = Number(process.env.LOG_FLUSH_MS || 200);
@@ -10,6 +11,26 @@ const CLOSE_TIMEOUT_MS = Number(process.env.LOG_CLOSE_TIMEOUT_MS || 5000);
 const LOG_ROOT = path.resolve(process.cwd(), "logs");
 const ACTIVITY_LOG_KEY = "__activity__";
 const ACTIVITY_LOG_PATH = path.join(LOG_ROOT, "_activity.txt");
+const BR_TIMEZONE = "America/Sao_Paulo";
+
+const brTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+  timeZone: BR_TIMEZONE,
+});
+
+const brDateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+  timeZone: BR_TIMEZONE,
+});
 
 fs.mkdirSync(LOG_ROOT, { recursive: true });
 
@@ -17,8 +38,31 @@ export function fmtTimeNow() {
   return new Date().toISOString();
 }
 
+export function fmtBrTime(date = new Date()) {
+  const parts = brTimeFormatter.formatToParts(date);
+  const bucket = { hour: "00", minute: "00", second: "00" };
+  for (const part of parts) {
+    if (part.type === "hour" || part.type === "minute" || part.type === "second") {
+      bucket[part.type] = part.value;
+    }
+  }
+  const millis = String(date.getMilliseconds()).padStart(3, "0");
+  return `${bucket.hour}:${bucket.minute}:${bucket.second}:${millis}`;
+}
+
+function fmtBrDateTime(date = new Date()) {
+  const parts = brDateTimeFormatter.formatToParts(date);
+  const bucket = { day: "01", month: "01", year: "1970", hour: "00", minute: "00", second: "00" };
+  for (const part of parts) {
+    if (part.type in bucket) {
+      bucket[part.type] = part.value;
+    }
+  }
+  return `${bucket.day}/${bucket.month}/${bucket.year}, ${bucket.hour}:${bucket.minute}:${bucket.second}`;
+}
+
 function formatLine(level, msg) {
-  return `[${fmtTimeNow()}][${String(level ?? "info").toUpperCase()}] ${msg}\n`;
+  return `[${fmtBrTime()}][${String(level ?? "info").toUpperCase()}] ${msg}\n`;
 }
 
 function getEntry(filePath) {
@@ -63,6 +107,51 @@ function defaultLogPath(filePath) {
   const base = path.parse(filePath).name || path.basename(filePath) || "log";
   fs.mkdirSync(dir, { recursive: true });
   return path.join(dir, `Logger_${base}.txt`);
+}
+
+export function shortPath(p) {
+  if (!p) return "";
+  const raw = String(p);
+  const normalized = raw.replace(/\\/g, "/");
+  const match = normalized.match(/\/(\d{2}_\d{2}_\d{2})\/(\d{4})\/([^/]+)$/);
+  if (match) {
+    const [, tabela, ano, arquivo] = match;
+    return `\\${tabela}\\${ano}\\${arquivo}`;
+  }
+  const base = path.basename(raw);
+  return base ? `\\${base}` : "";
+}
+
+const PATH_TOKEN_REGEX = /(src|work|path|staging[a-z0-9_]*)(\s*=\s*)(?:"([^"]*)"|'([^']*)'|([^\s"';]+))/gi;
+
+export function shortenPathsInMsg(msg, fallbackShort = "") {
+  if (!msg) return msg;
+  const safeFallback = fallbackShort || "";
+  return msg.replace(
+    PATH_TOKEN_REGEX,
+    (full, key, separator, doubleValue, singleValue, bareValue) => {
+      const originalValue =
+        doubleValue ?? singleValue ?? bareValue ?? "";
+      const keyLower = String(key).toLowerCase();
+      const normalizedValue = String(originalValue).toLowerCase();
+      let replacement = shortPath(originalValue);
+
+      if ((!replacement || replacement === "\\") && safeFallback) {
+        replacement = safeFallback;
+      }
+
+      if (keyLower.startsWith("staging") || normalizedValue.includes("staging")) {
+        replacement = safeFallback || replacement || shortPath(originalValue);
+      }
+
+      if (!replacement) {
+        replacement = originalValue;
+      }
+
+      const quote = doubleValue !== undefined ? '"' : singleValue !== undefined ? "'" : "";
+      return `${key}${separator}${quote}${replacement}${quote}`;
+    },
+  );
 }
 
 function waitForStreamToEnd(stream) {
@@ -115,15 +204,18 @@ export function startLogger(filePath, options = {}) {
     logPath: forcedPath,
     flushIntervalMs = FLUSH_MS,
     highWaterMark = 1024 * 256,
-    disableBeginLine = false,
+    disableBeginLine = true,
     displayName,
+    overwrite = true,
   } = options;
 
   const logPath = forcedPath || defaultLogPath(filePath);
   fs.mkdirSync(path.dirname(logPath), { recursive: true });
 
+  const shouldAppend =
+    filePath === ACTIVITY_LOG_KEY ? true : overwrite === false;
   const stream = fs.createWriteStream(logPath, {
-    flags: "a",
+    flags: shouldAppend ? "a" : "w",
     highWaterMark,
   });
 
@@ -180,6 +272,123 @@ export async function logLine(filePath, level, msg) {
     await flush(filePath);
   }
   return true;
+}
+
+async function writeLines(filePath, lines) {
+  for (const line of lines) {
+    await logLine(filePath, "info", line);
+  }
+}
+
+export async function writeBeginFile({
+  filePath,
+  arquivo,
+  tabela,
+  dataStr,
+  acao,
+  hash,
+}) {
+  const now = fmtBrDateTime();
+  await writeLines(filePath, [
+    `---------------- BEGIN FILE ${now} ----------------`,
+    `Arquivo: ${arquivo ?? "—"}`,
+    `Tabela : ${tabela ?? "—"}`,
+    `Data   : ${dataStr ?? "—"}`,
+    `Acao   : ${acao ?? "analyze"}`,
+    `Hash   : ${hash ?? "—"}`,
+    "-----------------------------------------------------",
+  ]);
+}
+
+function columnWidth(title, values) {
+  let width = title.length;
+  for (const value of values) {
+    const len = String(value ?? "").length;
+    if (len > width) width = len;
+  }
+  return width;
+}
+
+function pad(value, width) {
+  return String(value ?? "").padEnd(width, " ");
+}
+
+export async function writeHeadersDiff({
+  filePath,
+  tabela,
+  headersCsv = [],
+  headersTabela = [],
+}) {
+  const csvHeaders = Array.isArray(headersCsv) ? headersCsv : [];
+  const tabelaHeaders = Array.isArray(headersTabela) ? headersTabela : [];
+  const csvTitle = `CSV (${csvHeaders.length})`;
+  const tabelaTitle = `TABELA (${tabelaHeaders.length})`;
+  const col1Width = columnWidth(csvTitle, csvHeaders);
+  const col2Width = columnWidth(tabelaTitle, tabelaHeaders);
+  const separator = `${"-".repeat(col1Width)}+${"-".repeat(col2Width)}`;
+  const rows = [];
+  const maxRows = Math.max(csvHeaders.length, tabelaHeaders.length);
+  for (let i = 0; i < maxRows; i += 1) {
+    rows.push(
+      `${pad(csvHeaders[i] ?? "", col1Width)} | ${pad(
+        tabelaHeaders[i] ?? "",
+        col2Width,
+      )}`,
+    );
+  }
+  if (rows.length === 0) {
+    rows.push(`${pad("—", col1Width)} | ${pad("—", col2Width)}`);
+  }
+
+  const tabelaSet = new Set(tabelaHeaders.map((h) => String(h ?? "")));
+  const csvSet = new Set(csvHeaders.map((h) => String(h ?? "")));
+  const extras = csvHeaders
+    .map((h) => String(h ?? ""))
+    .filter((h) => !tabelaSet.has(h));
+  const missing = tabelaHeaders
+    .map((h) => String(h ?? ""))
+    .filter((h) => !csvSet.has(h));
+
+  await writeLines(filePath, [
+    "---------------- HEADERS CSV × TABELA ----------------",
+    `Tabela: ${tabela ?? "—"}`,
+    `${pad(csvTitle, col1Width)} | ${pad(tabelaTitle, col2Width)}`,
+    separator,
+    ...rows,
+    "---------------- DIFERENÇAS ----------------",
+    `Extras no CSV   (${extras.length}): ${
+      extras.length ? extras.join(", ") : "—"
+    }`,
+    `Faltando no CSV (${missing.length}): ${
+      missing.length ? missing.join(", ") : "—"
+    }`,
+    "-----------------------------------------------------",
+  ]);
+}
+
+export async function writeStatusUpdate({
+  filePath,
+  arquivo,
+  tabela,
+  dataStr,
+  acao,
+  hash,
+}) {
+  const now = fmtBrDateTime();
+  await writeLines(filePath, [
+    `---------------- STATUS UPDATE ${now} ----------------`,
+    `Arquivo: ${arquivo ?? "—"}`,
+    `Tabela : ${tabela ?? "—"}`,
+    `Data   : ${dataStr ?? "—"}`,
+    `Acao   : ${acao ?? "—"}`,
+    `Hash   : ${hash ?? "—"}`,
+    "-----------------------------------------------------",
+  ]);
+}
+
+export async function writeFinal({ filePath, dataStr }) {
+  const stamp = dataStr || fmtBrDateTime();
+  await writeLines(filePath, [`==== FINAL ${stamp} ====`]);
 }
 export async function flush(filePath) {
   const entry = getEntry(filePath);
@@ -319,6 +528,7 @@ function ensureActivityLogger() {
     startLogger(ACTIVITY_LOG_KEY, {
       logPath: ACTIVITY_LOG_PATH,
       displayName: "_activity",
+      overwrite: false,
     });
   }
 }
@@ -340,4 +550,11 @@ export default {
   endAllLoggers,
   logActivity,
   fmtTimeNow,
+  fmtBrTime,
+  shortPath,
+  shortenPathsInMsg,
+  writeBeginFile,
+  writeHeadersDiff,
+  writeStatusUpdate,
+  writeFinal,
 };
