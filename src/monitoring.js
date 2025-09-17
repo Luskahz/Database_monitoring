@@ -6,7 +6,8 @@ import fs from "fs";
 import createdHandler from "./controller/Handlers/createdHandler.js";
 import deletedHandler from "./controller/Handlers/deletedHandler.js";
 import { addErro } from "./middleware/errorHandler.js";
-import { FILES_MAX_CONCURRENT, metrics as pipelineMetrics } from "./utils/streamPipeline.js";
+import { metrics as pipelineMetrics } from "./utils/streamPipeline.js";
+import { FILES_MAX_CONCURRENT } from "../config/index.js";
 import { getActiveFilesCount } from "./utils/withFileLifecycle.js";
 import { memoryGuard } from "./utils/memoryGuard.js";
 import { startWatchdog } from "./monitoring/watchdog.js";
@@ -43,7 +44,7 @@ function runWithDebounce(filePath, acao, handler) {
     });
     debounceTimers.delete(filePath);
     updateDebounceSize(debounceTimers.size);
-  }, 500);
+  }, 2000);
   debounceTimers.set(filePath, { timer, ts: Date.now() });
   updateDebounceSize(debounceTimers.size);
 }

@@ -10,7 +10,7 @@ export default async function fluxoValidatorController(metadados, logData) {
   const nome = metadados.nome_arquivo;
   const tabela = metadados.tabela;
 
-  const fastPath = PIPELINE_FAST_PATH === "true";
+  const fastPath = PIPELINE_FAST_PATH;
 
   const overlap = await ensureOverlapDecision(metadados, contexto);
   const strategy = overlap?.strategy || "insert";

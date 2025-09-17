@@ -275,24 +275,18 @@ export async function endLogger(filePath) {
   }
 
   entry.endPromise = (async () => {
-    if (entry.inFlush && entry.flushPromise) {
-      try {
-        await entry.flushPromise;
-      } catch (err) {
-        console.error(`[logger] flush pendente falhou (${entry.displayName}):`, err?.message || err);
-      }
-    }
-
-    if (!entry.ended && !entry.stream.destroyed) {
-      entry.buffer.push(formatLine("info", `==== END ${entry.displayName} ====`));
-      try {
-        await flush(filePath);
-      } catch (err) {
-        console.error(`[logger] flush final falhou (${entry.displayName}):`, err?.message || err);
-      }
-    }
-
     try {
+      if (entry.inFlush && entry.flushPromise) {
+        await entry.flushPromise;
+      }
+
+      if (!entry.ended && !entry.stream.destroyed) {
+        entry.buffer.push(formatLine("info", `==== END ${entry.displayName} ====`));
+        await flush(filePath).catch(err => {
+          console.error(`[logger] flush final falhou (${entry.displayName}):`, err?.message || err);
+        });
+      }
+
       await finalizeStream(entry);
     } catch (err) {
       console.error(`[logger] finalizeStream falhou (${entry.displayName}):`, err?.message || err);
@@ -304,6 +298,7 @@ export async function endLogger(filePath) {
 
   return entry.endPromise;
 }
+
 
 export async function endAllLoggers() {
   for (const [filePath] of Array.from(loggers.entries())) {

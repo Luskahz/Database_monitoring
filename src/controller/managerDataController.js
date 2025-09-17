@@ -11,8 +11,8 @@ import { decideOverlapPolicy } from "../utils/decideOverlapPolicy.js";
 import streamPipeline, {
   POOL_MAX,
   INSERT_MAX_CONCURRENT,
-  FILES_MAX_CONCURRENT,
 } from "../utils/streamPipeline.js";
+import { FILES_MAX_CONCURRENT } from "../../config/index.js";
 import {
   detectDelimiter,
   detectEncoding,
