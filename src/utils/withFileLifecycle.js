@@ -15,7 +15,11 @@ export function getActiveFilesCount() {
 }
 
 export async function withFileLifecycle(filePath, fn, lifecycleOpts = {}) {
-  startLogger(filePath);
+  const { manageLogger = true, loggerOptions } = lifecycleOpts;
+
+  if (manageLogger !== false) {
+    startLogger(filePath, loggerOptions);
+  }
   activeFiles.add(filePath);
 
   const { job: rawJob, action } = lifecycleOpts;
@@ -45,7 +49,9 @@ export async function withFileLifecycle(filePath, fn, lifecycleOpts = {}) {
     throw err;
   } finally {
     try {
-      await endLogger(filePath);
+      if (manageLogger !== false) {
+        await endLogger(filePath);
+      }
     } catch (err) {
       console.error(`[logger] Falha ao finalizar logger de ${filePath}:`, err?.message || err);
     } finally {

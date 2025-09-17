@@ -1,3 +1,4 @@
+import path from "path";
 import { deleteFromTable, buildRangeFromMetadados } from "../model/tableModel.js";
 import {
   iniciarBarra,
@@ -6,7 +7,7 @@ import {
 } from "../utils/progressBar.js";
 
 import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
-import { logActivity } from "../middleware/logger.js";
+import { logActivity, writeStatusUpdate } from "../middleware/logger.js";
 import { decideOverlapPolicy } from "../utils/decideOverlapPolicy.js";
 import streamPipeline, {
   POOL_MAX,
@@ -253,6 +254,46 @@ export async function manageInsertController(metadados, logData) {
       }
 
       addInfo("Processo de inserção finalizado.", contexto);
+      try {
+        const arquivo = path.basename(contexto || "");
+        const tabelaFin =
+          metadados?.destino?.tabela_destino || metadados?.tabela || "—";
+        const overlapStrategy =
+          metadados?.overlap?.strategy || metadados?.manage?.usingStrategy;
+
+        const range = metadados?.range || metadados?.manage?.range;
+        const dataStr = (() => {
+          if (!range?.start) return "—";
+          const d = new Date(range.start);
+          const y = d.getFullYear();
+          const mes = new Intl.DateTimeFormat("pt-BR", {
+            month: "long",
+            timeZone: "America/Sao_Paulo",
+          })
+            .format(d)
+            .toLowerCase();
+          return `${y}-${mes}-—`;
+        })();
+
+        const acao =
+          metadados?.arquivoAlterado || overlapStrategy === "replace"
+            ? "modified"
+            : "insert";
+
+        await writeStatusUpdate({
+          filePath: contexto,
+          arquivo,
+          tabela: tabelaFin,
+          dataStr,
+          acao,
+          hash: metadados?.hash || "—",
+        });
+      } catch (err) {
+        addAviso(
+          `[Status] não foi possível registrar atualização: ${err?.message || err}`,
+          contexto,
+        );
+      }
       void logActivity("info", "Pipeline de streaming concluído", { filePath: contexto });
       updateActiveJob(contexto, { stage: "finalização", progress: 1, detail: "Processo concluído" });
 

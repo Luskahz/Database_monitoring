@@ -205,6 +205,7 @@ export function startLogger(filePath, options = {}) {
     flushIntervalMs = FLUSH_MS,
     highWaterMark = 1024 * 256,
     disableBeginLine = true,
+    disableEndLine = false,
     displayName,
     overwrite = true,
   } = options;
@@ -231,6 +232,7 @@ export function startLogger(filePath, options = {}) {
     ended: false,
     endPromise: null,
     displayName: displayName || path.basename(filePath) || filePath,
+    disableEndLine: Boolean(disableEndLine),
   };
 
   stream.on("error", (err) => {
@@ -490,8 +492,10 @@ export async function endLogger(filePath) {
       }
 
       if (!entry.ended && !entry.stream.destroyed) {
-        entry.buffer.push(formatLine("info", `==== END ${entry.displayName} ====`));
-        await flush(filePath).catch(err => {
+        if (!entry.disableEndLine) {
+          entry.buffer.push(formatLine("info", `==== END ${entry.displayName} ====`));
+        }
+        await flush(filePath).catch((err) => {
           console.error(`[logger] flush final falhou (${entry.displayName}):`, err?.message || err);
         });
       }

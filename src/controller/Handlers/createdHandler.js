@@ -1,3 +1,4 @@
+import path from "path";
 import { addAviso, addErro, addInfo } from "../../middleware/errorHandler.js";
 import { insertLog } from "../../model/logModel.js";
 import createDataController from "../createDataController.js";
@@ -16,6 +17,12 @@ import { markJobComplete } from "../../utils/queueTracker.js";
 import { ensureLocalStaging } from "../../utils/ensureLocalStaging.js";
 import { cleanupStaging } from "../../utils/cleanupStaging.js";
 import { unlink } from "fs/promises";
+import {
+  startLogger,
+  writeBeginFile,
+  writeFinal,
+  endLogger,
+} from "../../middleware/logger.js";
 
 function parseBoolean(value, defaultValue) {
   if (value == null) return defaultValue;
@@ -62,12 +69,46 @@ export default async function createdHandler(filePath, action, job) {
     return;
   }
 
-  await withFileLifecycle(
-    filePath,
-    async () => {
-      const stagingLogger = createStagingLogger(filePath);
-      const reuse = parseBoolean(STAGING_REUSE, true);
-      const verify = parseBoolean(STAGING_VERIFY, true);
+  let loggerEntry = null;
+  const arquivo = filePath ? path.basename(filePath) : "";
+  try {
+    try {
+      loggerEntry = startLogger(filePath, {
+        overwrite: true,
+        disableBeginLine: true,
+        disableEndLine: true,
+      });
+    } catch (err) {
+      addAviso(
+        `[Logger] não foi possível iniciar logger dedicado: ${err?.message || err}`,
+        filePath,
+      );
+    }
+
+    if (loggerEntry) {
+      try {
+        await writeBeginFile({
+          filePath,
+          arquivo: arquivo || "—",
+          tabela: "—",
+          dataStr: "—",
+          acao: "analyze",
+          hash: "—",
+        });
+      } catch (err) {
+        addAviso(
+          `[Logger] não foi possível registrar bloco inicial: ${err?.message || err}`,
+          filePath,
+        );
+      }
+    }
+
+    await withFileLifecycle(
+      filePath,
+      async () => {
+        const stagingLogger = createStagingLogger(filePath);
+        const reuse = parseBoolean(STAGING_REUSE, true);
+        const verify = parseBoolean(STAGING_VERIFY, true);
       const cleanupOnSuccess = parseBoolean(STAGING_CLEANUP_ON_SUCCESS, true);
       const cleanupTtlMin = parseNumber(STAGING_CLEANUP_TTL_MIN, 120);
       const stagingDirEnv =
@@ -185,7 +226,28 @@ export default async function createdHandler(filePath, action, job) {
           }
         }
       }
-    },
-    { job, action }
-  );
+      },
+      { job, action, manageLogger: false }
+    );
+  } finally {
+    if (loggerEntry) {
+      try {
+        await writeFinal({ filePath });
+      } catch (err) {
+        addAviso(
+          `[Logger] não foi possível registrar bloco final: ${err?.message || err}`,
+          filePath,
+        );
+      }
+    }
+
+    try {
+      await endLogger(filePath);
+    } catch (err) {
+      addAviso(
+        `[Logger] não foi possível encerrar logger dedicado: ${err?.message || err}`,
+        filePath,
+      );
+    }
+  }
 }
