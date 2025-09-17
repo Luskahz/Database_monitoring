@@ -20,7 +20,7 @@ import {
 } from "../model/tableModel.js";
 import { PIPELINE_FAST_PATH } from "../../config/index.js";
 import { decideOverlapPolicy } from "../utils/decideOverlapPolicy.js";
-import { logActivity } from "../middleware/logger.js";
+import { logActivity, writeHeadersDiff, shortPath } from "../middleware/logger.js";
 import { isRemotePath } from "../utils/ensureLocalStaging.js";
 
 /* ---------- hot helpers ---------- */
@@ -91,6 +91,51 @@ export function truncarFilepath(fullpath) {
   }
 
   return s;
+}
+
+function inferTabelaFromContexto(contexto, fallback = "—") {
+  if (!contexto) return fallback;
+  const match = String(contexto).match(/[\\/](\d{2}_\d{2}_\d{2})[\\/](\d{4})[\\/][^\\/]+$/);
+  if (match && match[1]) {
+    return match[1];
+  }
+  return fallback;
+}
+
+function computeHeadersDiff(headersCsv, headersTabela) {
+  const csv = Array.isArray(headersCsv) ? headersCsv : [];
+  const tabela = Array.isArray(headersTabela) ? headersTabela : [];
+  const tabelaSet = new Set(tabela.map((h) => String(h ?? "")));
+  const csvSet = new Set(csv.map((h) => String(h ?? "")));
+  const extras = csv.map((h) => String(h ?? "")).filter((h) => !tabelaSet.has(h));
+  const missing = tabela.map((h) => String(h ?? "")).filter((h) => !csvSet.has(h));
+  return { extras, missing };
+}
+
+async function logHeadersComparison({ contexto, tabela, headersCsv, headersTabela }) {
+  if (!Array.isArray(headersCsv) || !Array.isArray(headersTabela)) return;
+  const tabelaSafe = tabela || inferTabelaFromContexto(contexto);
+  try {
+    await writeHeadersDiff({
+      filePath: contexto,
+      tabela: tabelaSafe || inferTabelaFromContexto(contexto),
+      headersCsv,
+      headersTabela,
+    });
+
+    const { extras, missing } = computeHeadersDiff(headersCsv, headersTabela);
+    if (extras.length === 0 && missing.length === 0) {
+      addInfo("[Headers] CSV e tabela estão alinhados.", contexto);
+    }
+  } catch (err) {
+    const shortCtx = shortPath(contexto || "");
+    addAviso(
+      `[Headers] não foi possível gerar comparativo (${shortCtx || "—"}): ${
+        err?.message || err
+      }`,
+      contexto,
+    );
+  }
 }
 
 /* ---------- controllers ---------- */
@@ -236,6 +281,13 @@ export async function createMetadadosController(filePath, action, opts = {}) {
       caminho_truncado,
     };
 
+    await logHeadersComparison({
+      contexto: filePath,
+      tabela: metadados.tabela,
+      headersCsv: metadados.colunas_json,
+      headersTabela: metadados.colunas_tabela,
+    });
+
     await ensureOverlapMetadata(metadados, filePath, action);
     return metadados;
   }
@@ -263,6 +315,13 @@ export async function createMetadadosController(filePath, action, opts = {}) {
     caminho_original: filePath,
     caminho_truncado,
   };
+
+  await logHeadersComparison({
+    contexto: filePath,
+    tabela: metadados.tabela,
+    headersCsv: metadados.colunas_json,
+    headersTabela: metadados.colunas_tabela,
+  });
 
   await ensureOverlapMetadata(metadados, filePath, action);
   return metadados;
