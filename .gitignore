@@ -5,3 +5,4 @@ databaseMonitoring_ResumoString.txt.gz
 loggers
 tmp-smoke
 logs
+staging/

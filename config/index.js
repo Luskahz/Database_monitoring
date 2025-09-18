@@ -21,6 +21,7 @@ export const MAX_BATCH_BYTES_WHEN_HIGH = Number(process.env.MAX_BATCH_BYTES_WHEN
 
 // concorrência
 const _insertConc = Number(process.env.MAX_CONCURRENT_INSERTS ?? 1);
+console.log(_insertConc)
 export const MAX_CONCURRENT_INSERTS_DEFAULT = Number.isFinite(_insertConc) && _insertConc > 0 ? _insertConc : 1;
 
 
@@ -48,3 +49,48 @@ export const STAGING_DIR = process.env.STAGING_DIR ?? "./staging";
  export const STAGING_VERIFY = _bool(process.env.STAGING_VERIFY ?? 1);
  export const STAGING_CLEANUP_ON_SUCCESS = _bool(process.env.STAGING_CLEANUP_ON_SUCCESS ?? 1);
 export const STAGING_CLEANUP_TTL_MIN = Number(process.env.STAGING_CLEANUP_TTL_MIN ?? 60);
+// no final do index.js
+
+function printConfig() {
+  const config = {
+    schema,
+    pipeline: {
+      PIPELINE_FAST_PATH,
+    },
+    pool: {
+      DB_POOL_MAX,
+    },
+    batch: {
+      BATCH_SIZE,
+      MAX_BATCH_BYTES_DEFAULT,
+      MAX_BATCH_BYTES_WHEN_HIGH,
+    },
+    ram: {
+      ADAPTIVE_RAM_GUARD,
+      RAM_HIGH_MB,
+      RAM_LOW_MB,
+      RAM_GUARD_INTERVAL_MS,
+    },
+    concorrencia: {
+      MAX_CONCURRENT_INSERTS_DEFAULT,
+      FILES_MAX_CONCURRENT,
+    },
+    fila: {
+      HIGH_WATERMARK_DEFAULT,
+      LOW_WATERMARK_DEFAULT,
+    },
+    staging: {
+      STAGING_DIR,
+      STAGING_REUSE,
+      STAGING_VERIFY,
+      STAGING_CLEANUP_ON_SUCCESS,
+      STAGING_CLEANUP_TTL_MIN,
+    },
+  };
+
+  console.log("===== CONFIGURAÇÃO CARREGADA =====");
+  console.log(JSON.stringify(config, null, 2));
+  console.log("==================================");
+}
+
+printConfig();
