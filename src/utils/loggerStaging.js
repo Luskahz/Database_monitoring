@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { copyFile, mkdir, unlink, writeFile } from "fs/promises";
+import { copyFile, mkdir, stat, unlink, writeFile } from "fs/promises";
 import { isRemotePath } from "./ensureLocalStaging.js";
 
 const LOCAL_LOG_DIR = path.resolve(process.cwd(), "staging_loggers");
@@ -19,8 +19,23 @@ export function shouldStageLogger(filePath) {
 export async function setupStagedLogger(filePath) {
   if (!shouldStageLogger(filePath)) return null;
 
-  const baseName = getLogBaseName(filePath);
-  const localLogPath = path.join(LOCAL_LOG_DIR, `Logger_${baseName}.txt`);
+  const rawBase = getLogBaseName(filePath);
+  const safeBase = rawBase.replace(/[^a-zA-Z0-9._-]/g, "_");
+
+  let uniqueSuffix = "";
+  try {
+    const stats = await stat(filePath);
+    const sizePart = Number(stats.size) || 0;
+    const mtimePart = Math.floor(Number(stats.mtimeMs) || 0);
+    uniqueSuffix = `.${sizePart}.${mtimePart}`;
+  } catch {
+    uniqueSuffix = `.${Date.now()}`;
+  }
+
+  const localLogPath = path.join(
+    LOCAL_LOG_DIR,
+    `Logger_${safeBase}${uniqueSuffix}.txt`
+  );
 
   await mkdir(LOCAL_LOG_DIR, { recursive: true });
 
@@ -29,12 +44,12 @@ export async function setupStagedLogger(filePath) {
 
   const startPlaceholder = path.join(
     networkLogDir,
-    `Logger_${baseName}_processamento_iniciado.txt`
+    `Logger_${safeBase}_processamento_iniciado.txt`
   );
   const stamp = new Date().toISOString();
   await writeFile(startPlaceholder, `Processamento iniciado em ${stamp}\n`);
 
-  return { baseName, localLogPath, networkLogDir, startPlaceholder };
+  return { baseName: safeBase, localLogPath, networkLogDir, startPlaceholder };
 }
 
 export async function finalizeStagedLogger(stagedInfo, options = {}) {
