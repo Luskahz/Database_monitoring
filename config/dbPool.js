@@ -1,9 +1,15 @@
 // config/dbPool.js
 import mysql from "mysql2/promise";
 
-const POOL_MAX = parseInt(process.env.DB_POOL_MAX, 10) || 10;
-const POOL_MIN = parseInt(process.env.DB_POOL_MIN, 10) || 2;
-const IDLE_MS  = parseInt(process.env.DB_POOL_IDLE_MS, 10) || 60000;
+function toNumber(value, fallback) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+const POOL_MAX = toNumber(process.env.DB_POOL_MAX, 10);
+const POOL_MIN = toNumber(process.env.DB_POOL_MIN, 2);
+const IDLE_MS = toNumber(process.env.DB_POOL_IDLE_MS, 60000);
+const DB_PORT = toNumber(process.env.DB_PORT, 3306);
 const _t = Number(process.env.DB_QUERY_TIMEOUT_MS);
 export const DB_QUERY_TIMEOUT_MS = Number.isFinite(_t) ? _t : 120000;
 
@@ -12,7 +18,7 @@ const pool = mysql.createPool({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  port: process.env.DB_PORT || 3306,
+  port: DB_PORT,
   waitForConnections: true,
   connectionLimit: POOL_MAX,
   maxIdle: POOL_MIN,
