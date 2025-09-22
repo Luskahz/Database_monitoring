@@ -1,17 +1,21 @@
 import fs from "fs";
 import path from "path";
 
-// Logger configurado para timestamps compactos em BR, caminhos truncados e sobrescrita por execução.
 const loggers = new Map();
-
-const FLUSH_MS = Number(process.env.LOG_FLUSH_MS || 200);
-const FLUSH_LINES = Number(process.env.LOG_FLUSH_LINES || 100);
-const CLOSE_TIMEOUT_MS = Number(process.env.LOG_CLOSE_TIMEOUT_MS || 5000);
+const FLUSH_MS = Number(process.env.LOG_FLUSH_MS);
+const FLUSH_LINES = Number(process.env.LOG_FLUSH_LINES);
+const CLOSE_TIMEOUT_MS = Number(process.env.LOG_CLOSE_TIMEOUT_MS);
 
 const LOG_ROOT = path.resolve(process.cwd(), "logs");
 const ACTIVITY_LOG_KEY = "__activity__";
 const ACTIVITY_LOG_PATH = path.join(LOG_ROOT, "_activity.txt");
 const BR_TIMEZONE = "America/Sao_Paulo";
+
+const PATH_TOKEN_REGEX = /(src|work|path|staging[a-z0-9_]*)(\s*=\s*)(?:"([^"]*)"|'([^']*)'|([^\s"';]+))/gi;
+
+
+
+
 
 const brTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
   hour: "2-digit",
@@ -121,8 +125,6 @@ export function shortPath(p) {
   const base = path.basename(raw);
   return base ? `\\${base}` : "";
 }
-
-const PATH_TOKEN_REGEX = /(src|work|path|staging[a-z0-9_]*)(\s*=\s*)(?:"([^"]*)"|'([^']*)'|([^\s"';]+))/gi;
 
 export function shortenPathsInMsg(msg, fallbackShort = "") {
   if (!msg) return msg;
@@ -392,6 +394,7 @@ export async function writeFinal({ filePath, dataStr }) {
   const stamp = dataStr || fmtBrDateTime();
   await writeLines(filePath, [`==== FINAL ${stamp} ====`]);
 }
+
 export async function flush(filePath) {
   const entry = getEntry(filePath);
   if (!entry) return;
@@ -445,7 +448,6 @@ export async function flush(filePath) {
   await currentPromise;
 }
 
-
 async function finalizeStream(entry) {
   if (!entry || entry.ended || entry.stream.destroyed) {
     entry.ended = true;
@@ -453,25 +455,55 @@ async function finalizeStream(entry) {
   }
 
   try {
+    // listeners de debug ANTES do end()
+    entry.stream.on("finish", () => {
+      console.log(`[logger-debug] FINISH emitido para ${entry.displayName}`);
+    });
+    entry.stream.on("close", () => {
+      console.log(`[logger-debug] CLOSE emitido para ${entry.displayName}`);
+    });
+    entry.stream.on("error", (err) => {
+      console.log(
+        `[logger-debug] ERROR emitido para ${entry.displayName}:`,
+        err?.message || err
+      );
+    });
+
+    // pede pro Node encerrar
     entry.stream.end();
+    console.log(`[logger-debug] END chamado para ${entry.displayName}`);
   } catch (err) {
-    console.error(`[logger] stream.end falhou (${entry.displayName}):`, err?.message || err);
+    console.error(
+      `[logger] stream.end falhou (${entry.displayName}):`,
+      err?.message || err
+    );
     entry.ended = true;
     return;
   }
 
   const result = await waitForStreamToEnd(entry.stream);
+
   if (result.status === "error") {
-    console.error(`[logger] erro ao finalizar stream (${entry.displayName}):`, result.error?.message || result.error);
+    console.error(
+      `[logger] erro ao finalizar stream (${entry.displayName}):`,
+      result.error?.message || result.error
+    );
   } else if (result.status === "timeout") {
-    console.error(`[logger] timeout ao finalizar stream (${entry.displayName})`);
+    console.error(
+      `[logger] timeout ao finalizar stream (${entry.displayName})`
+    );
     try {
       entry.stream.destroy?.();
     } catch {}
+  } else {
+    console.log(
+      `[logger-debug] finalizeStream concluiu com status=${result.status} (${entry.displayName})`
+    );
   }
 
   entry.ended = true;
 }
+
 
 export async function endLogger(filePath) {
   const entry = getEntry(filePath);
@@ -511,7 +543,6 @@ export async function endLogger(filePath) {
 
   return entry.endPromise;
 }
-
 
 export async function endAllLoggers() {
   for (const [filePath] of Array.from(loggers.entries())) {
