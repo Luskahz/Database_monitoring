@@ -63,13 +63,15 @@ const purgeInterval = setInterval(purgeDebounceTimers, 10 * 60 * 1000);
 purgeInterval.unref?.();
 
 export async function startMonitoring() {
-  const monitorPath = path.resolve(
-    __dirname,
-    "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL"
-  );
+  const monitorPath =
+    process.env.MONITOR_PATH ||
+    path.resolve(
+      __dirname,
+      "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL"
+    );
 
-  const awfStability = Number(process.env.AWF_STABILITY_MS || 1500);
-  const awfPoll = Number(process.env.AWF_POLL_MS || 100);
+  const awfStability = Number(process.env.AWF_STABILITY_MS ?? 1500);
+  const awfPoll = Number(process.env.AWF_POLL_MS ?? 100);
 
   const ignoredPatterns = [/[/\\]database_monitoring[/\\]/, /[/\\]loggers[/\\]/, /\.txt$/];
   if (STAGING_DIR) {
