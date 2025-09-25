@@ -25,6 +25,20 @@ import {
 import { logActivity } from "../middleware/logger.js";
 import { updateActiveJob, updateMetrics } from "./queueTracker.js";
 
+function buildContextTag(metadados) {
+  if (!metadados) return "";
+  const tabela = metadados.tabela || metadados?.destino?.tabela_destino || "tabela-desconhecida";
+  const ano = metadados.ano ?? metadados?.destino?.ano ?? metadados?.range?.ano ?? "—";
+  return `[${tabela}][${ano}]`;
+}
+
+function buildLogAction(metadados) {
+  if (!metadados) return undefined;
+  const tabela = metadados.tabela || metadados?.destino?.tabela_destino;
+  const ano = metadados.ano ?? metadados?.destino?.ano ?? metadados?.range?.ano;
+  return [tabela, ano].filter((value) => value != null && value !== "").join(" ");
+}
+
 const CPU = Math.max(1, os.cpus()?.length ?? 1);
 const pool = await getPool();
 export const POOL_MAX = pool.pool?.max ?? 10;
@@ -73,6 +87,15 @@ export async function streamPipeline(
   } = metadados;
   const workPath = metadados.paths?.work || contexto;
 
+  const contextTag = buildContextTag(metadados);
+  const activityAction = buildLogAction(metadados);
+  const withTag = (msg) => (contextTag ? `${contextTag} ${msg}` : msg);
+  const info = (msg) => addInfo(withTag(msg), contexto);
+  const aviso = (msg) => addAviso(withTag(msg), contexto);
+  const erro = (msg) => addErro(withTag(msg), contexto);
+  const activity = (level, message) =>
+    logActivity(level, message, { filePath: contexto, action: activityAction });
+
   memoryGuard.start();
 
   let dynamicAllowedInserts = MAX_CONCURRENT_INSERTS_DEFAULT;
@@ -89,24 +112,22 @@ export async function streamPipeline(
         dynamicMaxBatchBytes,
         MAX_BATCH_BYTES_WHEN_HIGH
       );
-      addInfo(
+      info(
         "[RAM] HIGH: reduzindo concorrência para 1, HIGH_WATERMARK=1, maxBatchBytes=" +
-          dynamicMaxBatchBytes,
-        contexto
+          dynamicMaxBatchBytes
       );
     } else {
       dynamicAllowedInserts = MAX_CONCURRENT_INSERTS_DEFAULT;
       dynamicHighWatermark = HIGH_WATERMARK_DEFAULT;
       dynamicLowWatermark = LOW_WATERMARK_DEFAULT;
       dynamicMaxBatchBytes = MAX_BATCH_BYTES_DEFAULT;
-      addInfo(
+      info(
         "[RAM] NORMAL: restaurando concorrência=" +
           dynamicAllowedInserts +
           ", HIGH_WATERMARK=" +
           dynamicHighWatermark +
           ", maxBatchBytes=" +
-          dynamicMaxBatchBytes,
-        contexto
+          dynamicMaxBatchBytes
       );
     }
   });
@@ -160,9 +181,7 @@ export async function streamPipeline(
         detail: "Inserções iniciadas",
       });
     }
-    void logActivity("info", `Inserindo lote (${lote.length} linhas)`, {
-      filePath: contexto,
-    });
+    void activity("info", `Inserindo lote (${lote.length} linhas)`);
     updateActiveJob(contexto, { detail: `Inserindo lote (${lote.length})` });
     try {
       const skipUpdateClause = Boolean(metadados.applyPreDelete); // só pula UPDATE se fizemos pre-delete
@@ -170,16 +189,10 @@ export async function streamPipeline(
       inseridosAteAgora += lote.length;
       publishInsert?.(inseridosAteAgora);
       metrics.lastProgressTs = Date.now();
-      void logActivity("info", `Lote concluído (${lote.length} linhas)`, {
-        filePath: contexto,
-      });
+      void activity("info", `Lote concluído (${lote.length} linhas)`);
     } catch (e) {
-      addAviso(`[BATCH][FALLBACK] Falha no lote de ${lote.length}. Provável duplicata/constraint.`, contexto);
-      void logActivity(
-        "warn",
-        `Fallback para inserção linha-a-linha: ${e.message}`,
-        { filePath: contexto }
-      );
+      aviso(`[BATCH][FALLBACK] Falha no lote de ${lote.length}. Provável duplicata/constraint.`);
+      void activity("warn", `Fallback para inserção linha-a-linha: ${e.message}`);
       let ok = 0,
         fail = 0;
       for (const row of lote) {
@@ -189,10 +202,7 @@ export async function streamPipeline(
           inseridosAteAgora++;
         } catch (err) {
           fail++;
-          addErro(
-            `Erro ao inserir linha ${inseridosAteAgora + 1}: ${err.message}`,
-            contexto
-          );
+          erro(`Erro ao inserir linha ${inseridosAteAgora + 1}: ${err.message}`);
         }
       }
       updateActiveJob(contexto, {
@@ -201,10 +211,7 @@ export async function streamPipeline(
       publishInsert?.(inseridosAteAgora);
       metrics.lastProgressTs = Date.now();
     } finally {
-      addInfo(
-        `[BATCH] Inseridos ${lote.length} linhas (até agora: ${inseridosAteAgora}).`,
-        contexto
-      );
+      info(`[BATCH] Inseridos ${lote.length} linhas (até agora: ${inseridosAteAgora}).`);
     }
   }
 
@@ -232,9 +239,8 @@ export async function streamPipeline(
       metrics.inFlightInserts = inflight.size;
       updateActiveJob(contexto, { detail: `Lotes em voo: ${inflight.size}` });
     });
-    addInfo(
-      `[FLUSH] inflight_inserts=${inflight.size}, batch_len=${lote.length}, approx_bytes=${loteBytes}`,
-      contexto
+    info(
+      `[FLUSH] inflight_inserts=${inflight.size}, batch_len=${lote.length}, approx_bytes=${loteBytes}`
     );
     updateActiveJob(contexto, {
       detail: `Enviando lote (${lote.length} linhas)`,
@@ -310,20 +316,16 @@ export async function streamPipeline(
   await Promise.all(inflight);
 
   const avgMs = insertCount ? totalInsertTime / insertCount : 0;
-  addInfo(
+  info(
     `[STATS] tempo_medio_lote=${avgMs.toFixed(
       2
-    )}ms, pico_inflight=${maxInflight}`,
-    contexto
+    )}ms, pico_inflight=${maxInflight}`
   );
-  void logActivity(
+  void activity(
     "info",
     `[STATS] tempo_medio_lote=${avgMs.toFixed(
       2
-    )}ms, pico_inflight=${maxInflight}`,
-    {
-      filePath: contexto,
-    }
+    )}ms, pico_inflight=${maxInflight}`
   );
 
   metadados.total_linhas = lidas;
