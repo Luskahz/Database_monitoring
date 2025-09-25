@@ -313,8 +313,12 @@ export async function manageInsertController(metadados, logData) {
     } catch (e) {
       erro(`Falha no pipeline de leitura/inserção: ${e.message}`);
       void activity("error", `Falha no pipeline: ${e.message}`);
-      throw e;
+      throw e;  
     }
+  }
+  finally {
+    // Se precisar garantir algo aqui (ex: atualizar status de job)
+    updateActiveJob(contexto, { stage: "finalização", detail: "Encerrado com erro ou sucesso" });
   }
 }
 
