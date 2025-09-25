@@ -22,6 +22,9 @@ const state = {
     lastProgressTs: Date.now(),
     activeFiles: 0,
     filesMaxConcurrent: null,
+    memoryUsage: null,
+    loadAverage: null,
+    dbStatus: null,
   },
 };
 
@@ -65,6 +68,10 @@ function buildSnapshot() {
   const lastProgressAgo = state.metrics.lastProgressTs
     ? `${Math.max(0, now - state.metrics.lastProgressTs)}ms`
     : "n/a";
+  const mem = state.metrics.memoryUsage;
+  const loadAvg = state.metrics.loadAverage;
+  const dbStatus = state.metrics.dbStatus;
+  const formatMb = (value) => (value != null ? (value / (1024 * 1024)).toFixed(1) : "0.0");
 
   lines.push(`Snapshot: ${fmtTimeNow()}`);
   lines.push(`FILES_MAX_CONCURRENT=${filesMax}`);
@@ -121,6 +128,33 @@ function buildSnapshot() {
   lines.push(
     `pendingBatches=${state.metrics.pendingBatches} | inFlight=${state.metrics.inFlightInserts} | lastProgressAgo=${lastProgressAgo}`
   );
+
+  if (mem) {
+    lines.push(
+      `Memória RSS: ${formatMb(mem.rss)} MB | Heap Usado: ${formatMb(mem.heapUsed)} MB | Heap Total: ${formatMb(mem.heapTotal)} MB`
+    );
+  }
+
+  if (Array.isArray(loadAvg) && loadAvg.length) {
+    const loadFormatted = loadAvg.map((value) => (Number.isFinite(value) ? value.toFixed(2) : "n/a"));
+    lines.push(`Carga CPU (1,5,15min): [${loadFormatted.join(", ")}]`);
+  }
+
+  if (dbStatus) {
+    const checkedAt = dbStatus.checkedAt
+      ? new Date(dbStatus.checkedAt).toISOString()
+      : "n/a";
+    if (dbStatus.error) {
+      lines.push(`DB status erro: ${dbStatus.error} | Última verificação: ${checkedAt}`);
+    } else {
+      const threads = dbStatus.threadsConnected ?? "n/a";
+      const processes = dbStatus.processCount ?? "n/a";
+      const latency = dbStatus.latencyMs != null ? `${dbStatus.latencyMs}ms` : "n/a";
+      lines.push(
+        `DB Threads conectados: ${threads} | Processlist: ${processes} | Latência: ${latency} | Última verificação: ${checkedAt}`
+      );
+    }
+  }
 
   return `${lines.join("\n")}\n`;
 }

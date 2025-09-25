@@ -46,6 +46,20 @@ function tailDirs(dir) {
 
   return [parent, grandParent, greatGrandParent];
 }
+
+function buildContextTag(meta) {
+  if (!meta) return "";
+  const tabela = meta.tabela || meta?.destino?.tabela_destino || "tabela-desconhecida";
+  const ano = meta.ano ?? meta?.destino?.ano ?? meta?.range?.ano ?? "—";
+  return `[${tabela}][${ano}]`;
+}
+
+function buildLogAction(meta) {
+  if (!meta) return undefined;
+  const tabela = meta.tabela || meta?.destino?.tabela_destino;
+  const ano = meta.ano ?? meta?.destino?.ano ?? meta?.range?.ano;
+  return [tabela, ano].filter((value) => value != null && value !== "").join(" ");
+}
 export function destinoByFilePath(filePath) {
   const { dir, base: fileName, name: baseNameNoExt } = path.parse(filePath);
   const [parent, grandParent, greatGrandParent] = tailDirs(dir);
@@ -339,7 +353,12 @@ async function ensureOverlapMetadata(metadados, contexto, action) {
   const range = metadados.range ?? buildRangeFromMetadados(metadados);
   metadados.range = range || null;
 
-  const logger = createOverlapLogger(contexto, action);
+  const logger = createOverlapLogger(
+    contexto,
+    action,
+    buildLogAction(metadados),
+    buildContextTag(metadados)
+  );
   const decision = await decideOverlapPolicy({
     table: metadados.tabela,
     dateCol: metadados.coluna_data,
@@ -350,17 +369,18 @@ async function ensureOverlapMetadata(metadados, contexto, action) {
   return decision;
 }
 
-function createOverlapLogger(contexto, action) {
+function createOverlapLogger(contexto, action, activityAction, contextTag = "") {
   return {
     info(message, payload = {}) {
       try {
         const serialized = JSON.stringify(payload);
         const line = `${message} ${serialized}`;
-        addInfo(line, contexto);
-        void logActivity("info", line, { filePath: contexto, action });
+        addInfo(contextTag ? `${contextTag} ${line}` : line, contexto);
+        void logActivity("info", line, { filePath: contexto, action: activityAction || action });
       } catch (err) {
-        addInfo(`${message} ${payload ? String(payload) : ""}`, contexto);
-        void logActivity("info", message, { filePath: contexto, action });
+        const fallback = `${message} ${payload ? String(payload) : ""}`;
+        addInfo(contextTag ? `${contextTag} ${fallback}` : fallback, contexto);
+        void logActivity("info", message, { filePath: contexto, action: activityAction || action });
       }
     },
   };

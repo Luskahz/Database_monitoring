@@ -5,12 +5,32 @@ import { buildRangeFromMetadados } from "../model/tableModel.js";
 import { logActivity } from "../middleware/logger.js";
 import { PIPELINE_FAST_PATH } from "../../config/index.js";
 
+function buildContextTag(meta) {
+  if (!meta) return "";
+  const tabela = meta.tabela || meta?.destino?.tabela_destino || "tabela-desconhecida";
+  const ano = meta.ano ?? meta?.destino?.ano ?? meta?.range?.ano ?? "—";
+  return `[${tabela}][${ano}]`;
+}
+
+function buildLogAction(meta) {
+  if (!meta) return undefined;
+  const tabela = meta.tabela || meta?.destino?.tabela_destino;
+  const ano = meta.ano ?? meta?.destino?.ano ?? meta?.range?.ano;
+  return [tabela, ano].filter((value) => value != null && value !== "").join(" ");
+}
+
 export default async function fluxoValidatorController(metadados, logData) {
   const contexto = metadados.caminho_original;
   const nome = metadados.nome_arquivo;
   const tabela = metadados.tabela;
 
   const fastPath = PIPELINE_FAST_PATH;
+  const contextTag = buildContextTag(metadados);
+  const actionContext = buildLogAction(metadados);
+  const withTag = (msg) => (contextTag ? `${contextTag} ${msg}` : msg);
+  const info = (msg) => addInfo(withTag(msg), contexto);
+  const erro = (msg) => addErro(withTag(msg), contexto);
+  const aviso = (msg) => addAviso(withTag(msg), contexto);
 
   const overlap = await ensureOverlapDecision(metadados, contexto);
   const strategy = overlap?.strategy || "insert";
@@ -22,27 +42,23 @@ export default async function fluxoValidatorController(metadados, logData) {
     hasOverlap,
     reason: overlap?.reason ?? null,
     range: metadados.range ?? null,
-  });
+  }, actionContext, contextTag);
 
   if (fastPath) {
     if (!logData?.hash_arquivo) {
-      addInfo(
-        "[Validator] FAST_PATH: hash indisponível nesta etapa — validação seguirá por range.",
-        contexto
+      info(
+        "[Validator] FAST_PATH: hash indisponível nesta etapa — validação seguirá por range."
       );
     }
     if (hasOverlap) {
-      addInfo(
-        `[ARQUIVO MODIFICADO] [${nome}] já existia, mas foi alterado. Reprocessando.`,
-        contexto
-      );
+      info(`[ARQUIVO MODIFICADO] [${nome}] já existia, mas foi alterado. Reprocessando.`);
       console.log(
         `[🟡 MODIFICADO] [${nome}] sera inserido na tabela [${tabela}]`
       );
       return "reprocessar";
     }
 
-    addInfo(`[NOVO ARQUIVO] [${nome}] será processado.`, contexto);
+    info(`[NOVO ARQUIVO] [${nome}] será processado.`);
     console.log(`[🟢 NOVO] [${nome}] sera inserido na tabela [${tabela}]`);
     return "inserir";
   }
@@ -50,7 +66,7 @@ export default async function fluxoValidatorController(metadados, logData) {
   const hash = logData?.hash_arquivo;
 
   if (!hash) {
-    addErro("Hash do arquivo não foi passado ao validador do fluxo.", contexto);
+    erro("Hash do arquivo não foi passado ao validador do fluxo.");
   }
 
   if (metadados?.file_size_bytes != null && metadados?.total_linhas != null) {
@@ -61,18 +77,17 @@ export default async function fluxoValidatorController(metadados, logData) {
         total_linhas: metadados.total_linhas,
       });
       if (similar) {
-        addInfo(
-          "[Validator] Meta match (size+lines) encontrado — provável duplicado; seguir com verificação por hash.",
-          contexto
+        info(
+          "[Validator] Meta match (size+lines) encontrado — provável duplicado; seguir com verificação por hash."
         );
       }
     } catch (e) {
-      addErro(`Erro ao buscar log por metadados: ${e.message}`, contexto);
+      erro(`Erro ao buscar log por metadados: ${e.message}`);
     }
   }
 
   const pLogs = getLogByData(metadados).catch((e) => {
-    addErro(`erro ao extrair os logs referentes à data: ${e.message}`, contexto);
+    erro(`erro ao extrair os logs referentes à data: ${e.message}`);
     return null;
   });
 
@@ -86,7 +101,7 @@ export default async function fluxoValidatorController(metadados, logData) {
           return false;
         })
         .catch((e) => {
-          addErro(`Erro ao extrair os hashes: ${e.message}`, contexto);
+          erro(`Erro ao extrair os hashes: ${e.message}`);
           return false;
         })
     : Promise.resolve(false);
@@ -94,10 +109,7 @@ export default async function fluxoValidatorController(metadados, logData) {
   const [logs, hashJaExiste] = await Promise.all([pLogs, pHashExiste]);
 
   if (hashJaExiste) {
-    addInfo(
-      `[ARQUIVO DUPLICADO] O conteúdo de [${nome}] já está presente na base, ${tabela}.`,
-      contexto
-    );
+    info(`[ARQUIVO DUPLICADO] O conteúdo de [${nome}] já está presente na base, ${tabela}.`);
     console.log(
       `[🟠 DUPLICADO] [${nome}] não sera inserido na tabela [${tabela}]`
     );
@@ -105,15 +117,12 @@ export default async function fluxoValidatorController(metadados, logData) {
   }
 
   if (!logs || logs.length === 0) {
-    addInfo(`[NOVO ARQUIVO] [${nome}] será processado.`, contexto);
+    info(`[NOVO ARQUIVO] [${nome}] será processado.`);
     console.log(`[🟢 NOVO] [${nome}] sera inserido na tabela [${tabela}]`);
     return "inserir";
   }
 
-  addInfo(
-    `[ARQUIVO MODIFICADO] [${nome}] já existia, mas foi alterado. Reprocessando.`,
-    contexto
-  );
+  info(`[ARQUIVO MODIFICADO] [${nome}] já existia, mas foi alterado. Reprocessando.`);
   console.log(
     `[🟡 MODIFICADO] [${nome}] sera inserido na tabela [${tabela}], validar lógica de atualização para o tipo do arquivo`
   );
@@ -129,9 +138,12 @@ async function ensureOverlapDecision(metadados, contexto) {
     return metadados.overlap;
   }
 
-  addAviso(
-    "[OverlapDecision] Metadados sem decisão prévia; calculando tardiamente.",
-    contexto
+  const contextTag = buildContextTag(metadados);
+  const actionContext = buildLogAction(metadados);
+  aviso(
+    contextTag
+      ? `${contextTag} [OverlapDecision] Metadados sem decisão prévia; calculando tardiamente.`
+      : "[OverlapDecision] Metadados sem decisão prévia; calculando tardiamente.",
   );
   const range = metadados.range ?? buildRangeFromMetadados(metadados);
   metadados.range = range || null;
@@ -139,35 +151,39 @@ async function ensureOverlapDecision(metadados, contexto) {
     table: metadados.tabela,
     dateCol: metadados.coluna_data,
     range,
-    logger: createOverlapLogger(contexto),
+    logger: createOverlapLogger(contexto, metadados.acao, actionContext, contextTag),
   });
   metadados.overlap = decision;
   return decision;
 }
 
-function createOverlapLogger(contexto) {
+function createOverlapLogger(contexto, actionContext, contextTag = "") {
   return {
     info(message, payload = {}) {
       try {
         const serialized = JSON.stringify(payload);
         const line = `${message} ${serialized}`;
-        addInfo(line, contexto);
-        void logActivity("info", line, { filePath: contexto });
+        addInfo(contextTag ? `${contextTag} ${line}` : line, contexto);
+        void logActivity("info", line, { filePath: contexto, action: actionContext });
       } catch (err) {
-        addInfo(`${message} ${payload ? String(payload) : ""}`, contexto);
-        void logActivity("info", message, { filePath: contexto });
+        const fallback = `${message} ${payload ? String(payload) : ""}`;
+        addInfo(contextTag ? `${contextTag} ${fallback}` : fallback, contexto);
+        void logActivity("info", message, { filePath: contexto, action: actionContext });
       }
     },
   };
 }
 
-function logOverlapUsage(contexto, payload) {
+function logOverlapUsage(contexto, payload, actionContext, contextTag = "") {
   try {
     const line = `[OverlapDecision][Use] ${JSON.stringify(payload)}`;
-    addInfo(line, contexto);
-    void logActivity("info", line, { filePath: contexto });
+    addInfo(contextTag ? `${contextTag} ${line}` : line, contexto);
+    void logActivity("info", line, { filePath: contexto, action: actionContext });
   } catch (err) {
-    addInfo("[OverlapDecision][Use]", contexto);
-    void logActivity("info", "[OverlapDecision][Use]", { filePath: contexto });
+    const fallback = contextTag
+      ? `${contextTag} [OverlapDecision][Use]`
+      : "[OverlapDecision][Use]";
+    addInfo(fallback, contexto);
+    void logActivity("info", "[OverlapDecision][Use]", { filePath: contexto, action: actionContext });
   }
 }

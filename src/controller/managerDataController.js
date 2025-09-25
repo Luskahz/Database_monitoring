@@ -1,10 +1,6 @@
 import path from "path";
 import { deleteFromTable, buildRangeFromMetadados } from "../model/tableModel.js";
-import {
-  iniciarBarra,
-  atualizarBarra,
-  finalizarBarra,
-} from "../utils/progressBar.js";
+import { atualizarBarra } from "../utils/progressBar.js";
 
 import { addAviso, addErro, addInfo } from "../middleware/errorHandler.js";
 import { logActivity, writeStatusUpdate } from "../middleware/logger.js";
@@ -31,18 +27,39 @@ import {
 import { updateActiveJob } from "../utils/queueTracker.js";
 import { normalizeTotal } from "../utils/normalizeTotal.js";
 
+function buildContextTag(metadados) {
+  if (!metadados) return "";
+  const tabela = metadados.tabela || metadados?.destino?.tabela_destino || "tabela-desconhecida";
+  const ano = metadados.ano ?? metadados?.destino?.ano ?? metadados?.range?.ano ?? "—";
+  return `[${tabela}][${ano}]`;
+}
+
+function buildLogAction(metadados) {
+  if (!metadados) return undefined;
+  const tabela = metadados.tabela || metadados?.destino?.tabela_destino;
+  const ano = metadados.ano ?? metadados?.destino?.ano ?? metadados?.range?.ano;
+  return [tabela, ano].filter((value) => value != null && value !== "").join(" ");
+}
+
 export async function manageInsertController(metadados, logData) {
   const contexto = metadados.caminho_original;
   const workPath = metadados.paths?.work || contexto;
   const nomeArquivo = metadados.nome_arquivo ?? "arquivo-desconhecido";
   const barraId = `${nomeArquivo}::${metadados.ano ?? "-"}::${metadados.tabela}`;
+  const contextTag = buildContextTag(metadados);
+  const activityAction = buildLogAction(metadados);
+  const withTag = (msg) => (contextTag ? `${contextTag} ${msg}` : msg);
+  const info = (msg) => addInfo(withTag(msg), contexto);
+  const erro = (msg) => addErro(withTag(msg), contexto);
+  const aviso = (msg) => addAviso(withTag(msg), contexto);
+  const activity = (level, message) =>
+    logActivity(level, message, { filePath: contexto, action: activityAction });
 
   console.log(`[DB] Using pool limit=${POOL_MAX} | insert_concurrency=${INSERT_MAX_CONCURRENT} | files_concurrency=${FILES_MAX_CONCURRENT}`);
-  addInfo(
+  info(
     `Configuração: INSERT_MAX_CONCURRENT=${INSERT_MAX_CONCURRENT}, FILES_MAX_CONCURRENT=${FILES_MAX_CONCURRENT}, BATCH_SIZE=${BATCH_SIZE}, QUEUE_HIGH_WATERMARK=${HIGH_WATERMARK_DEFAULT}, QUEUE_LOW_WATERMARK=${LOW_WATERMARK_DEFAULT}`,
-    contexto,
   );
-  void logActivity("info", "Preparação iniciada", { filePath: contexto });
+  void activity("info", "Preparação iniciada");
   updateActiveJob(contexto, { stage: "preparação", detail: "Coletando metadados" });
 
   // -------- Barra global: 0..100 (3 fases) --------
@@ -52,8 +69,6 @@ export async function manageInsertController(metadados, logData) {
   let lastPctAbs = 0;
   const stageNames = { prep: "preparação", read: "leitura", insert: "inserção" };
   let currentStageName = stageNames.prep;
-
-  iniciarBarra(barraId, 100, nomeArquivo, metadados.tabela, metadados.ano);
 
   function setPhase(name) {
     phaseBase += phaseSpan;
@@ -106,11 +121,11 @@ export async function manageInsertController(metadados, logData) {
     // Tipos esperados (schema + overrides)
     const schemaMap = await loadDecimalProfilesFromSchema(metadados.tabela);
     const tiposFinal = expandTiposWithSchema(metadados.tipos_esperados, schemaMap);
-    void logActivity("info", "Preparação concluída", { filePath: contexto });
+    void activity("info", "Preparação concluída");
 
     publish(1.0, "Preparação concluída");
     setPhase("read"); // 15..60%
-    void logActivity("info", "Leitura e validação iniciadas", { filePath: contexto });
+    void activity("info", "Leitura e validação iniciadas");
 
     // -------- Valida dados e ação --------
     let totalKnown = normalizeTotal(metadados.total_linhas);
@@ -161,7 +176,7 @@ export async function manageInsertController(metadados, logData) {
       };
       if (primaryLabel) payload[primaryLabel] = primaryValue;
 
-      addInfo(`[Progress] ${JSON.stringify(payload)}`, contexto);
+      info(`[Progress] ${JSON.stringify(payload)}`);
       progressLogState.set(stageName, {
         lastPercent: percentVal,
         lastValue: primaryValue,
@@ -180,7 +195,7 @@ export async function manageInsertController(metadados, logData) {
       reason: overlapDecision?.reason ?? null,
       range: metadados.range ?? null,
       applyPreDelete: metadados.applyPreDelete,
-    });
+    }, activityAction, contextTag);
 
     const validator = strategy === "replace"
       ? metadados.coluna_data ? "substituir" : "cadastro"
@@ -188,22 +203,22 @@ export async function manageInsertController(metadados, logData) {
 
     if (validator === "cadastro" || validator === "substituir") {
       try {
-        void logActivity("info", "Removendo período anterior", { filePath: contexto });
+        void activity("info", "Removendo período anterior");
         await deleteFromTable(metadados);
         const msg = validator === "cadastro"
           ? "[Delete dados] tabela limpa para reinserção cadastral"
           : "[Gerenciamento] substituição: período removido antes da reinserção";
-        addInfo(msg, contexto);
-        void logActivity("info", "Remoção concluída", { filePath: contexto });
+        info(msg);
+        void activity("info", "Remoção concluída");
       } catch (e) {
-        addErro(`Erro ao deletar antes da reinserção: ${e.message}`, contexto);
-        void logActivity("error", `Falha ao deletar período: ${e.message}`, { filePath: contexto });
+        erro(`Erro ao deletar antes da reinserção: ${e.message}`);
+        void activity("error", `Falha ao deletar período: ${e.message}`);
         throw e;
       }
     }
 
-    addInfo("Iniciando leitura e montagem de lotes...", contexto);
-    void logActivity("info", "Pipeline de streaming iniciado", { filePath: contexto });
+    info("Iniciando leitura e montagem de lotes...");
+    void activity("info", "Pipeline de streaming iniciado");
     updateActiveJob(contexto, { stage: "leitura", detail: "Stream iniciada", progress: lastPctAbs / 100 });
 
     try {
@@ -253,7 +268,7 @@ export async function manageInsertController(metadados, logData) {
         lastPctAbs = 100;
       }
 
-      addInfo("Processo de inserção finalizado.", contexto);
+      info("Processo de inserção finalizado.");
       try {
         const arquivo = path.basename(contexto || "");
         const tabelaFin =
@@ -289,22 +304,17 @@ export async function manageInsertController(metadados, logData) {
           hash: metadados?.hash || "—",
         });
       } catch (err) {
-        addAviso(
-          `[Status] não foi possível registrar atualização: ${err?.message || err}`,
-          contexto,
-        );
+        aviso(`[Status] não foi possível registrar atualização: ${err?.message || err}`);
       }
-      void logActivity("info", "Pipeline de streaming concluído", { filePath: contexto });
+      void activity("info", "Pipeline de streaming concluído");
       updateActiveJob(contexto, { stage: "finalização", progress: 1, detail: "Processo concluído" });
 
       return resultado;
     } catch (e) {
-      addErro(`Falha no pipeline de leitura/inserção: ${e.message}`, contexto);
-      void logActivity("error", `Falha no pipeline: ${e.message}`, { filePath: contexto });
+      erro(`Falha no pipeline de leitura/inserção: ${e.message}`);
+      void activity("error", `Falha no pipeline: ${e.message}`);
       throw e;
     }
-  } finally {
-    await finalizarBarra(barraId);
   }
 }
 
@@ -318,8 +328,11 @@ async function ensureOverlapDecision(metadados, contexto) {
     return metadados.overlap;
   }
 
+  const contextTag = buildContextTag(metadados);
   addAviso(
-    "[OverlapDecision] Metadados sem decisão prévia; calculando tardiamente (manager).",
+    contextTag
+      ? `${contextTag} [OverlapDecision] Metadados sem decisão prévia; calculando tardiamente (manager).`
+      : "[OverlapDecision] Metadados sem decisão prévia; calculando tardiamente (manager).",
     contexto
   );
   const range = metadados.range ?? buildRangeFromMetadados(metadados);
@@ -328,53 +341,69 @@ async function ensureOverlapDecision(metadados, contexto) {
     table: metadados.tabela,
     dateCol: metadados.coluna_data,
     range,
-    logger: createOverlapLogger(contexto, metadados.acao),
+    logger: createOverlapLogger(
+      contexto,
+      metadados.acao,
+      buildLogAction(metadados),
+      contextTag
+    ),
   });
   metadados.overlap = decision;
   return decision;
 }
 
-function createOverlapLogger(contexto, action) {
+function createOverlapLogger(contexto, action, activityAction, contextTag = "") {
   return {
     info(message, payload = {}) {
       try {
         const serialized = JSON.stringify(payload);
         const line = `${message} ${serialized}`;
-        addInfo(line, contexto);
-        void logActivity("info", line, { filePath: contexto, action });
+        addInfo(contextTag ? `${contextTag} ${line}` : line, contexto);
+        void logActivity("info", line, { filePath: contexto, action: activityAction || action });
       } catch (err) {
-        addInfo(`${message} ${payload ? String(payload) : ""}`, contexto);
-        void logActivity("info", message, { filePath: contexto, action });
+        const fallback = `${message} ${payload ? String(payload) : ""}`;
+        addInfo(contextTag ? `${contextTag} ${fallback}` : fallback, contexto);
+        void logActivity("info", message, { filePath: contexto, action: activityAction || action });
       }
     },
   };
 }
 
-function logManageStrategy(contexto, payload) {
+function logManageStrategy(contexto, payload, activityAction, contextTag = "") {
   try {
     const line = `[ManageInsert] ${JSON.stringify(payload)}`;
-    addInfo(line, contexto);
-    void logActivity("info", line, { filePath: contexto });
+    addInfo(contextTag ? `${contextTag} ${line}` : line, contexto);
+    void logActivity("info", line, { filePath: contexto, action: activityAction });
   } catch (err) {
-    addInfo("[ManageInsert]", contexto);
-    void logActivity("info", "[ManageInsert]", { filePath: contexto });
+    const fallbackLine = contextTag ? `${contextTag} [ManageInsert]` : "[ManageInsert]";
+    addInfo(fallbackLine, contexto);
+    void logActivity("info", "[ManageInsert]", { filePath: contexto, action: activityAction });
   }
 }
 
 
 export async function managerDeleterController(logData) {
   const contexto = logData.caminho_original;
+  const contextTag = buildContextTag(logData);
+  const activityAction = buildLogAction(logData);
+  const withTag = (msg) => (contextTag ? `${contextTag} ${msg}` : msg);
 
   try {
-    void logActivity("info", "Fluxo de deleção iniciado", { filePath: contexto });
+    void logActivity("info", "Fluxo de deleção iniciado", { filePath: contexto, action: activityAction });
     const res = await deleteFromTable(logData);
     const removidos = res?.affectedRows ?? res?.affected_rows ?? 0;
-    addInfo( `[DELETE] Removidos ${removidos} registros de ${logData.tabela || logData.tabela_destino}.`, contexto );
-    void logActivity("info", `Fluxo de deleção concluído (${removidos} registros)`, { filePath: contexto });
+    addInfo(withTag(`[DELETE] Removidos ${removidos} registros de ${logData.tabela || logData.tabela_destino}.`), contexto);
+    void logActivity("info", `Fluxo de deleção concluído (${removidos} registros)`, {
+      filePath: contexto,
+      action: activityAction,
+    });
     return { erro: false, removidos };
   } catch (e) {
-    addErro( `Erro ao deletar período no banco pós exclusão do arquivo, erro: ${e.message}`, contexto);
-    void logActivity("error", `Erro durante deleção: ${e.message}`, { filePath: contexto });
+    addErro(withTag(`Erro ao deletar período no banco pós exclusão do arquivo, erro: ${e.message}`), contexto);
+    void logActivity("error", `Erro durante deleção: ${e.message}`, {
+      filePath: contexto,
+      action: activityAction,
+    });
     return { erro: true, mensagem: e.message };
   }
 }

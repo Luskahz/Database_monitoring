@@ -33,6 +33,7 @@ import {
   setupStagedLogger,
   shouldStageLogger,
 } from "../../utils/loggerStaging.js";
+import { iniciarBarra, finalizarBarra } from "../../utils/progressBar.js";
 
 function parseBoolean(value, defaultValue) {
   if (value == null) return defaultValue;
@@ -66,6 +67,28 @@ function createStagingLogger(filePath) {
   };
 }
 
+function buildContextTag(meta) {
+  if (!meta) return "";
+  const tabela = meta.tabela || meta?.destino?.tabela_destino || "tabela-desconhecida";
+  const ano = meta.ano ?? meta?.destino?.ano ?? meta?.range?.ano ?? "—";
+  return `[${tabela}][${ano}]`;
+}
+
+function formatBeginData(meta) {
+  if (!meta) return "—";
+  if (meta.ano != null) return String(meta.ano);
+  const start = meta?.range?.start;
+  if (start) {
+    const d = new Date(start);
+    if (!Number.isNaN(d?.getTime?.())) {
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${d.getFullYear()}-${month}-${day}`;
+    }
+  }
+  return "—";
+}
+
 export default async function createdHandler(filePath, action, job) {
   const useFastPath = PIPELINE_FAST_PATH; // kept for compatibility
   if (!filePath) {
@@ -82,6 +105,13 @@ export default async function createdHandler(filePath, action, job) {
   let loggerEntry = null;
   let stagedLoggerInfo = null;
   const arquivo = filePath ? path.basename(filePath) : "";
+  let metadados = null;
+  let logData = null;
+  let contextTag = "";
+  let barraId = null;
+  let barraIniciada = false;
+  let beginRegistrado = false;
+
   try {
     const loggerOptions = {
       overwrite: true,
@@ -124,24 +154,6 @@ export default async function createdHandler(filePath, action, job) {
       }
     }
 
-    if (loggerEntry) {
-      try {
-        await writeBeginFile({
-          filePath,
-          arquivo: arquivo || "—",
-          tabela: "—",
-          dataStr: "—",
-          acao: "analyze",
-          hash: "—",
-        });
-      } catch (err) {
-        addAviso(
-          `[Logger] não foi possível registrar bloco inicial: ${err?.message || err}`,
-          filePath,
-        );
-      }
-    }
-
     await withFileLifecycle(
       filePath,
       async () => {
@@ -156,8 +168,6 @@ export default async function createdHandler(filePath, action, job) {
             : undefined;
 
         let stagingInfo = null;
-        let metadados;
-        let logData;
         let processingSucceeded = false;
 
         try {
@@ -185,6 +195,9 @@ export default async function createdHandler(filePath, action, job) {
               stagingInfo,
             });
             ({ metadados, logData } = result || {});
+            if (metadados) {
+              contextTag = buildContextTag(metadados);
+            }
           } catch (e) {
             addErro(`erro ao gerar os dados fundamentais, erro:${e.message}`, filePath);
             return;
@@ -195,18 +208,49 @@ export default async function createdHandler(filePath, action, job) {
             return;
           }
 
+          if (loggerEntry && !beginRegistrado) {
+            const tabelaLog = metadados?.tabela || metadados?.destino?.tabela_destino || "—";
+            try {
+              await writeBeginFile({
+                filePath,
+                arquivo: metadados.nome_arquivo || arquivo || "—",
+                tabela: tabelaLog,
+                dataStr: formatBeginData(metadados),
+                acao: action || "analyze",
+                hash: metadados?.hash || "—",
+              });
+              beginRegistrado = true;
+            } catch (err) {
+              addAviso(
+                `[Logger] ${contextTag ? `${contextTag} ` : ""}não foi possível registrar bloco inicial: ${
+                  err?.message || err
+                }`,
+                filePath,
+              );
+            }
+          }
+
+          if (!barraIniciada) {
+            const nomeArquivo = metadados.nome_arquivo ?? arquivo ?? "arquivo-desconhecido";
+            barraId = `${nomeArquivo}::${metadados.ano ?? "-"}::${metadados.tabela ?? "-"}`;
+            iniciarBarra(barraId, 100, nomeArquivo, metadados.tabela, metadados.ano);
+            barraIniciada = true;
+          }
+
+          const prefixInfo = (msg) => addInfo(`${contextTag} ${msg}`.trim(), filePath);
+          const prefixErro = (msg) => addErro(`${contextTag} ${msg}`.trim(), filePath);
+
           let fluxo;
           try {
             fluxo = await fluxoValidatorController(metadados, logData);
           } catch (e) {
-            addErro(`Erro ao validar fluxo de ingestão: ${e.message}`, filePath);
+            prefixErro(`Erro ao validar fluxo de ingestão: ${e.message}`);
             return;
           }
 
           if (fluxo !== "inserir" && fluxo !== "reprocessar") {
-            addInfo(
-              `[ARQUIVO IGNORADO] ${metadados.nome_arquivo} já existe e não foi modificado.`,
-              filePath
+            prefixInfo(
+              `[ARQUIVO IGNORADO] ${metadados.nome_arquivo} já existe e não foi modificado.`
             );
             await insertLog(logData);
             processingSucceeded = true;
@@ -219,11 +263,11 @@ export default async function createdHandler(filePath, action, job) {
             logData.mensagem_erro = resultado?.mensagem || null;
             logData.hash_arquivo = metadados.hash;
             logData.total_linhas = metadados.total_linhas;
-            if (resultado?.erro) addErro(logData.mensagem_erro, filePath);
+            if (resultado?.erro) prefixErro(logData.mensagem_erro);
           } catch (e) {
             logData.sucesso = false;
             logData.mensagem_erro = `Erro durante execução do managerDataController: ${e.message}`;
-            addErro(logData.mensagem_erro, filePath);
+            prefixErro(logData.mensagem_erro);
           } finally {
             await insertLog(logData);
           }
@@ -237,23 +281,25 @@ export default async function createdHandler(filePath, action, job) {
               if (processingSucceeded && cleanupOnSuccess) {
                 try {
                   await unlinkFile(stagingInfo.effectivePath);
-                  stagingLogger.info(
-                    `cópia local removida após sucesso (${stagingInfo.effectivePath})`
-                  );
-                } catch (err) {
-                  stagingLogger.warn(
-                    `falha ao remover cópia local (${stagingInfo.effectivePath}): ${err?.message || err}`
-                  );
-                }
-              } else if (!processingSucceeded) {
                 stagingLogger.info(
-                  `mantendo cópia local para análise (${stagingInfo.effectivePath})`
+                  `${contextTag ? `${contextTag} ` : ""}cópia local removida após sucesso (${stagingInfo.effectivePath})`
+                );
+              } catch (err) {
+                stagingLogger.warn(
+                  `${contextTag ? `${contextTag} ` : ""}falha ao remover cópia local (${stagingInfo.effectivePath}): ${
+                    err?.message || err
+                  }`
                 );
               }
+            } else if (!processingSucceeded) {
+              stagingLogger.info(
+                `${contextTag ? `${contextTag} ` : ""}mantendo cópia local para análise (${stagingInfo.effectivePath})`
+              );
             }
           }
+        }
 
-          if (stagingInfo?.stagingDir) {
+        if (stagingInfo?.stagingDir) {
             try {
               await cleanupStaging({
                 stagingDir: stagingInfo.stagingDir,
@@ -261,7 +307,9 @@ export default async function createdHandler(filePath, action, job) {
                 logger: stagingLogger,
               });
             } catch (err) {
-              stagingLogger.warn(`cleanup tardio falhou: ${err?.message || err}`);
+              stagingLogger.warn(
+                `${contextTag ? `${contextTag} ` : ""}cleanup tardio falhou: ${err?.message || err}`
+              );
             }
           }
         }
@@ -274,15 +322,19 @@ export default async function createdHandler(filePath, action, job) {
         await flushAggregatedSummaries(filePath);
       } catch (err) {
         addAviso(
-          `[Logger] não foi possível registrar resumos de erros/avisos: ${err?.message || err}`,
+          `[Logger] ${contextTag ? `${contextTag} ` : ""}não foi possível registrar resumos de erros/avisos: ${
+            err?.message || err
+          }`,
           filePath,
         );
       }
       try {
-        await writeFinal({ filePath });
+        await writeFinal({ filePath, dataStr: formatBeginData(metadados) });
       } catch (err) {
         addAviso(
-          `[Logger] não foi possível registrar bloco final: ${err?.message || err}`,
+          `[Logger] ${contextTag ? `${contextTag} ` : ""}não foi possível registrar bloco final: ${
+            err?.message || err
+          }`,
           filePath,
         );
       }
@@ -292,9 +344,22 @@ export default async function createdHandler(filePath, action, job) {
       await endLogger(filePath);
     } catch (err) {
       addAviso(
-        `[Logger] não foi possível encerrar logger dedicado: ${err?.message || err}`,
+        `[Logger] ${contextTag ? `${contextTag} ` : ""}não foi possível encerrar logger dedicado: ${
+          err?.message || err
+        }`,
         filePath,
       );
+    }
+
+    if (barraIniciada && barraId) {
+      try {
+        await finalizarBarra(barraId);
+      } catch (err) {
+        addAviso(
+          `[Progress] ${contextTag ? `${contextTag} ` : ""}falha ao finalizar barra: ${err?.message || err}`,
+          filePath,
+        );
+      }
     }
 
     if (stagedLoggerInfo) {
@@ -302,7 +367,9 @@ export default async function createdHandler(filePath, action, job) {
         await finalizeStagedLogger(stagedLoggerInfo);
       } catch (err) {
         addAviso(
-          `[Logger] Falha ao copiar log final para a rede: ${err?.message || err}`,
+          `[Logger] ${contextTag ? `${contextTag} ` : ""}Falha ao copiar log final para a rede: ${
+            err?.message || err
+          }`,
           filePath,
         );
       }
