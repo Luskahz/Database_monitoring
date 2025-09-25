@@ -6,3 +6,4 @@ loggers
 tmp-smoke
 logs
 staging/
+staging_loggers/
