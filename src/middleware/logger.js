@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { addErro, addInfo } from "./errorHandler.js";
 
 const loggers = new Map();
 const FLUSH_MS = Number(process.env.LOG_FLUSH_MS);
@@ -11,11 +12,8 @@ const ACTIVITY_LOG_KEY = "__activity__";
 const ACTIVITY_LOG_PATH = path.join(LOG_ROOT, "_activity.txt");
 const BR_TIMEZONE = "America/Sao_Paulo";
 
-const PATH_TOKEN_REGEX = /(src|work|path|staging[a-z0-9_]*)(\s*=\s*)(?:"([^"]*)"|'([^']*)'|([^\s"';]+))/gi;
-
-
-
-
+const PATH_TOKEN_REGEX =
+  /(src|work|path|staging[a-z0-9_]*)(\s*=\s*)(?:"([^"]*)"|'([^']*)'|([^\s"';]+))/gi;
 
 const brTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
   hour: "2-digit",
@@ -46,7 +44,11 @@ export function fmtBrTime(date = new Date()) {
   const parts = brTimeFormatter.formatToParts(date);
   const bucket = { hour: "00", minute: "00", second: "00" };
   for (const part of parts) {
-    if (part.type === "hour" || part.type === "minute" || part.type === "second") {
+    if (
+      part.type === "hour" ||
+      part.type === "minute" ||
+      part.type === "second"
+    ) {
       bucket[part.type] = part.value;
     }
   }
@@ -56,7 +58,14 @@ export function fmtBrTime(date = new Date()) {
 
 function fmtBrDateTime(date = new Date()) {
   const parts = brDateTimeFormatter.formatToParts(date);
-  const bucket = { day: "01", month: "01", year: "1970", hour: "00", minute: "00", second: "00" };
+  const bucket = {
+    day: "01",
+    month: "01",
+    year: "1970",
+    hour: "00",
+    minute: "00",
+    second: "00",
+  };
   for (const part of parts) {
     if (part.type in bucket) {
       bucket[part.type] = part.value;
@@ -132,8 +141,7 @@ export function shortenPathsInMsg(msg, fallbackShort = "") {
   return msg.replace(
     PATH_TOKEN_REGEX,
     (full, key, separator, doubleValue, singleValue, bareValue) => {
-      const originalValue =
-        doubleValue ?? singleValue ?? bareValue ?? "";
+      const originalValue = doubleValue ?? singleValue ?? bareValue ?? "";
       const keyLower = String(key).toLowerCase();
       const normalizedValue = String(originalValue).toLowerCase();
       let replacement = shortPath(originalValue);
@@ -142,7 +150,10 @@ export function shortenPathsInMsg(msg, fallbackShort = "") {
         replacement = safeFallback;
       }
 
-      if (keyLower.startsWith("staging") || normalizedValue.includes("staging")) {
+      if (
+        keyLower.startsWith("staging") ||
+        normalizedValue.includes("staging")
+      ) {
         replacement = safeFallback || replacement || shortPath(originalValue);
       }
 
@@ -150,9 +161,10 @@ export function shortenPathsInMsg(msg, fallbackShort = "") {
         replacement = originalValue;
       }
 
-      const quote = doubleValue !== undefined ? '"' : singleValue !== undefined ? "'" : "";
+      const quote =
+        doubleValue !== undefined ? '"' : singleValue !== undefined ? "'" : "";
       return `${key}${separator}${quote}${replacement}${quote}`;
-    },
+    }
   );
 }
 
@@ -240,7 +252,12 @@ export function startLogger(filePath, options = {}) {
   stream.on("error", (err) => {
     if (!entry.ended) {
       entry.ended = true;
-      console.error(`[logger] erro no stream (${entry.displayName}):`, err?.message || err);
+      addErro(
+        `[logger] erro no stream (${entry.displayName}): ${
+          err?.message || err
+        }`,
+        filePath
+      );
     }
   });
 
@@ -251,7 +268,12 @@ export function startLogger(filePath, options = {}) {
   if (flushIntervalMs > 0) {
     const timer = setInterval(() => {
       flush(filePath).catch((err) => {
-        console.error(`[logger] flush falhou (${entry.displayName}):`, err?.message || err);
+        addErro(
+          `[logger] flush falhou (${entry.displayName}): ${
+            err?.message || err
+          }`,
+          filePath
+        );
       });
     }, flushIntervalMs);
     timer.unref?.();
@@ -336,8 +358,8 @@ export async function writeHeadersDiff({
     rows.push(
       `${pad(csvHeaders[i] ?? "", col1Width)} | ${pad(
         tabelaHeaders[i] ?? "",
-        col2Width,
-      )}`,
+        col2Width
+      )}`
     );
   }
   if (rows.length === 0) {
@@ -421,12 +443,18 @@ export async function flush(filePath) {
 
   const runFlush = async () => {
     try {
-      if (!entry.stream.writable || entry.stream.destroyed || entry.ended) return;
+      if (!entry.stream.writable || entry.stream.destroyed || entry.ended)
+        return;
       if (!entry.stream.write(chunk)) {
         await waitForDrain(entry.stream);
       }
     } catch (err) {
-      console.error(`[logger] erro ao escrever (${entry.displayName}):`, err?.message || err);
+      addErro(
+        `[logger] erro ao escrever (${entry.displayName}):${
+          err?.message || err
+        }`,
+        filePath
+      );
       try {
         entry.stream.destroy?.(err);
       } catch {}
@@ -448,7 +476,7 @@ export async function flush(filePath) {
   await currentPromise;
 }
 
-async function finalizeStream(entry) {
+async function finalizeStream(entry, filePath) {
   if (!entry || entry.ended || entry.stream.destroyed) {
     entry.ended = true;
     return;
@@ -457,25 +485,34 @@ async function finalizeStream(entry) {
   try {
     // listeners de debug ANTES do end()
     entry.stream.on("finish", () => {
-      console.log(`[logger-debug] FINISH emitido para ${entry.displayName}`);
+      addInfo(
+        `[logger-debug] FINISH emitido para ${entry.displayName}`,
+        filePath
+      );
     });
     entry.stream.on("close", () => {
-      console.log(`[logger-debug] CLOSE emitido para ${entry.displayName}`);
+      addInfo(
+        `[logger-debug] CLOSE emitido para ${entry.displayName}`,
+        filePath
+      );
     });
     entry.stream.on("error", (err) => {
-      console.log(
-        `[logger-debug] ERROR emitido para ${entry.displayName}:`,
-        err?.message || err
+      addInfo(
+        `[logger-debug] ERROR emitido para ${entry.displayName}:${
+          err?.message || err
+        }`,
+        filePath
       );
     });
 
     // pede pro Node encerrar
     entry.stream.end();
-    console.log(`[logger-debug] END chamado para ${entry.displayName}`);
+    addInfo(`[logger-debug] END chamado para ${entry.displayName}`, filePath);
   } catch (err) {
-    console.error(
-      `[logger] stream.end falhou (${entry.displayName}):`,
-      err?.message || err
+    addErro(
+      `[logger] stream.end falhou (${entry.displayName}): ${err?.message ||
+        err}`,
+      filePath
     );
     entry.ended = true;
     return;
@@ -484,26 +521,29 @@ async function finalizeStream(entry) {
   const result = await waitForStreamToEnd(entry.stream);
 
   if (result.status === "error") {
-    console.error(
-      `[logger] erro ao finalizar stream (${entry.displayName}):`,
-      result.error?.message || result.error
+    addErro(
+      `[logger] erro ao finalizar stream (${entry.displayName}):${
+        result.error?.message || result.error
+      }`,
+      filePath
     );
   } else if (result.status === "timeout") {
-    console.error(
-      `[logger] timeout ao finalizar stream (${entry.displayName})`
+    addErro(
+      `[logger] timeout ao finalizar stream (${entry.displayName})`,
+      filePath
     );
     try {
       entry.stream.destroy?.();
     } catch {}
   } else {
-    console.log(
-      `[logger-debug] finalizeStream concluiu com status=${result.status} (${entry.displayName})`
+    addInfo(
+      `[logger-debug] finalizeStream concluiu com status=${result.status} (${entry.displayName})`,
+      filePath
     );
   }
 
   entry.ended = true;
 }
-
 
 export async function endLogger(filePath) {
   const entry = getEntry(filePath);
@@ -525,16 +565,28 @@ export async function endLogger(filePath) {
 
       if (!entry.ended && !entry.stream.destroyed) {
         if (!entry.disableEndLine) {
-          entry.buffer.push(formatLine("info", `==== END ${entry.displayName} ====`));
+          entry.buffer.push(
+            formatLine("info", `==== END ${entry.displayName} ====`)
+          );
         }
         await flush(filePath).catch((err) => {
-          console.error(`[logger] flush final falhou (${entry.displayName}):`, err?.message || err);
+          addErro(
+            `[logger] flush final falhou (${entry.displayName}): ${
+              err?.message || err
+            }`,
+            filePath
+          );
         });
       }
 
-      await finalizeStream(entry);
+      await finalizeStream(entry, filePath);
     } catch (err) {
-      console.error(`[logger] finalizeStream falhou (${entry.displayName}):`, err?.message || err);
+      addErro(
+        `[logger] finalizeStream falhou (${entry.displayName}): ${
+          err?.message || err
+        }`,
+        filePath
+      );
     } finally {
       entry.ended = true;
       loggers.delete(filePath);
@@ -549,7 +601,11 @@ export async function endAllLoggers() {
     try {
       await endLogger(filePath);
     } catch (err) {
-      console.error(`[logger] falha ao encerrar ${filePath}:`, err?.message || err);
+      addErro(
+        `[logger] falha ao encerrar ${filePath}: 
+        ${err?.message || err}`,
+        filePath
+      );
     }
   }
 }

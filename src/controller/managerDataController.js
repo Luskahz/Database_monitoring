@@ -55,7 +55,7 @@ export async function manageInsertController(metadados, logData) {
   const activity = (level, message) =>
     logActivity(level, message, { filePath: contexto, action: activityAction });
 
-  console.log(`[DB] Using pool limit=${POOL_MAX} | insert_concurrency=${INSERT_MAX_CONCURRENT} | files_concurrency=${FILES_MAX_CONCURRENT}`);
+  info(`[DB] Using pool limit=${POOL_MAX} | insert_concurrency=${INSERT_MAX_CONCURRENT} | files_concurrency=${FILES_MAX_CONCURRENT}`);
   info(
     `Configuração: INSERT_MAX_CONCURRENT=${INSERT_MAX_CONCURRENT}, FILES_MAX_CONCURRENT=${FILES_MAX_CONCURRENT}, BATCH_SIZE=${BATCH_SIZE}, QUEUE_HIGH_WATERMARK=${HIGH_WATERMARK_DEFAULT}, QUEUE_LOW_WATERMARK=${LOW_WATERMARK_DEFAULT}`,
   );

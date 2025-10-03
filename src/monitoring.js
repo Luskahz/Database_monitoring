@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import createdHandler from "./controller/Handlers/createdHandler.js";
 import deletedHandler from "./controller/Handlers/deletedHandler.js";
-import { addErro } from "./middleware/errorHandler.js";
+import { addErro, addInfo } from "./middleware/errorHandler.js";
 import { metrics as pipelineMetrics } from "./utils/streamPipeline.js";
 import { FILES_MAX_CONCURRENT } from "../config/index.js";
 import { getActiveFilesCount } from "./utils/withFileLifecycle.js";
@@ -38,16 +38,42 @@ function runWithDebounce(filePath, acao, handler) {
       const fileSizeMB = stats.size / (1024 * 1024);
       if (fileSizeMB >= 200) chosen = bigLimit;
     } catch {}
+
     const job = enqueueFileJob(filePath, acao);
-    chosen(() => handler(filePath, acao, job)).catch((e) => {
-      console.log(`[monitoramento] Erro ao processar arquivo cujo path é: ${filePath}, erro: ${e.message}`);
+    addInfo(
+      `[MONITOR] Enqueued job id=${job.id} file=${filePath} action=${acao}`,
+      filePath
+    );
+
+    chosen(() => {
+      addInfo(
+        `[MONITOR] Dispatching job id=${job.id} file=${filePath} action=${acao}`,
+        filePath
+      );
+      addInfo(
+        `[${Date.now()}][MONITOR] Job START id=${job.id} file=${filePath} action=${acao}`,
+        filePath
+      );
+      return handler(filePath, acao, job).finally(() => {
+        addInfo(
+          `[${Date.now()}][MONITOR] Job END   id=${job.id} file=${filePath} action=${acao}`,
+          filePath
+        );
+      });
+    }).catch((e) => {
+      addErro(
+        `[MONITOR] Erro ao processar arquivo ${filePath}: ${e.message}`,
+        filePath
+      );
     });
+
     debounceTimers.delete(filePath);
     updateDebounceSize(debounceTimers.size);
   }, 2000);
   debounceTimers.set(filePath, { timer, ts: Date.now() });
   updateDebounceSize(debounceTimers.size);
 }
+
 
 function purgeDebounceTimers() {
   const now = Date.now();
@@ -73,7 +99,11 @@ export async function startMonitoring() {
   const awfStability = Number(process.env.AWF_STABILITY_MS ?? 1500);
   const awfPoll = Number(process.env.AWF_POLL_MS ?? 100);
 
-  const ignoredPatterns = [/[/\\]database_monitoring[/\\]/, /[/\\]loggers[/\\]/, /\.txt$/];
+  const ignoredPatterns = [
+    /[/\\]database_monitoring[/\\]/,
+    /[/\\]loggers[/\\]/,
+    /\.txt$/,
+  ];
   if (STAGING_DIR) {
     const normalized = path.resolve(STAGING_DIR);
     ignoredPatterns.push(normalized);
@@ -140,4 +170,3 @@ export async function startMonitoring() {
     timers: [purgeInterval, watchdogInterval],
   });
 }
-

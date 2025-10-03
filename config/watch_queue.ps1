@@ -1,5 +1,5 @@
 param(
-  [string]$File = "C:\Users\lucas.l\Desktop\Banco\database_monitoring\logs\_queue.txt"
+  [string]$File = "C:\Users\lucas.l\Desktop\database_monitoring\logs\_queue.txt"
 )
 while ($true) {
   if (Test-Path $File) {

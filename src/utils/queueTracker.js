@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { fmtTimeNow } from "../middleware/logger.js";
-
+import { addInfo } from "../middleware/errorHandler.js";
 
 const LOG_ROOT = path.resolve(process.cwd(), "logs");
 const QUEUE_LOG_PATH = path.join(LOG_ROOT, "_queue.txt");
@@ -41,7 +41,10 @@ function scheduleSnapshot() {
       .catch(() => {})
       .then(() => fs.promises.writeFile(QUEUE_LOG_PATH, snapshot, "utf8"))
       .catch((err) => {
-        console.error(`[queue] falha ao escrever snapshot:`, err?.message || err);
+        console.error(
+          `[queue] falha ao escrever snapshot:`,
+          err?.message || err
+        );
       });
   });
 }
@@ -71,7 +74,8 @@ function buildSnapshot() {
   const mem = state.metrics.memoryUsage;
   const loadAvg = state.metrics.loadAverage;
   const dbStatus = state.metrics.dbStatus;
-  const formatMb = (value) => (value != null ? (value / (1024 * 1024)).toFixed(1) : "0.0");
+  const formatMb = (value) =>
+    value != null ? (value / (1024 * 1024)).toFixed(1) : "0.0";
 
   lines.push(`Snapshot: ${fmtTimeNow()}`);
   lines.push(`FILES_MAX_CONCURRENT=${filesMax}`);
@@ -81,12 +85,24 @@ function buildSnapshot() {
   if (state.active.size === 0) {
     lines.push("  - nenhum arquivo em processamento");
   } else {
-    for (const { job, progress, stage, detail, startedAt } of state.active.values()) {
-      const pct = Number.isFinite(progress) ? `${Math.max(0, Math.min(100, progress * 100)).toFixed(1)}%` : "n/a";
+    for (const {
+      job,
+      progress,
+      stage,
+      detail,
+      startedAt,
+    } of state.active.values()) {
+      const pct = Number.isFinite(progress)
+        ? `${Math.max(0, Math.min(100, progress * 100)).toFixed(1)}%`
+        : "n/a";
       const base = path.basename(job.filePath || job.id || "arquivo");
       const elapsed = startedAt ? formatDuration(now - startedAt) : "-";
       const detailText = detail ? ` | ${detail}` : "";
-      lines.push(`  - ${base} (${job.action || "?"}) :: ${stage || "iniciando"} :: ${pct}${detailText} :: ${elapsed}`);
+      lines.push(
+        `  - ${base} (${job.action || "?"}) :: ${
+          stage || "iniciando"
+        } :: ${pct}${detailText} :: ${elapsed}`
+      );
     }
   }
   lines.push("");
@@ -96,9 +112,13 @@ function buildSnapshot() {
     lines.push("  - fila vazia");
   } else {
     for (const job of state.pending) {
-      const waited = job.enqueuedAt ? formatDuration(now - job.enqueuedAt) : "-";
+      const waited = job.enqueuedAt
+        ? formatDuration(now - job.enqueuedAt)
+        : "-";
       const base = path.basename(job.filePath || job.id || "arquivo");
-      lines.push(`  - ${base} (${job.action || "?"}) :: aguardando há ${waited}`);
+      lines.push(
+        `  - ${base} (${job.action || "?"}) :: aguardando há ${waited}`
+      );
     }
   }
   lines.push("");
@@ -110,14 +130,19 @@ function buildSnapshot() {
   } else {
     for (const item of completed) {
       const base = path.basename(item.job.filePath || item.job.id || "arquivo");
-      const duration = item.job.startedAt && item.finishedAt
-        ? formatDuration(item.finishedAt - item.job.startedAt)
-        : "-";
+      const duration =
+        item.job.startedAt && item.finishedAt
+          ? formatDuration(item.finishedAt - item.job.startedAt)
+          : "-";
       const status = item.success ? "ok" : `erro: ${item.message || ""}`.trim();
       const finishedStamp = item.finishedAt
         ? new Date(item.finishedAt).toISOString()
         : fmtTimeNow();
-      lines.push(`  - ${finishedStamp} :: ${base} (${item.job.action || "?"}) :: ${status} :: ${duration}`);
+      lines.push(
+        `  - ${finishedStamp} :: ${base} (${
+          item.job.action || "?"
+        }) :: ${status} :: ${duration}`
+      );
     }
   }
   lines.push("");
@@ -131,12 +156,16 @@ function buildSnapshot() {
 
   if (mem) {
     lines.push(
-      `Memória RSS: ${formatMb(mem.rss)} MB | Heap Usado: ${formatMb(mem.heapUsed)} MB | Heap Total: ${formatMb(mem.heapTotal)} MB`
+      `Memória RSS: ${formatMb(mem.rss)} MB | Heap Usado: ${formatMb(
+        mem.heapUsed
+      )} MB | Heap Total: ${formatMb(mem.heapTotal)} MB`
     );
   }
 
   if (Array.isArray(loadAvg) && loadAvg.length) {
-    const loadFormatted = loadAvg.map((value) => (Number.isFinite(value) ? value.toFixed(2) : "n/a"));
+    const loadFormatted = loadAvg.map((value) =>
+      Number.isFinite(value) ? value.toFixed(2) : "n/a"
+    );
     lines.push(`Carga CPU (1,5,15min): [${loadFormatted.join(", ")}]`);
   }
 
@@ -145,11 +174,14 @@ function buildSnapshot() {
       ? new Date(dbStatus.checkedAt).toISOString()
       : "n/a";
     if (dbStatus.error) {
-      lines.push(`DB status erro: ${dbStatus.error} | Última verificação: ${checkedAt}`);
+      lines.push(
+        `DB status erro: ${dbStatus.error} | Última verificação: ${checkedAt}`
+      );
     } else {
       const threads = dbStatus.threadsConnected ?? "n/a";
       const processes = dbStatus.processCount ?? "n/a";
-      const latency = dbStatus.latencyMs != null ? `${dbStatus.latencyMs}ms` : "n/a";
+      const latency =
+        dbStatus.latencyMs != null ? `${dbStatus.latencyMs}ms` : "n/a";
       lines.push(
         `DB Threads conectados: ${threads} | Processlist: ${processes} | Latência: ${latency} | Última verificação: ${checkedAt}`
       );
@@ -210,6 +242,15 @@ export function markJobActive(job, info = {}) {
   state.active.set(job.id, record);
   state.fileToJob.set(job.filePath, job.id);
   state.metrics.activeFiles = state.active.size;
+
+  // 👇 LOG CRÍTICO
+  addInfo(
+    `[QUEUE] Acquire  id=${job.id} file=${path.basename(
+      job.filePath || "?"
+    )} ` +
+      `active=${state.active.size} pending=${state.pending.length} stage=${record.stage}`
+  );
+
   scheduleSnapshot();
   return job;
 }
@@ -224,18 +265,38 @@ export function updateActiveJob(filePath, patch = {}) {
   if (typeof patch.progress === "number" && Number.isFinite(patch.progress)) {
     record.progress = Math.max(0, Math.min(1, patch.progress));
   }
+
   if (typeof patch.stage === "string") {
-    record.stage = patch.stage;
+    if (record.stage !== patch.stage) {
+      record.stage = patch.stage;
+      addInfo(
+        `[QUEUE] Stage id=${jobId} file=${filePath} stage=${record.stage}`,
+        filePath
+      );
+    }
   }
+
   if (typeof patch.detail === "string") {
     record.detail = patch.detail;
   }
+
   record.lastUpdate = Date.now();
   scheduleSnapshot();
 }
 
 export function markJobComplete(job, result = {}) {
   if (!job || !job.id) return;
+
+  const alreadyDone =
+    !state.active.has(job.id) &&
+    state.pending.findIndex((j) => j.id === job.id) === -1;
+  if (alreadyDone) {
+    addInfo(
+      `[QUEUE] Release (idempotent) id=${job.id} file=${job.filePath || "?"}`,
+      job.filePath
+    );
+    return;
+  }
 
   removePending(job.id);
   const record = state.active.get(job.id);
@@ -246,7 +307,8 @@ export function markJobComplete(job, result = {}) {
   const finishedAt = Date.now();
   job.finishedAt = finishedAt;
   const success = result.success !== false && !result.error;
-  const message = result.message || result.error?.message || result.error || null;
+  const message =
+    result.message || result.error?.message || result.error || null;
 
   state.completed.unshift({
     job,
@@ -254,9 +316,25 @@ export function markJobComplete(job, result = {}) {
     success,
     message: typeof message === "string" ? message : null,
   });
+
+  addInfo(
+    `[QUEUE-DEBUG] Pós-complete: active=${state.active.size}, pending=${state.pending.length}`,
+    job.filePath
+  );
+
   if (state.completed.length > MAX_COMPLETED) {
     state.completed.length = MAX_COMPLETED;
   }
+
+  // 👇 aqui você pode incluir o duration
+  const duration = job.startedAt ? finishedAt - job.startedAt : 0;
+  addInfo(
+    `[QUEUE] Release id=${job.id} file=${job.filePath || "?"} ` +
+      `active=${state.active.size} pending=${state.pending.length} ` +
+      `status=${success ? "ok" : "erro"} msg=${message || "-"} ` +
+      `duração=${duration}ms`,
+    job.filePath
+  );
 
   scheduleSnapshot();
 }
