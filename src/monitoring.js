@@ -1,13 +1,17 @@
 import chokidar from "chokidar";
 import pLimit from "p-limit";
+import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
-import fs from "fs";
+
+import { FILES_MAX_CONCURRENT, STAGING_DIR } from "../config/index.js";
+
 import createdHandler from "./controller/Handlers/createdHandler.js";
 import deletedHandler from "./controller/Handlers/deletedHandler.js";
 import { addErro, addInfo } from "./middleware/errorHandler.js";
+
+
 import { metrics as pipelineMetrics } from "./utils/streamPipeline.js";
-import { FILES_MAX_CONCURRENT } from "../config/index.js";
 import { getActiveFilesCount } from "./utils/withFileLifecycle.js";
 import { memoryGuard } from "./utils/memoryGuard.js";
 import { startWatchdog } from "./monitoring/watchdog.js";
@@ -20,13 +24,13 @@ import {
   updateDebounceSize,
   updateMetrics as updateQueueMetrics,
 } from "./utils/queueTracker.js";
-import { STAGING_DIR } from "../config/index.js";
+import { toNumber } from "./utils/normalizar.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const limit = pLimit(FILES_MAX_CONCURRENT);
 const bigLimit = pLimit(Math.min(FILES_MAX_CONCURRENT, 4));
-
 const debounceTimers = new Map();
+
 
 function runWithDebounce(filePath, acao, handler) {
   const prev = debounceTimers.get(filePath);
@@ -36,7 +40,7 @@ function runWithDebounce(filePath, acao, handler) {
     try {
       const stats = fs.statSync(filePath);
       const fileSizeMB = stats.size / (1024 * 1024);
-      if (fileSizeMB >= 200) chosen = bigLimit;
+      if (fileSizeMB >= 100) chosen = bigLimit;
     } catch {}
 
     const job = enqueueFileJob(filePath, acao);
@@ -74,18 +78,17 @@ function runWithDebounce(filePath, acao, handler) {
   updateDebounceSize(debounceTimers.size);
 }
 
-
 function purgeDebounceTimers() {
   const now = Date.now();
   for (const [fp, { timer, ts }] of debounceTimers) {
-    if (now - ts > 15 * 60 * 1000 || !fs.existsSync(fp)) {
+    if (now - ts > 7 * 60 * 1000 || !fs.existsSync(fp)) {
       clearTimeout(timer);
       debounceTimers.delete(fp);
     }
   }
   updateDebounceSize(debounceTimers.size);
 }
-const purgeInterval = setInterval(purgeDebounceTimers, 10 * 60 * 1000);
+const purgeInterval = setInterval(purgeDebounceTimers, 2 * 60 * 1000);
 purgeInterval.unref?.();
 
 export async function startMonitoring() {
@@ -96,8 +99,8 @@ export async function startMonitoring() {
       "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL"
     );
 
-  const awfStability = Number(process.env.AWF_STABILITY_MS ?? 1500);
-  const awfPoll = Number(process.env.AWF_POLL_MS ?? 100);
+  const awfStability = toNumber(process.env.AWF_STABILITY_MS, 2000);
+  const awfPoll = toNumber(process.env.AWF_POLL_MS, 200);
 
   const ignoredPatterns = [
     /[/\\]database_monitoring[/\\]/,

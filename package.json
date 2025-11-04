@@ -4,11 +4,11 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-  "test": "echo \"Error: no test specified\" && exit 1",
-  "dev": "node --max-old-space-size=8192 node_modules/nodemon/bin/nodemon.js src/server.js",
-  "dev:monitor": "node --max-old-space-size=8192 -r ./scripts/monitor.js node_modules/nodemon/bin/nodemon.js src/server.js",
-  "smoke:ingest": "node scripts/smoke-ingest.js"
-},
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node --max-old-space-size=8192 node_modules/nodemon/bin/nodemon.js src/server.js",
+    "dev:monitor": "node --max-old-space-size=8192 -r ./scripts/monitor.js node_modules/nodemon/bin/nodemon.js src/server.js",
+    "smoke:ingest": "node scripts/smoke-ingest.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Luskahz/Database_monitoring.git"

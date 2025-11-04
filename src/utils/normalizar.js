@@ -27,3 +27,34 @@ export default function normalizar(nome) {
 
   return s.toLowerCase();
 }
+
+export function toNumber(value, fallback) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+export function toBool(value, defaultValue = false) {
+  if (value == null) return defaultValue;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return defaultValue;
+    if (["1", "true", "yes", "sim", "y"].includes(normalized)) return true;
+    if (["0", "false", "no", "nao", "não", "n"].includes(normalized))
+      return false;
+  }
+  return defaultValue;
+}
+
+
+export function msToTimeString(ms) {
+  if (!Number.isFinite(ms) || ms < 0) return "0s";
+  const sec = Math.floor(ms / 1000);
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}

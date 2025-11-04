@@ -1,9 +1,10 @@
-import "dotenv/config";              // <- precisa ser a primeira linha
+import "dotenv/config";
 import "../src/utils/bootStrapLogs.js";
 import express from "express";
 import { startMonitoring } from "./monitoring.js";
 import { getPool, query, shutdownPool } from "../config/dbPool.js";
 import { logActivity } from "./middleware/logger.js";
+import { toNumber } from "./utils/normalizar.js";
 
 function describeError(err) {
   if (err instanceof Error) {
@@ -30,7 +31,7 @@ process.on("uncaughtException", (err) => {
 });
 
 const app = express();
-const port = Number(process.env.PORT ?? 3000);
+const port = toNumber(process.env.PORT, 3306);
 
 (async () => {
   try {
@@ -43,7 +44,7 @@ const port = Number(process.env.PORT ?? 3000);
   } catch (e) {
     console.error("[DB] Falha ao consultar versão/packet:", e?.message || e);
   }
-})();
+})(); 
 
 const shutdown = async () => { 
   await shutdownPool(); 
@@ -56,4 +57,5 @@ startMonitoring();
 
 app.listen(port, () => {
   console.log(`Servidor rodando na porta ${port}`);
+  console.log("Para reiniciar o sistema aperte Ctrl+C e rode Npm run dev novamente")
 });

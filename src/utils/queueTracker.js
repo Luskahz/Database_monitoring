@@ -2,10 +2,11 @@ import fs from "fs";
 import path from "path";
 import { fmtTimeNow } from "../middleware/logger.js";
 import { addInfo } from "../middleware/errorHandler.js";
+import { msToTimeString } from "./normalizar.js";
 
 const LOG_ROOT = path.resolve(process.cwd(), "logs");
 const QUEUE_LOG_PATH = path.join(LOG_ROOT, "_queue.txt");
-const MAX_COMPLETED = 20;
+const MAX_COMPLETED = 12;
 
 fs.mkdirSync(LOG_ROOT, { recursive: true });
 
@@ -53,17 +54,6 @@ function createJobId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function formatDuration(ms) {
-  if (!Number.isFinite(ms) || ms < 0) return "0s";
-  const sec = Math.floor(ms / 1000);
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = sec % 60;
-  if (h > 0) return `${h}h ${m}m ${s}s`;
-  if (m > 0) return `${m}m ${s}s`;
-  return `${s}s`;
-}
-
 function buildSnapshot() {
   const now = Date.now();
   const lines = [];
@@ -78,7 +68,7 @@ function buildSnapshot() {
     value != null ? (value / (1024 * 1024)).toFixed(1) : "0.0";
 
   lines.push(`Snapshot: ${fmtTimeNow()}`);
-  lines.push(`FILES_MAX_CONCURRENT=${filesMax}`);
+  lines.push(`FILES_MAX_CONCURRENT: ${filesMax}`);
   lines.push("");
 
   lines.push(`Ativos (${state.active.size}):`);
@@ -96,7 +86,7 @@ function buildSnapshot() {
         ? `${Math.max(0, Math.min(100, progress * 100)).toFixed(1)}%`
         : "n/a";
       const base = path.basename(job.filePath || job.id || "arquivo");
-      const elapsed = startedAt ? formatDuration(now - startedAt) : "-";
+      const elapsed = startedAt ? msToTimeString(now - startedAt) : "-";
       const detailText = detail ? ` | ${detail}` : "";
       lines.push(
         `  - ${base} (${job.action || "?"}) :: ${
@@ -113,7 +103,7 @@ function buildSnapshot() {
   } else {
     for (const job of state.pending) {
       const waited = job.enqueuedAt
-        ? formatDuration(now - job.enqueuedAt)
+        ? msToTimeString(now - job.enqueuedAt)
         : "-";
       const base = path.basename(job.filePath || job.id || "arquivo");
       lines.push(
@@ -132,7 +122,7 @@ function buildSnapshot() {
       const base = path.basename(item.job.filePath || item.job.id || "arquivo");
       const duration =
         item.job.startedAt && item.finishedAt
-          ? formatDuration(item.finishedAt - item.job.startedAt)
+          ? msToTimeString(item.finishedAt - item.job.startedAt)
           : "-";
       const status = item.success ? "ok" : `erro: ${item.message || ""}`.trim();
       const finishedStamp = item.finishedAt
@@ -146,19 +136,15 @@ function buildSnapshot() {
     }
   }
   lines.push("");
-
   lines.push(
-    `debounceTimers=${state.debounceSize} | memoryGuardListeners=${state.memoryGuardListeners} | activeFiles=${state.metrics.activeFiles}`
-  );
-  lines.push(
-    `pendingBatches=${state.metrics.pendingBatches} | inFlight=${state.metrics.inFlightInserts} | lastProgressAgo=${lastProgressAgo}`
+    `|debounceTimers: ${state.debounceSize}\n|memoryGuardListeners: ${state.memoryGuardListeners} \n|activeFiles: ${state.metrics.activeFiles} \n|pendingBatches: ${state.metrics.pendingBatches} \n|inFlight: ${state.metrics.inFlightInserts} \n|lastProgressAgo: ${lastProgressAgo}`
   );
 
   if (mem) {
     lines.push(
-      `Memória RSS: ${formatMb(mem.rss)} MB | Heap Usado: ${formatMb(
+      `|Memória RSS: ${formatMb(mem.rss)} MB \n|Heap Usado: ${formatMb(
         mem.heapUsed
-      )} MB | Heap Total: ${formatMb(mem.heapTotal)} MB`
+      )} MB \n|Heap Total: ${formatMb(mem.heapTotal)} MB`
     );
   }
 
@@ -166,7 +152,7 @@ function buildSnapshot() {
     const loadFormatted = loadAvg.map((value) =>
       Number.isFinite(value) ? value.toFixed(2) : "n/a"
     );
-    lines.push(`Carga CPU (1,5,15min): [${loadFormatted.join(", ")}]`);
+    lines.push(`|Carga CPU (1,5,15min): [${loadFormatted.join(", ")}]`);
   }
 
   if (dbStatus) {
@@ -183,7 +169,7 @@ function buildSnapshot() {
       const latency =
         dbStatus.latencyMs != null ? `${dbStatus.latencyMs}ms` : "n/a";
       lines.push(
-        `DB Threads conectados: ${threads} | Processlist: ${processes} | Latência: ${latency} | Última verificação: ${checkedAt}`
+        `|DB Threads conectados: ${threads} \n|Processlist: ${processes} \n|Latência: ${latency} \n|Última verificação: ${checkedAt}`
       );
     }
   }

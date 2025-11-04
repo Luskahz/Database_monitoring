@@ -1,10 +1,6 @@
-// config/dbPool.js
 import mysql from "mysql2/promise";
+import { toNumber } from "../src/utils/normalizar.js";
 
-function toNumber(value, fallback) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
-}
 
 const POOL_MAX = toNumber(process.env.DB_POOL_MAX, 10);
 const POOL_MIN = toNumber(process.env.DB_POOL_MIN, 2);

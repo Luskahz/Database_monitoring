@@ -38,25 +38,8 @@ import {
   shouldStageLogger,
 } from "../../utils/loggerStaging.js";
 import { iniciarBarra, finalizarBarra } from "../../utils/progressBar.js";
+import { toBool, toNumber } from "../../utils/normalizar.js";
 
-function parseBoolean(value, defaultValue) {
-  if (value == null) return defaultValue;
-  if (typeof value === "boolean") return value;
-  if (typeof value === "number") return value !== 0;
-  if (typeof value === "string") {
-    const normalized = value.trim().toLowerCase();
-    if (!normalized) return defaultValue;
-    if (["1", "true", "yes", "sim", "y"].includes(normalized)) return true;
-    if (["0", "false", "no", "nao", "não", "n"].includes(normalized))
-      return false;
-  }
-  return defaultValue;
-}
-
-function parseNumber(value, defaultValue) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : defaultValue;
-}
 
 function createStagingLogger(filePath) {
   return {
@@ -71,7 +54,6 @@ function createStagingLogger(filePath) {
     },
   };
 }
-
 function buildContextTag(meta) {
   if (!meta) return "";
   const tabela =
@@ -79,7 +61,6 @@ function buildContextTag(meta) {
   const ano = meta.ano ?? meta?.destino?.ano ?? meta?.range?.ano ?? "—";
   return `[${tabela}][${ano}]`;
 }
-
 function formatBeginData(meta) {
   if (!meta) return "—";
   if (meta.ano != null) return String(meta.ano);
@@ -96,11 +77,8 @@ function formatBeginData(meta) {
 }
 
 export default async function createdHandler(filePath, action, job) {
-  addInfo(
-    `[DEBUG] Entrou no createdHandler para ${filePath} action=${action}`,
-    filePath
-  );
-  const useFastPath = PIPELINE_FAST_PATH; // kept for compatibility
+  addInfo( `[DEBUG] Entrou no createdHandler para ${filePath} action=${action}`, filePath );
+  const useFastPath = PIPELINE_FAST_PATH; 
   if (!filePath) {
     addErro(
       "caminho do arquivo não definido no handler, sem como identificar qual arquivo deu erro...",
@@ -178,10 +156,10 @@ export default async function createdHandler(filePath, action, job) {
       filePath,
       async () => {
         const stagingLogger = createStagingLogger(filePath);
-        const reuse = parseBoolean(STAGING_REUSE, true);
-        const verify = parseBoolean(STAGING_VERIFY, true);
-        const cleanupOnSuccess = parseBoolean(STAGING_CLEANUP_ON_SUCCESS, true);
-        const cleanupTtlMin = parseNumber(STAGING_CLEANUP_TTL_MIN, 120);
+        const reuse = toBool(STAGING_REUSE, true);
+        const verify = toBool(STAGING_VERIFY, true);
+        const cleanupOnSuccess = toBool(STAGING_CLEANUP_ON_SUCCESS, true);
+        const cleanupTtlMin = toNumber(STAGING_CLEANUP_TTL_MIN, 120);
         const stagingDirEnv =
           typeof STAGING_DIR === "string" && STAGING_DIR.trim().length > 0
             ? STAGING_DIR.trim()
