@@ -1,4 +1,5 @@
 import fs from "fs";
+import crypto from "crypto";
 import path from "path";
 import { fmtTimeNow } from "../middleware/logger.js";
 import { addInfo } from "../middleware/errorHandler.js";
@@ -29,26 +30,39 @@ const state = {
   },
 };
 
-let writeChain = Promise.resolve();
-let snapshotScheduled = false;
+
+
+let lastSnapshotHash = "";
+let lastWrite = 0;
+const SNAPSHOT_INTERVAL = 10_000; // 10 segundos
+const MIN_INTERVAL = 1000; // proteção contra spam, 1s mínimo
+let snapshotTimer = null;
 
 function scheduleSnapshot() {
-  if (snapshotScheduled) return;
-  snapshotScheduled = true;
-  queueMicrotask(() => {
-    snapshotScheduled = false;
+  // Evita spam de múltiplas chamadas simultâneas
+  if (snapshotTimer) return;
+  snapshotTimer = setTimeout(async () => {
+    snapshotTimer = null;
+    const now = Date.now();
+
+    // monta snapshot atual
     const snapshot = buildSnapshot();
-    writeChain = writeChain
-      .catch(() => {})
-      .then(() => fs.promises.writeFile(QUEUE_LOG_PATH, snapshot, "utf8"))
-      .catch((err) => {
-        console.error(
-          `[queue] falha ao escrever snapshot:`,
-          err?.message || err
-        );
-      });
-  });
+    const hash = crypto.createHash("md5").update(snapshot).digest("hex");
+
+    // só grava se mudou e respeita intervalo mínimo
+    if (hash !== lastSnapshotHash && now - lastWrite >= MIN_INTERVAL) {
+      lastSnapshotHash = hash;
+      lastWrite = now;
+
+      try {
+        await fs.promises.writeFile(QUEUE_LOG_PATH, snapshot, "utf8");
+      } catch (err) {
+        console.error(`[queue] falha ao escrever snapshot:`, err?.message || err);
+      }
+    }
+  }, SNAPSHOT_INTERVAL); // executa no máximo 1x a cada 10 s
 }
+
 
 function createJobId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -344,6 +358,33 @@ export function getJobState(filePath) {
   const jobId = state.fileToJob.get(filePath);
   if (!jobId) return null;
   return state.active.get(jobId) || null;
+}
+
+
+function pullState() {
+  return {
+    pending: [...state.pending],
+    active: new Map(state.active),
+    fileToJob: new Map(state.fileToJob),
+    completed: [...state.completed],
+    debounceSize: state.debounceSize,
+    memoryGuardListeners: state.memoryGuardListeners,
+    metrics: { ...state.metrics },
+  };
+}
+
+export function getState() {
+  const snapshot = pullState();
+  console.log(
+    `\n--- STATE SNAPSHOT ---\n`,
+    {
+      pending: snapshot.pending,
+      active: Object.fromEntries(snapshot.active), // agora funciona
+      completed: snapshot.completed,
+      metrics: snapshot.metrics,
+    },
+    "\n--------------------------\n"
+  );
 }
 
 export default {

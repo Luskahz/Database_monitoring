@@ -22,6 +22,7 @@ import {
   markJobActive,
   updateActiveJob,
   markJobComplete,
+  getState,
 } from "../../utils/queueTracker.js";
 import { ensureLocalStaging } from "../../utils/ensureLocalStaging.js";
 import { cleanupStaging } from "../../utils/cleanupStaging.js";
@@ -39,7 +40,6 @@ import {
 } from "../../utils/loggerStaging.js";
 import { iniciarBarra, finalizarBarra } from "../../utils/progressBar.js";
 import { toBool, toNumber } from "../../utils/normalizar.js";
-
 
 function createStagingLogger(filePath) {
   return {
@@ -77,8 +77,11 @@ function formatBeginData(meta) {
 }
 
 export default async function createdHandler(filePath, action, job) {
-  addInfo( `[DEBUG] Entrou no createdHandler para ${filePath} action=${action}`, filePath );
-  const useFastPath = PIPELINE_FAST_PATH; 
+  addInfo(
+    `[DEBUG] Entrou no createdHandler para ${filePath} action=${action}`,
+    filePath
+  );
+  const useFastPath = PIPELINE_FAST_PATH;
   if (!filePath) {
     addErro(
       "caminho do arquivo não definido no handler, sem como identificar qual arquivo deu erro...",
@@ -285,7 +288,7 @@ export default async function createdHandler(filePath, action, job) {
             prefixInfo(
               `[ARQUIVO IGNORADO] ${metadados.nome_arquivo} já existe e não foi modificado.`
             );
-            logData.sucesso = true; // 👈 adicione isso
+            logData.sucesso = true;
             logData.mensagem_erro = null;
             await insertLog(logData);
             processingSucceeded = true;
@@ -443,8 +446,6 @@ export default async function createdHandler(filePath, action, job) {
 
     if (job && job.id) {
       try {
-        // evita “double-complete”: só libera se ainda estiver ativo
-        // (ajuda caso algum outro ponto tenha liberado antes)
         addInfo(
           `[QUEUE-DEBUG] Liberando job ${job.id} para arquivo ${filePath}`,
           filePath
@@ -454,7 +455,10 @@ export default async function createdHandler(filePath, action, job) {
           message: logData?.mensagem_erro || "OK",
         });
       } catch (err) {
-        addErro(`[QUEUE-DEBUG] Falha ao liberar job ${job.id}: ${err}`, filePath);
+        addErro(
+          `[QUEUE-DEBUG] Falha ao liberar job ${job.id}: ${err}`,
+          filePath
+        );
       }
     }
   }
