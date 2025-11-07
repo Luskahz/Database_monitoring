@@ -1,7 +1,6 @@
 import mysql from "mysql2/promise";
 import { toNumber } from "../src/utils/normalizar.js";
 
-
 const POOL_MAX = toNumber(process.env.DB_POOL_MAX, 10);
 const POOL_MIN = toNumber(process.env.DB_POOL_MIN, 2);
 const IDLE_MS = toNumber(process.env.DB_POOL_IDLE_MS, 60000);
@@ -9,7 +8,7 @@ const DB_PORT = toNumber(process.env.DB_PORT, 3306);
 const _t = Number(process.env.DB_QUERY_TIMEOUT_MS);
 export const DB_QUERY_TIMEOUT_MS = Number.isFinite(_t) ? _t : 120000;
 
-const pool = mysql.createPool({
+export const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
@@ -27,7 +26,10 @@ const pool = mysql.createPool({
 
 pool.on("connection", (conn) => {
   if (typeof conn.promise === "function") {
-    conn.promise().query("SET SESSION wait_timeout = 1800").catch(() => {});
+    conn
+      .promise()
+      .query("SET SESSION wait_timeout = 1800")
+      .catch(() => {});
   } else {
     conn.query("SET SESSION wait_timeout = 1800", () => {});
   }
@@ -38,12 +40,18 @@ export function getPool() {
 }
 
 export async function query(sql, params) {
-  const [rows] = await pool.query({ sql, timeout: DB_QUERY_TIMEOUT_MS }, params);
+  const [rows] = await pool.query(
+    { sql, timeout: DB_QUERY_TIMEOUT_MS },
+    params
+  );
   return rows;
 }
 
 export async function execute(sql, params) {
-  const [rows] = await pool.execute({ sql, timeout: DB_QUERY_TIMEOUT_MS }, params);
+  const [rows] = await pool.execute(
+    { sql, timeout: DB_QUERY_TIMEOUT_MS },
+    params
+  );
   return rows;
 }
 

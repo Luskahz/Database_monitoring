@@ -17,6 +17,9 @@ import {
   shouldStageLogger,
 } from "./loggerStaging.js";
 
+// ⏱️ Perf
+import { startPerf, endPerf, perfWrap } from "../utils/perfLogger.js";
+
 const activeFiles = new Set();
 export function getActiveFilesCount() {
   return activeFiles.size;
@@ -24,51 +27,60 @@ export function getActiveFilesCount() {
 
 export async function withFileLifecycle(filePath, fn, lifecycleOpts = {}) {
   const { manageLogger = true, loggerOptions } = lifecycleOpts;
+  const perfCtx = filePath || "unknown_file";
+  startPerf("lifecycle.total", perfCtx);
 
   let stagedLoggerInfo = null;
   let loggerStarted = false;
   let effectiveLoggerOptions = loggerOptions;
 
+  // ========== LOGGER SETUP ==========
   if (manageLogger !== false) {
     effectiveLoggerOptions = { ...(loggerOptions || {}) };
     if (!effectiveLoggerOptions.logPath && shouldStageLogger(filePath)) {
-      try {
-        stagedLoggerInfo = await setupStagedLogger(filePath);
-        if (stagedLoggerInfo?.localLogPath) {
-          effectiveLoggerOptions.logPath = stagedLoggerInfo.localLogPath;
-        }
-      } catch (err) {
-        stagedLoggerInfo = null;
-        console.error(
-          `[logger] Falha ao preparar log temporário (${filePath}):`,
-          err?.message || err
-        );
-      }
-    }
-
-    try {
-      startLogger(filePath, effectiveLoggerOptions);
-      loggerStarted = true;
-    } catch (err) {
-      console.error(
-        `[logger] Falha ao iniciar logger de ${filePath}:`,
-        err?.message || err
-      );
-      if (stagedLoggerInfo) {
+      await perfWrap("lifecycle.setupStagedLogger", perfCtx, async () => {
         try {
-          await finalizeStagedLogger(stagedLoggerInfo, { skipCopy: true });
-        } catch (cleanupErr) {
+          stagedLoggerInfo = await setupStagedLogger(filePath);
+          if (stagedLoggerInfo?.localLogPath) {
+            effectiveLoggerOptions.logPath = stagedLoggerInfo.localLogPath;
+          }
+        } catch (err) {
+          stagedLoggerInfo = null;
           console.error(
-            `[logger] Falha ao descartar log temporário de ${filePath}:`,
-            cleanupErr?.message || cleanupErr
+            `[logger] Falha ao preparar log temporário (${filePath}):`,
+            err?.message || err
           );
         }
-        stagedLoggerInfo = null;
-      }
+      });
     }
+
+    await perfWrap("lifecycle.startLogger", perfCtx, async () => {
+      try {
+        startLogger(filePath, effectiveLoggerOptions);
+        loggerStarted = true;
+      } catch (err) {
+        console.error(
+          `[logger] Falha ao iniciar logger de ${filePath}:`,
+          err?.message || err
+        );
+        if (stagedLoggerInfo) {
+          try {
+            await finalizeStagedLogger(stagedLoggerInfo, { skipCopy: true });
+          } catch (cleanupErr) {
+            console.error(
+              `[logger] Falha ao descartar log temporário de ${filePath}:`,
+              cleanupErr?.message || cleanupErr
+            );
+          }
+          stagedLoggerInfo = null;
+        }
+      }
+    });
   }
+
   activeFiles.add(filePath);
 
+  // ========== JOB INIT ==========
   const { job: rawJob, action } = lifecycleOpts;
   const job = markJobActive(
     ensureJob(rawJob, filePath, action),
@@ -83,9 +95,12 @@ export async function withFileLifecycle(filePath, fn, lifecycleOpts = {}) {
   const off = memoryGuard.onChange(() => {});
   updateMemoryGuardListeners(memoryGuard.listenerCount());
 
+  // ========== EXECUÇÃO PRINCIPAL ==========
   let caughtError = null;
   try {
-    await fn();
+    await perfWrap("lifecycle.fn", perfCtx, async () => {
+      await fn();
+    });
     updateActiveJob(filePath, { progress: 1, stage: "finalizando", detail: "Finalizando" });
   } catch (err) {
     caughtError = err;
@@ -95,28 +110,37 @@ export async function withFileLifecycle(filePath, fn, lifecycleOpts = {}) {
     });
     throw err;
   } finally {
+    // ========== ENCERRAMENTO ==========
     try {
       if (manageLogger !== false) {
-        await flushAggregatedSummaries(filePath);
-        await endLogger(filePath);
+        await perfWrap("lifecycle.flushAggregatedSummaries", perfCtx, async () => {
+          await flushAggregatedSummaries(filePath);
+        });
+        await perfWrap("lifecycle.endLogger", perfCtx, async () => {
+          await endLogger(filePath);
+        });
       }
     } catch (err) {
       console.error(`[logger] Falha ao finalizar logger de ${filePath}:`, err?.message || err);
     } finally {
-      if (stagedLoggerInfo) {
-        try {
-          await finalizeStagedLogger(stagedLoggerInfo, { skipCopy: !loggerStarted });
-        } catch (err) {
-          console.error(
-            `[logger] Falha ao consolidar log de ${filePath}:`,
-            err?.message || err
-          );
+      await perfWrap("lifecycle.finalizeStagedLogger", perfCtx, async () => {
+        if (stagedLoggerInfo) {
+          try {
+            await finalizeStagedLogger(stagedLoggerInfo, { skipCopy: !loggerStarted });
+          } catch (err) {
+            console.error(
+              `[logger] Falha ao consolidar log de ${filePath}:`,
+              err?.message || err
+            );
+          }
         }
-      }
+      });
+
       off();
       updateMemoryGuardListeners(memoryGuard.listenerCount());
       clearAllErrors(filePath);
       activeFiles.delete(filePath);
+
       markJobComplete(job, { success: !caughtError, error: caughtError });
       const level = caughtError ? "error" : "info";
       const message = caughtError
@@ -124,5 +148,7 @@ export async function withFileLifecycle(filePath, fn, lifecycleOpts = {}) {
         : "Processamento concluído";
       void logActivity(level, message, { filePath, action: job?.action });
     }
+
+    endPerf("lifecycle.total", perfCtx);
   }
 }

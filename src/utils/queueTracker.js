@@ -1,5 +1,4 @@
 import fs from "fs";
-import crypto from "crypto";
 import path from "path";
 import { fmtTimeNow } from "../middleware/logger.js";
 import { addInfo } from "../middleware/errorHandler.js";
@@ -30,26 +29,21 @@ const state = {
   },
 };
 
-
+import crypto from "crypto";
 
 let lastSnapshotHash = "";
 let lastWrite = 0;
-const SNAPSHOT_INTERVAL = 10_000; // 10 segundos
-const MIN_INTERVAL = 1000; // proteção contra spam, 1s mínimo
+const SNAPSHOT_INTERVAL = 10_000;
+const MIN_INTERVAL = 1000; 
 let snapshotTimer = null;
 
 function scheduleSnapshot() {
-  // Evita spam de múltiplas chamadas simultâneas
   if (snapshotTimer) return;
   snapshotTimer = setTimeout(async () => {
     snapshotTimer = null;
     const now = Date.now();
-
-    // monta snapshot atual
     const snapshot = buildSnapshot();
     const hash = crypto.createHash("md5").update(snapshot).digest("hex");
-
-    // só grava se mudou e respeita intervalo mínimo
     if (hash !== lastSnapshotHash && now - lastWrite >= MIN_INTERVAL) {
       lastSnapshotHash = hash;
       lastWrite = now;
@@ -57,12 +51,14 @@ function scheduleSnapshot() {
       try {
         await fs.promises.writeFile(QUEUE_LOG_PATH, snapshot, "utf8");
       } catch (err) {
-        console.error(`[queue] falha ao escrever snapshot:`, err?.message || err);
+        console.error(
+          `[queue] falha ao escrever snapshot:`,
+          err?.message || err
+        );
       }
     }
-  }, SNAPSHOT_INTERVAL); // executa no máximo 1x a cada 10 s
+  }, SNAPSHOT_INTERVAL);
 }
-
 
 function createJobId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -359,7 +355,6 @@ export function getJobState(filePath) {
   if (!jobId) return null;
   return state.active.get(jobId) || null;
 }
-
 
 function pullState() {
   return {

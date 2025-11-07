@@ -27,6 +27,9 @@ import {
 import { updateActiveJob } from "../utils/queueTracker.js";
 import { normalizeTotal } from "../utils/normalizeTotal.js";
 
+// ⏱️ PERF
+import { startPerf, endPerf, perfWrap } from "../utils/perfLogger.js";
+
 function buildContextTag(metadados) {
   if (!metadados) return "";
   const tabela = metadados.tabela || metadados?.destino?.tabela_destino || "tabela-desconhecida";
@@ -54,6 +57,11 @@ export async function manageInsertController(metadados, logData) {
   const aviso = (msg) => addAviso(withTag(msg), contexto);
   const activity = (level, message) =>
     logActivity(level, message, { filePath: contexto, action: activityAction });
+
+  // ⏱️ contexto para logs de perf
+  const perfCtx = `${nomeArquivo}|${metadados?.tabela || "-"}`;
+
+  startPerf("insert.manageInsertController", perfCtx);
 
   info(`[DB] Using pool limit=${POOL_MAX} | insert_concurrency=${INSERT_MAX_CONCURRENT} | files_concurrency=${FILES_MAX_CONCURRENT}`);
   info(
@@ -97,169 +105,142 @@ export async function manageInsertController(metadados, logData) {
     // -------- Fase 1: preparação --------
     let { encoding, delimiter } = metadados;
 
-    publish(0.1, encoding ? `Encoding: ${encoding}` : "Detectando encoding...");
+    // ⏱️ Detect encoding
     if (!encoding) {
-      ({ encoding } = await detectEncoding({ filePath: workPath }));
+      const encRes = await perfWrap("prep.detectEncoding", perfCtx, () =>
+        detectEncoding({ filePath: workPath })
+      );
+      encoding = encRes?.encoding;
+    } else {
+      startPerf("prep.detectEncoding", perfCtx);
+      endPerf("prep.detectEncoding", perfCtx, { skipped: true, encoding });
     }
+    publish(0.1, encoding ? `Encoding: ${encoding}` : "Detectando encoding...");
 
+    // ⏱️ Detect delimiter
+    if (!delimiter) {
+      delimiter = await perfWrap("prep.detectDelimiter", perfCtx, () =>
+        detectDelimiter(workPath, encoding)
+      );
+    } else {
+      startPerf("prep.detectDelimiter", perfCtx);
+      endPerf("prep.detectDelimiter", perfCtx, { skipped: true, delimiter });
+    }
     publish(
       0.4,
-      delimiter
-        ? `Encoding: ${encoding} | Delimitador: ${delimiter}`
-        : `Encoding: ${encoding} | Detectando delimitador...`,
+      `Encoding: ${encoding} | Delimitador: ${delimiter}`
     );
-    if (!delimiter) {
-      delimiter = await detectDelimiter(workPath, encoding);
-    }
 
-    publish(0.8, `Delimitador: ${delimiter}`);
     metadados.encoding = encoding;
     metadados.delimiter = delimiter;
     const headersNorm = metadados.colunas_json;
     updateActiveJob(contexto, { detail: `Encoding ${encoding} | Delimitador ${delimiter}` });
 
-    // Tipos esperados (schema + overrides)
-    const schemaMap = await loadDecimalProfilesFromSchema(metadados.tabela);
-    const tiposFinal = expandTiposWithSchema(metadados.tipos_esperados, schemaMap);
-    void activity("info", "Preparação concluída");
+    // ⏱️ Tipos esperados (schema + overrides)
+    const schemaMap = await perfWrap("prep.loadDecimalProfilesFromSchema", perfCtx, () =>
+      loadDecimalProfilesFromSchema(metadados.tabela)
+    );
+    const tiposFinal = await perfWrap("prep.expandTiposWithSchema", perfCtx, () =>
+      expandTiposWithSchema(metadados.tipos_esperados, schemaMap)
+    );
 
+    void activity("info", "Preparação concluída");
     publish(1.0, "Preparação concluída");
-    setPhase("read"); // 15..60%
+
+    // -------- Fase 2: leitura/validação --------
+    setPhase("read");
     void activity("info", "Leitura e validação iniciadas");
 
-    // -------- Valida dados e ação --------
-    let totalKnown = normalizeTotal(metadados.total_linhas);
-    let totalIsKnown = totalKnown != null;
-    let totalDisplay = totalIsKnown ? String(totalKnown) : "-";
-    let totalForReturn = totalKnown ?? 0;
+    // ⏱️ Overlap decision
+    const overlapDecision = await perfWrap("policy.ensureOverlapDecision", perfCtx, () =>
+      ensureOverlapDecision(metadados, contexto)
+    );
 
-    const progressLogState = new Map();
-
-    function shouldLogUnknownDelta(nextValue, lastValue) {
-      if (!Number.isFinite(nextValue)) return false;
-      if (lastValue == null) return true;
-      return nextValue - lastValue >= 1000;
-    }
-
-    function logProgress(stageName, statusText, primaryLabel, primaryValue) {
-      if (!Number.isFinite(primaryValue)) return;
-
-      const state = progressLogState.get(stageName) || {
-        lastPercent: null,
-        lastValue: null,
-        logged: false,
-      };
-
-      const percentVal =
-        totalIsKnown && totalKnown
-          ? Math.max(0, Math.min(100, Math.floor((primaryValue / totalKnown) * 100)))
-          : null;
-
-      let shouldLog = !state.logged;
-      if (!shouldLog) {
-        if (percentVal != null && percentVal !== state.lastPercent) {
-          shouldLog = true;
-        } else if (!totalIsKnown && shouldLogUnknownDelta(primaryValue, state.lastValue)) {
-          shouldLog = true;
-        }
-      }
-
-      if (!shouldLog) return;
-
-      const payload = {
-        stage: stageName,
-        status: statusText || stageName,
-        total: totalDisplay,
-        totalKnown: totalIsKnown,
-        percent:
-          totalIsKnown && percentVal != null ? `${percentVal}%` : "-",
-      };
-      if (primaryLabel) payload[primaryLabel] = primaryValue;
-
-      info(`[Progress] ${JSON.stringify(payload)}`);
-      progressLogState.set(stageName, {
-        lastPercent: percentVal,
-        lastValue: primaryValue,
-        logged: true,
-      });
-    }
-
-    const overlapDecision = await ensureOverlapDecision(metadados, contexto);
     const strategy = overlapDecision?.strategy || "insert";
     const hasOverlap = overlapDecision?.hasOverlap === true;
     metadados.applyPreDelete = strategy === "replace";
 
-    logManageStrategy(contexto, {
-      usingStrategy: strategy,
-      hasOverlap,
-      reason: overlapDecision?.reason ?? null,
-      range: metadados.range ?? null,
-      applyPreDelete: metadados.applyPreDelete,
-    }, activityAction, contextTag);
+    logManageStrategy(
+      contexto,
+      {
+        usingStrategy: strategy,
+        hasOverlap,
+        reason: overlapDecision?.reason ?? null,
+        range: metadados.range ?? null,
+        applyPreDelete: metadados.applyPreDelete,
+      },
+      activityAction,
+      contextTag
+    );
 
     const validator = strategy === "replace"
       ? metadados.coluna_data ? "substituir" : "cadastro"
       : "inserir";
 
+    // ⏱️ Pre-delete quando necessário
     if (validator === "cadastro" || validator === "substituir") {
-      try {
-        void activity("info", "Removendo período anterior");
-        await deleteFromTable(metadados);
-        const msg = validator === "cadastro"
-          ? "[Delete dados] tabela limpa para reinserção cadastral"
-          : "[Gerenciamento] substituição: período removido antes da reinserção";
-        info(msg);
-        void activity("info", "Remoção concluída");
-      } catch (e) {
-        erro(`Erro ao deletar antes da reinserção: ${e.message}`);
-        void activity("error", `Falha ao deletar período: ${e.message}`);
-        throw e;
-      }
+      await perfWrap("policy.predelete.deleteFromTable", perfCtx, async () => {
+        try {
+          void activity("info", "Removendo período anterior");
+          await deleteFromTable(metadados);
+          const msg = validator === "cadastro"
+            ? "[Delete dados] tabela limpa para reinserção cadastral"
+            : "[Gerenciamento] substituição: período removido antes da reinserção";
+          info(msg);
+          void activity("info", "Remoção concluída");
+        } catch (e) {
+          erro(`Erro ao deletar antes da reinserção: ${e.message}`);
+          void activity("error", `Falha ao deletar período: ${e.message}`);
+          throw e;
+        }
+      });
     }
 
     info("Iniciando leitura e montagem de lotes...");
     void activity("info", "Pipeline de streaming iniciado");
     updateActiveJob(contexto, { stage: "leitura", detail: "Stream iniciada", progress: lastPctAbs / 100 });
 
+    // -------- Fase 3: pipeline (leitura + inserção) --------
+    let resultado;
     try {
-      const resultado = await streamPipeline(
-        metadados,
-        tiposFinal,
-        {
-          publishRead: (lidas) => {
-            const status = totalIsKnown
-              ? `Montando lote (${lidas}/${totalDisplay})`
-              : `Montando lote (${lidas}/-)`;
-            publish(totalIsKnown && totalKnown ? lidas / totalKnown : 0, status);
-            logProgress(currentStageName, status, "linhasLidas", lidas);
+      resultado = await perfWrap("pipeline.streamPipeline", perfCtx, () =>
+        streamPipeline(
+          metadados,
+          tiposFinal,
+          {
+            publishRead: (lidas) => {
+              const totalKnown = normalizeTotal(metadados.total_linhas);
+              const totalIsKnown = totalKnown != null;
+              const totalDisplay = totalIsKnown ? String(totalKnown) : "-";
+              const status = totalIsKnown
+                ? `Montando lote (${lidas}/${totalDisplay})`
+                : `Montando lote (${lidas}/-)`;
+              publish(totalIsKnown && totalKnown ? lidas / totalKnown : 0, status);
+            },
+            publishInsert: (inseridos) => {
+              const totalKnown = normalizeTotal(metadados.total_linhas);
+              const totalIsKnown = totalKnown != null;
+              const totalDisplay = totalIsKnown ? String(totalKnown) : "-";
+              const status = totalIsKnown
+                ? `Inseridos: ${inseridos}/${totalDisplay}`
+                : `Inseridos: ${inseridos}/-`;
+              publish(totalIsKnown && totalKnown ? inseridos / totalKnown : 0, status);
+            },
+            onInsertStart: () => setPhase("insert"),
+            onFlush: () => atualizarBarra(barraId, 0, "Enviando lote..."),
           },
-          publishInsert: (inseridos) => {
-            const status = totalIsKnown
-              ? `Inseridos: ${inseridos}/${totalDisplay}`
-              : `Inseridos: ${inseridos}/-`;
-            publish(
-              totalIsKnown && totalKnown ? inseridos / totalKnown : 0,
-              status
-            );
-            logProgress(currentStageName, status, "inseridos", inseridos);
-          },
-          onInsertStart: () => setPhase("insert"),
-          onFlush: () => atualizarBarra(barraId, 0, "Enviando lote..."),
-        },
-        { logData }
+          { logData }
+        )
       );
 
+      // Ajuste do total (se conhecido após ler cabeçalho/contagem)
       const updatedTotal = normalizeTotal(metadados.total_linhas);
       if (updatedTotal != null) {
-        totalKnown = updatedTotal;
-        totalIsKnown = true;
-        totalDisplay = String(updatedTotal);
-        totalForReturn = updatedTotal;
         const finalInseridos = Number.isFinite(resultado?.inseridos)
           ? resultado.inseridos
           : updatedTotal;
-        const finalStatus = `Inseridos: ${finalInseridos}/${totalDisplay}`;
-        logProgress(currentStageName, finalStatus, "inseridos", finalInseridos);
+        const finalStatus = `Inseridos: ${finalInseridos}/${String(updatedTotal)}`;
+        publish(1, finalStatus);
       }
 
       // finaliza em 100%
@@ -269,43 +250,48 @@ export async function manageInsertController(metadados, logData) {
       }
 
       info("Processo de inserção finalizado.");
-      try {
-        const arquivo = path.basename(contexto || "");
-        const tabelaFin =
-          metadados?.destino?.tabela_destino || metadados?.tabela || "—";
-        const overlapStrategy =
-          metadados?.overlap?.strategy || metadados?.manage?.usingStrategy;
 
-        const range = metadados?.range || metadados?.manage?.range;
-        const dataStr = (() => {
-          if (!range?.start) return "—";
-          const d = new Date(range.start);
-          const y = d.getFullYear();
-          const mes = new Intl.DateTimeFormat("pt-BR", {
-            month: "long",
-            timeZone: "America/Sao_Paulo",
-          })
-            .format(d)
-            .toLowerCase();
-          return `${y}-${mes}-—`;
-        })();
+      // ⏱️ writeStatusUpdate
+      await perfWrap("logger.writeStatusUpdate", perfCtx, async () => {
+        try {
+          const arquivo = path.basename(contexto || "");
+          const tabelaFin =
+            metadados?.destino?.tabela_destino || metadados?.tabela || "—";
+          const overlapStrategy =
+            metadados?.overlap?.strategy || metadados?.manage?.usingStrategy;
 
-        const acao =
-          metadados?.arquivoAlterado || overlapStrategy === "replace"
-            ? "modified"
-            : "insert";
+          const range = metadados?.range || metadados?.manage?.range;
+          const dataStr = (() => {
+            if (!range?.start) return "—";
+            const d = new Date(range.start);
+            const y = d.getFullYear();
+            const mes = new Intl.DateTimeFormat("pt-BR", {
+              month: "long",
+              timeZone: "America/Sao_Paulo",
+            })
+              .format(d)
+              .toLowerCase();
+            return `${y}-${mes}-—`;
+          })();
 
-        await writeStatusUpdate({
-          filePath: contexto,
-          arquivo,
-          tabela: tabelaFin,
-          dataStr,
-          acao,
-          hash: metadados?.hash || "—",
-        });
-      } catch (err) {
-        aviso(`[Status] não foi possível registrar atualização: ${err?.message || err}`);
-      }
+          const acao =
+            metadados?.arquivoAlterado || overlapStrategy === "replace"
+              ? "modified"
+              : "insert";
+
+          await writeStatusUpdate({
+            filePath: contexto,
+            arquivo,
+            tabela: tabelaFin,
+            dataStr,
+            acao,
+            hash: metadados?.hash || "—",
+          });
+        } catch (err) {
+          aviso(`[Status] não foi possível registrar atualização: ${err?.message || err}`);
+        }
+      });
+
       void activity("info", "Pipeline de streaming concluído");
       updateActiveJob(contexto, { stage: "finalização", progress: 1, detail: "Processo concluído" });
 
@@ -319,41 +305,56 @@ export async function manageInsertController(metadados, logData) {
   finally {
     // Se precisar garantir algo aqui (ex: atualizar status de job)
     updateActiveJob(contexto, { stage: "finalização", detail: "Encerrado com erro ou sucesso" });
+    endPerf("insert.manageInsertController", perfCtx, {
+      tabela: metadados?.tabela,
+      total: metadados?.total_linhas ?? null
+    });
   }
 }
 
-
 async function ensureOverlapDecision(metadados, contexto) {
-  if (!metadados) return null;
-  if (metadados.overlap) {
-    if (!metadados.range) {
-      metadados.range = buildRangeFromMetadados(metadados);
-    }
-    return metadados.overlap;
-  }
 
-  const contextTag = buildContextTag(metadados);
-  addAviso(
-    contextTag
-      ? `${contextTag} [OverlapDecision] Metadados sem decisão prévia; calculando tardiamente (manager).`
-      : "[OverlapDecision] Metadados sem decisão prévia; calculando tardiamente (manager).",
-    contexto
-  );
-  const range = metadados.range ?? buildRangeFromMetadados(metadados);
-  metadados.range = range || null;
-  const decision = await decideOverlapPolicy({
-    table: metadados.tabela,
-    dateCol: metadados.coluna_data,
-    range,
-    logger: createOverlapLogger(
-      contexto,
-      metadados.acao,
-      buildLogAction(metadados),
+  const perfCtx = `${metadados?.nome_arquivo ?? path.basename(contexto || "")}|${metadados?.tabela || "-"}`;
+  startPerf("policy.ensureOverlapDecision(inner)", perfCtx);
+
+  try {
+    if (!metadados) return null;
+    if (metadados.overlap) {
+      if (!metadados.range) {
+        metadados.range = buildRangeFromMetadados(metadados);
+      }
+      return metadados.overlap;
+    }
+
+    const contextTag = buildContextTag(metadados);
+    addAviso(
       contextTag
-    ),
-  });
-  metadados.overlap = decision;
-  return decision;
+        ? `${contextTag} [OverlapDecision] Metadados sem decisão prévia; calculando tardiamente (manager).`
+        : "[OverlapDecision] Metadados sem decisão prévia; calculando tardiamente (manager).",
+      contexto
+    );
+    const range = metadados.range ?? buildRangeFromMetadados(metadados);
+    metadados.range = range || null;
+
+    const decision = await perfWrap("policy.decideOverlapPolicy", perfCtx, () =>
+      decideOverlapPolicy({
+        table: metadados.tabela,
+        dateCol: metadados.coluna_data,
+        range,
+        logger: createOverlapLogger(
+          contexto,
+          metadados.acao,
+          buildLogAction(metadados),
+          contextTag
+        ),
+      })
+    );
+
+    metadados.overlap = decision;
+    return decision;
+  } finally {
+    endPerf("policy.ensureOverlapDecision(inner)", perfCtx);
+  }
 }
 
 function createOverlapLogger(contexto, action, activityAction, contextTag = "") {
@@ -385,8 +386,11 @@ function logManageStrategy(contexto, payload, activityAction, contextTag = "") {
   }
 }
 
-
 export async function managerDeleterController(logData) {
+
+  const perfCtx = `${logData?.nome_arquivo ?? path.basename(logData?.caminho_original || "")}|${logData?.tabela || "-"}`;
+  startPerf("delete.managerDeleterController", perfCtx);
+
   const contexto = logData.caminho_original;
   const contextTag = buildContextTag(logData);
   const activityAction = buildLogAction(logData);
@@ -394,7 +398,11 @@ export async function managerDeleterController(logData) {
 
   try {
     void logActivity("info", "Fluxo de deleção iniciado", { filePath: contexto, action: activityAction });
-    const res = await deleteFromTable(logData);
+
+    const res = await perfWrap("delete.deleteFromTable", perfCtx, () =>
+      deleteFromTable(logData)
+    );
+
     const removidos = res?.affectedRows ?? res?.affected_rows ?? 0;
     addInfo(withTag(`[DELETE] Removidos ${removidos} registros de ${logData.tabela || logData.tabela_destino}.`), contexto);
     void logActivity("info", `Fluxo de deleção concluído (${removidos} registros)`, {
@@ -409,5 +417,7 @@ export async function managerDeleterController(logData) {
       action: activityAction,
     });
     return { erro: true, mensagem: e.message };
+  } finally {
+    endPerf("delete.managerDeleterController", perfCtx);
   }
 }

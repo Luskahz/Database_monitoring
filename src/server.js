@@ -5,6 +5,14 @@ import { startMonitoring } from "./monitoring.js";
 import { getPool, query, shutdownPool } from "../config/dbPool.js";
 import { logActivity } from "./middleware/logger.js";
 import { toNumber } from "./utils/normalizar.js";
+import process from "process";
+import os from "os";
+
+console.log(
+  `[BOOT] UV_THREADPOOL_SIZE=${process.env.UV_THREADPOOL_SIZE || "default(4)"} | CPUs=${os.cpus().length}`
+);
+
+
 
 function describeError(err) {
   if (err instanceof Error) {

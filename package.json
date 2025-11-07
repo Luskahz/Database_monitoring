@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node --max-old-space-size=8192 node_modules/nodemon/bin/nodemon.js src/server.js",
-    "dev:monitor": "node --max-old-space-size=8192 -r ./scripts/monitor.js node_modules/nodemon/bin/nodemon.js src/server.js",
+    "dev": "cross-env UV_THREADPOOL_SIZE=64 node --max-old-space-size=8192 node_modules/nodemon/bin/nodemon.js src/server.js",
+    "dev:monitor": "cross-env UV_THREADPOOL_SIZE=64 node --max-old-space-size=8192 -r ./scripts/monitor.js node_modules/nodemon/bin/nodemon.js src/server.js",
     "smoke:ingest": "node scripts/smoke-ingest.js"
   },
   "repository": {
@@ -39,6 +39,7 @@
     "papaparse": "^5.5.3"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "nodemon": "^3.1.10"
   }
 }

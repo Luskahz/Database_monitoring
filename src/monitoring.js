@@ -10,7 +10,6 @@ import createdHandler from "./controller/Handlers/createdHandler.js";
 import deletedHandler from "./controller/Handlers/deletedHandler.js";
 import { addErro, addInfo } from "./middleware/errorHandler.js";
 
-
 import { metrics as pipelineMetrics } from "./utils/streamPipeline.js";
 import { getActiveFilesCount } from "./utils/withFileLifecycle.js";
 import { memoryGuard } from "./utils/memoryGuard.js";
@@ -30,7 +29,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const limit = pLimit(FILES_MAX_CONCURRENT);
 const bigLimit = pLimit(Math.min(FILES_MAX_CONCURRENT, 4));
 const debounceTimers = new Map();
-
 
 function runWithDebounce(filePath, acao, handler) {
   const prev = debounceTimers.get(filePath);
@@ -55,12 +53,16 @@ function runWithDebounce(filePath, acao, handler) {
         filePath
       );
       addInfo(
-        `[${Date.now()}][MONITOR] Job START id=${job.id} file=${filePath} action=${acao}`,
+        `[${Date.now()}][MONITOR] Job START id=${
+          job.id
+        } file=${filePath} action=${acao}`,
         filePath
       );
       return handler(filePath, acao, job).finally(() => {
         addInfo(
-          `[${Date.now()}][MONITOR] Job END   id=${job.id} file=${filePath} action=${acao}`,
+          `[${Date.now()}][MONITOR] Job END   id=${
+            job.id
+          } file=${filePath} action=${acao}`,
           filePath
         );
       });
@@ -100,7 +102,7 @@ export async function startMonitoring() {
     );
 
   const awfStability = toNumber(process.env.AWF_STABILITY_MS, 2000);
-  const awfPoll = toNumber(process.env.AWF_POLL_MS, 200);
+  const awfPoll = toNumber(process.env.AWF_POLL_MS, 500);
 
   const ignoredPatterns = [
     /[/\\]database_monitoring[/\\]/,
@@ -116,20 +118,23 @@ export async function startMonitoring() {
   }
 
   const watcher = chokidar.watch(monitorPath, {
-    persistent: true,
-    ignoreInitial: true,
-    usePolling: true,
-    interval: 2000,
-    depth: 10,
-    atomic: 200,
-    ignorePermissionErrors: true,
-    ignored: ignoredPatterns,
-    awaitWriteFinish: {
-      stabilityThreshold: awfStability,
-      pollInterval: awfPoll,
-    },
-  });
-
+  persistent: true,
+  ignoreInitial: true,
+  usePolling: true,
+  interval: 10000,            // 10 segundos entre varreduras
+  binaryInterval: 10000,
+  depth: 7,                   // suficiente pro seu nível
+  alwaysStat: false,          // evita chamadas extras de fs.stat()
+  atomic: true,
+  followSymlinks: false,
+  ignorePermissionErrors: true,
+  awaitWriteFinish: {
+    stabilityThreshold: awfStability,
+    pollInterval: awfPoll,
+  },
+  ignored: ignoredPatterns,
+});
+  
   watcher
     .on("add", (filePath) => {
       if (!isCsvFile(filePath)) return;
@@ -142,6 +147,7 @@ export async function startMonitoring() {
       runWithDebounce(filePath, "modified", createdHandler);
     })
     .on("unlink", (filePath) => {
+      watcher.unwatch(filePath);
       if (!isCsvFile(filePath)) return;
       console.log(`🔴 Arquivo removido: ${filePath}`);
       runWithDebounce(filePath, "deleted", deletedHandler);

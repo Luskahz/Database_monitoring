@@ -4,6 +4,8 @@ import { toBool, toNumber } from "../src/utils/normalizar.js";
 
 dotenv.config();
 
+
+
 export const schema = process.env.DB_NAME;
 
 // FAST_PATH como boolean
