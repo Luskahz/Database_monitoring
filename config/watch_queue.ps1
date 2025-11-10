@@ -1,6 +1,7 @@
 param(
-  [string]$File = "C:\Users\lucas.l\Desktop\database_monitoring\logs\_queue.txt"
+  [string]$File = (Join-Path $PSScriptRoot "..\logs\_queue.txt")
 )
+
 while ($true) {
   if (Test-Path $File) {
     $lastWrite = (Get-Item $File).LastWriteTime
@@ -11,7 +12,7 @@ while ($true) {
     } while ($lastWrite -eq (Get-Item $File).LastWriteTime)
   } else {
     Clear-Host
-    Write-Host "Aguardando arquivo _queue.txt ser criado..."
+    Write-Host "Aguardando arquivo _queue.txt ser criado em ..\logs\_queue.txt ..."
     Start-Sleep -Seconds 1
   }
 }
