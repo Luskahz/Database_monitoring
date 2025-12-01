@@ -387,11 +387,10 @@ function logManageStrategy(contexto, payload, activityAction, contextTag = "") {
 }
 
 export async function managerDeleterController(logData) {
-
-  const perfCtx = `${logData?.nome_arquivo ?? path.basename(logData?.caminho_original || "")}|${logData?.tabela || "-"}`;
+  const perfCtx = `${logData?.nome_arquivo ?? path.basename(logData?.caminho || logData?.caminho_original || "")}|${logData?.tabela || "-"}`;
   startPerf("delete.managerDeleterController", perfCtx);
 
-  const contexto = logData.caminho_original;
+  const contexto = logData?.caminho_original ?? logData?.caminho ?? "(sem-caminho)";
   const contextTag = buildContextTag(logData);
   const activityAction = buildLogAction(logData);
   const withTag = (msg) => (contextTag ? `${contextTag} ${msg}` : msg);
@@ -405,19 +404,19 @@ export async function managerDeleterController(logData) {
 
     const removidos = res?.affectedRows ?? res?.affected_rows ?? 0;
     addInfo(withTag(`[DELETE] Removidos ${removidos} registros de ${logData.tabela || logData.tabela_destino}.`), contexto);
+
     void logActivity("info", `Fluxo de deleção concluído (${removidos} registros)`, {
       filePath: contexto,
       action: activityAction,
     });
+
     return { erro: false, removidos };
   } catch (e) {
     addErro(withTag(`Erro ao deletar período no banco pós exclusão do arquivo, erro: ${e.message}`), contexto);
-    void logActivity("error", `Erro durante deleção: ${e.message}`, {
-      filePath: contexto,
-      action: activityAction,
-    });
+    void logActivity("error", `Erro durante deleção: ${e.message}`, { filePath: contexto, action: activityAction });
     return { erro: true, mensagem: e.message };
   } finally {
     endPerf("delete.managerDeleterController", perfCtx);
   }
 }
+

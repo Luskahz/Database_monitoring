@@ -119,23 +119,23 @@ export async function startMonitoring() {
   }
 
   const watcher = chokidar.watch(monitorPath, {
-  persistent: true,
-  ignoreInitial: true,
-  usePolling: true,
-  interval: 10000,            // 10 segundos entre varreduras
-  binaryInterval: 10000,
-  depth: 7,                   // suficiente pro seu nível
-  alwaysStat: false,          // evita chamadas extras de fs.stat()
-  atomic: true,
-  followSymlinks: false,
-  ignorePermissionErrors: true,
-  awaitWriteFinish: {
-    stabilityThreshold: awfStability,
-    pollInterval: awfPoll,
-  },
-  ignored: ignoredPatterns,
-});
-  
+    persistent: true,
+    ignoreInitial: true,
+    usePolling: true,
+    interval: 10000, // 10 segundos entre varreduras
+    binaryInterval: 10000,
+    depth: 7, // suficiente pro seu nível
+    alwaysStat: false, // evita chamadas extras de fs.stat()
+    atomic: true,
+    followSymlinks: false,
+    ignorePermissionErrors: true,
+    awaitWriteFinish: {
+      stabilityThreshold: awfStability,
+      pollInterval: awfPoll,
+    },
+    ignored: ignoredPatterns,
+  });
+
   watcher
     .on("add", (filePath) => {
       if (!isCsvFile(filePath)) return;
@@ -148,7 +148,6 @@ export async function startMonitoring() {
       runWithDebounce(filePath, "modified", createdHandler);
     })
     .on("unlink", (filePath) => {
-      watcher.unwatch(filePath);
       if (!isCsvFile(filePath)) return;
       console.log(`🔴 Arquivo removido: ${filePath}`);
       runWithDebounce(filePath, "deleted", deletedHandler);
