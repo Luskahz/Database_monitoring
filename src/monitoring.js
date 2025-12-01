@@ -106,6 +106,7 @@ export async function startMonitoring() {
 
   const ignoredPatterns = [
     /[/\\]database_monitoring[/\\]/,
+    /[/\\]scripts[/\\]/,
     /[/\\]loggers[/\\]/,
     /\.txt$/,
   ];

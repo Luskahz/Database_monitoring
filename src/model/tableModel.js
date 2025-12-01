@@ -270,16 +270,40 @@ export async function existsAnyCsvDateInTable(metadados, opts = {}) {
 }
 
 
-
 export async function deleteFromTable(opcoes) {
   const { tabela, tabela_destino, mes, ano, dia, coluna_data, chunkSize } = opcoes;
   const nomeTabela = tabela || tabela_destino;
 
-    if (!nomeTabela) {
-      throw new Error("[model delete] Nome da tabela não foi informado.");
+  if (!nomeTabela) {
+    throw new Error("[model delete] Nome da tabela não foi informado.");
+  }
+  if (!coluna_data) {
+    try {
+      const colDb = await getDateColumnsFromTable(nomeTabela); 
+      if (colDb) {
+        addAviso(
+          `[model delete] DELETE TOTAL BLOQUEADO: '${schema}.${nomeTabela}' possui coluna DATE ('${colDb}') no DB, mas coluna_data não veio nos metadados. ` +
+          `Provável CSV/metadados incompatíveis. Operação abortada para evitar perda de dados.`,
+          nomeTabela
+        );
+        throw new Error(
+          `[model delete] DELETE TOTAL BLOQUEADO: tabela '${nomeTabela}' é periódica (DB tem DATE '${colDb}'), mas coluna_data está ausente.`
+        );
+      }
+    } catch (e) {
+
+      if (String(e?.message || "").includes("DELETE TOTAL BLOQUEADO")) throw e;
+
+      addAviso(
+        `[model delete] BLOQUEADO por segurança: falha ao verificar coluna DATE no DB antes de DELETE TOTAL em '${schema}.${nomeTabela}'. ` +
+        `Erro: ${e?.message || e}`,
+        nomeTabela
+      );
+      throw new Error(
+        `[model delete] BLOQUEADO: não foi possível verificar se '${nomeTabela}' é cadastral antes do DELETE TOTAL.`
+      );
     }
 
-  if (!coluna_data) {
     const sql = `DELETE FROM \`${schema}\`.\`${nomeTabela}\``;
     try {
       const result = await query(sql);
@@ -291,21 +315,27 @@ export async function deleteFromTable(opcoes) {
     }
   }
 
-    const range = (ano && mes) ? computeDateRange({ ano, mes, dia }) : null;
-    if (!range) {
-      throw new Error(`[model delete] Mês/Ano inválidos para delete.`);
-    }
-    const [inicio, fim] = range;
-    const idx = await query(
-      `SHOW INDEX FROM \`${schema}\`.\`${nomeTabela}\` WHERE Column_name = ?`,
-      [coluna_data]
+  // =========================
+  // Delete por período (tabela periódica)
+  // =========================
+  const range = (ano && mes) ? computeDateRange({ ano, mes, dia }) : null;
+  if (!range) {
+    throw new Error(`[model delete] Mês/Ano inválidos para delete.`);
+  }
+
+  const [inicio, fim] = range;
+
+  const idx = await query(
+    `SHOW INDEX FROM \`${schema}\`.\`${nomeTabela}\` WHERE Column_name = ?`,
+    [coluna_data]
+  );
+  if (!idx || idx.length === 0) {
+    addAviso(
+      `coluna ${coluna_data} da tabela ${nomeTabela} sem índice. Sugerido: CREATE INDEX idx_${nomeTabela}_${coluna_data} ON ${nomeTabela}(${coluna_data});`,
+      nomeTabela
     );
-    if (!idx || idx.length === 0) {
-      addAviso(
-        `coluna ${coluna_data} da tabela ${nomeTabela} sem índice. Sugerido: CREATE INDEX idx_${nomeTabela}_${coluna_data} ON ${nomeTabela}(${coluna_data});`,
-        nomeTabela
-      );
-    }
+  }
+
   const CHUNK = Number(chunkSize) > 0 ? Number(chunkSize) : 50_000;
   let totalAff = 0;
 
@@ -320,7 +350,7 @@ export async function deleteFromTable(opcoes) {
       const res = await query(sql, [inicio, fim]);
       const aff = res?.affectedRows || 0;
       totalAff += aff;
-      if (aff < CHUNK) break; // esvaziou o range
+      if (aff < CHUNK) break;
     }
     return { affectedRows: totalAff };
   } catch {
@@ -338,6 +368,7 @@ export async function deleteFromTable(opcoes) {
     }
   }
 }
+
 
 
 export async function getTiposFromTable(tabela) {

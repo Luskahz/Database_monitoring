@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import Papa from "papaparse";
-import { addAviso, addInfo } from "../middleware/errorHandler.js";
+import { addAviso, addInfo, addErro } from "../middleware/errorHandler.js";
 import {
   getTiposFromTable,
   getColumnsFromTable,
@@ -84,9 +84,10 @@ export async function analyzeCsv(filePath, tabelaName) {
       detectEncoding(filePath, { headBytes: 64 * 1024, fallback: "latin1" }),
     ]);
   const tMeta1 = performance.now();
+
   const encoding = encRes.encoding;
   addInfo(
-    `[Analyze] Metadados carregados em ${ms(tMeta1 - tMeta0)} | tipos=${Object.keys(tiposEsperados||{}).length} | colunasTabela=${(colunasTabela||[]).length} | encoding=${encoding}`,
+    `[Analyze] Metadados carregados em ${ms(tMeta1 - tMeta0)} | tipos=${Object.keys(tiposEsperados || {}).length} | colunasTabela=${(colunasTabela || []).length} | encoding=${encoding}`,
     contexto
   );
 
@@ -104,7 +105,7 @@ export async function analyzeCsv(filePath, tabelaName) {
   const tHdr0 = performance.now();
   const rawHeaders = await readCsvHeader(filePath, encoding, delimiter, {
     highWaterMark: 64 * 1024,
-    fastMode: true
+    fastMode: true,
   });
   const tHdr1 = performance.now();
   addInfo(`[Analyze] Cabeçalhos lidos (${rawHeaders.length} colunas) em ${ms(tHdr1 - tHdr0)}`, contexto);
@@ -117,22 +118,45 @@ export async function analyzeCsv(filePath, tabelaName) {
   }
   addInfo(`[Analyze] Headers normalizados (${headersNorm.length}) em ${ms(tNorm1 - tNorm0)}`, contexto);
 
-  /* 4) Coluna de data (se houver) */
-  const headersLen = headersNorm.length;
-  const idxData = colunaDataEsperada ? headersNorm.indexOf(colunaDataEsperada) : -1;
-  const tipoBruto = idxData >= 0 ? tiposEsperados[colunaDataEsperada] : undefined;
-  const tipoData =
-    tipoBruto === "date" || tipoBruto === "datetime" ? tipoBruto : "date";
+  /* 4) Coluna de data: DB decide / CSV só valida compatibilidade */
+  const colunaDataDb = colunaDataEsperada ?? null;
+
+  let idxData = -1;
+  if (colunaDataDb) {
+    // headersNorm já está normalizado por normalizar()+trim()
+    const colNorm = maybeTrim(normalizar(String(colunaDataDb)));
+    idxData = headersNorm.indexOf(colNorm);
+
+    // fallback: caso seu normalizar() não seja idêntico ao do header (muito raro)
+    if (idxData < 0) {
+      idxData = headersNorm.indexOf(String(colunaDataDb));
+    }
+  }
+
+  const tipoBruto = colunaDataDb ? tiposEsperados[colunaDataDb] : undefined;
+  const tipoData = tipoBruto === "date" || tipoBruto === "datetime" ? tipoBruto : "date";
   const datePrefixRe = /^\d{4}-\d{2}-\d{2}/;
+
   addInfo(
-    `[Analyze] Coluna de data esperada="${colunaDataEsperada ?? '(nenhuma)'}" | idx=${idxData} | tipoData=${tipoData}`,
+    `[Analyze] Coluna DATE no DB="${colunaDataDb ?? "(nenhuma)"}" | idx_no_csv=${idxData} | tipoData=${tipoData}`,
     contexto
   );
+
+  if (colunaDataDb && idxData < 0) {
+    addErro(
+      `[Analyze] CSV incompatível: tabela "${tabelaName}" possui coluna DATE no DB ("${colunaDataDb}"), mas o CSV não contém essa coluna. ` +
+      `Provável: usuário enviou CSV de outra tabela. Operação abortada para evitar deleção indevida.`,
+      contexto
+    );
+    throw new Error(
+      `CSV incompatível com a tabela "${tabelaName}": faltando coluna DATE "${colunaDataDb}".`
+    );
+  }
 
   /* 5) Tee p/ hash + parse */
   const tTee0 = performance.now();
   const { forHash, forParse } = createFileTee(filePath, { highWaterMark: 1024 * 1024 });
-  const pHash = hashBytes(forHash); // começa já
+  const pHash = hashBytes(forHash);
   const tTee1 = performance.now();
   addInfo(`[Analyze] Tee aberto (hash + parse) em ${ms(tTee1 - tTee0)} | HWM=1MB`, contexto);
 
@@ -157,13 +181,15 @@ export async function analyzeCsv(filePath, tabelaName) {
   let totalLinhas = 0;
   let isFirstRow = true;
 
-  // métricas de throughput
   let lastTick = performance.now();
   let lastCount = 0;
 
   for await (const rowArray of stream) {
     const rowArr = Array.isArray(rowArray) ? rowArray : rowArray?.data || [];
-    if (isFirstRow) { isFirstRow = false; continue; }
+    if (isFirstRow) {
+      isFirstRow = false;
+      continue;
+    }
 
     if (idxData >= 0) {
       const rawVal = rowArr[idxData];
@@ -178,14 +204,17 @@ export async function analyzeCsv(filePath, tabelaName) {
         }
       }
     }
+
     totalLinhas++;
 
-    // checkpoints leves: 1k e depois de 10k em 10k
-    if (totalLinhas === 1000 || (totalLinhas % 10000 === 0)) {
+    if (totalLinhas === 1000 || totalLinhas % 10000 === 0) {
       const now = performance.now();
       const deltaMs = now - lastTick;
       const deltaLin = totalLinhas - lastCount;
-      addInfo(`[Analyze] Progresso: ${totalLinhas} linhas | ${rate(deltaLin, deltaMs)} | datas distintas=${datasCsv.size}`, contexto);
+      addInfo(
+        `[Analyze] Progresso: ${totalLinhas} linhas | ${rate(deltaLin, deltaMs)} | datas distintas=${datasCsv.size}`,
+        contexto
+      );
       lastTick = now;
       lastCount = totalLinhas;
     }
@@ -196,18 +225,18 @@ export async function analyzeCsv(filePath, tabelaName) {
   const T1 = performance.now();
 
   addInfo(
-    `[Analyze] Concluído | linhas=${totalLinhas} | datas_distintas=${datasCsv.size} | hash=${hashHex.slice(0, 12)}… | tempo_total=${s((T1 - T0)/1000*1000)}`,
+    `[Analyze] Concluído | linhas=${totalLinhas} | datas_distintas=${datasCsv.size} | hash=${hashHex.slice(0, 12)}… | tempo_total=${ms(T1 - T0)}`,
     contexto
   );
 
   return {
-    hash: hashHex,                 // SHA-256 dos BYTES do arquivo
+    hash: hashHex,
     encoding,
     delimiter,
     colunas_json: headersNorm,
     tipos_esperados: tiposEsperados,
     colunas_tabela: colunasTabela,
-    coluna_data: idxData >= 0 ? colunaDataEsperada : null,
+    coluna_data: colunaDataDb,
     datas_csv: Array.from(datasCsv),
     total_linhas: totalLinhas,
   };
