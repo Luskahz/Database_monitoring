@@ -14,7 +14,6 @@ import { getPool } from "../../config/dbPool.js";
 import { memoryGuard } from "./memoryGuard.js";
 import {
   BATCH_SIZE,
-  ADAPTIVE_RAM_GUARD,
   MAX_BATCH_BYTES_DEFAULT,
   FILES_MAX_CONCURRENT,
   MAX_BATCH_BYTES_WHEN_HIGH,
@@ -86,6 +85,7 @@ export async function streamPipeline(
     delimiter,
   } = metadados;
   const workPath = metadados.paths?.work || contexto;
+  
 
   const contextTag = buildContextTag(metadados);
   const activityAction = buildLogAction(metadados);
@@ -102,6 +102,9 @@ export async function streamPipeline(
   let dynamicHighWatermark = HIGH_WATERMARK_DEFAULT;
   let dynamicLowWatermark = LOW_WATERMARK_DEFAULT;
   let dynamicMaxBatchBytes = MAX_BATCH_BYTES_DEFAULT;
+  info(`[DEBUG pipeline] tabela=${tabela}`);
+  info(`[DEBUG pipeline] cols(from metadados)=${JSON.stringify(cols)}`);
+  info(`[DEBUG pipeline] headersNorm=${JSON.stringify(headersNorm)}`);
 
   const offMem = memoryGuard.onChange((state) => {
     if (state === "HIGH") {

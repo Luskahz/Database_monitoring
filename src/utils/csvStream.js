@@ -5,6 +5,7 @@ import {
   getTiposFromTable,
   getColumnsFromTable,
   getDateColumnsFromTable,
+  getGeneratedDateColumnsFromTable
 } from "../model/tableModel.js";
 import {
   detectEncoding,
@@ -76,11 +77,12 @@ export async function analyzeCsv(filePath, tabelaName) {
 
   /* 1) Metadados e encoding (em paralelo) */
   const tMeta0 = performance.now();
-  const [tiposEsperados, colunasTabela, colunaDataEsperada, encRes] =
+  const [tiposEsperados, colunasTabela, colunaDataEsperada, colunaDataCalculadaEsperada, encRes] =
     await Promise.all([
       getTiposFromTable(tabelaName),
       getColumnsFromTable(tabelaName),
       getDateColumnsFromTable(tabelaName),
+      getGeneratedDateColumnsFromTable(tabelaName),
       detectEncoding(filePath, { headBytes: 64 * 1024, fallback: "latin1" }),
     ]);
   const tMeta1 = performance.now();
@@ -142,7 +144,7 @@ export async function analyzeCsv(filePath, tabelaName) {
     contexto
   );
 
-  if (colunaDataDb && idxData < 0) {
+  if ((colunaDataCalculadaEsperada === null) && (colunaDataDb && idxData < 0)) {
     addErro(
       `[Analyze] CSV incompatível: tabela "${tabelaName}" possui coluna DATE no DB ("${colunaDataDb}"), mas o CSV não contém essa coluna. ` +
       `Provável: usuário enviou CSV de outra tabela. Operação abortada para evitar deleção indevida.`,

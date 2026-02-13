@@ -39,8 +39,7 @@ import {
 } from "../../utils/loggerStaging.js";
 import { iniciarBarra, finalizarBarra } from "../../utils/progressBar.js";
 import { toBool, toNumber } from "../../utils/normalizar.js";
-import { performance } from "perf_hooks";
-import {startPerf, endPerf, measureSync, measureAsync, clearPerf, isPerfEnabled} from "../../utils/perfLogger.js";
+import {startPerf, endPerf} from "../../utils/perfLogger.js";
 
 function createStagingLogger(filePath) {
   return {

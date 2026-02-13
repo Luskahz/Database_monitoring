@@ -20,7 +20,11 @@ import {
 } from "../model/tableModel.js";
 import { PIPELINE_FAST_PATH } from "../../config/index.js";
 import { decideOverlapPolicy } from "../utils/decideOverlapPolicy.js";
-import { logActivity, writeHeadersDiff, shortPath } from "../middleware/logger.js";
+import {
+  logActivity,
+  writeHeadersDiff,
+  shortPath,
+} from "../middleware/logger.js";
 import { isRemotePath } from "../utils/ensureLocalStaging.js";
 
 /* ---------- hot helpers ---------- */
@@ -49,7 +53,8 @@ function tailDirs(dir) {
 
 function buildContextTag(meta) {
   if (!meta) return "";
-  const tabela = meta.tabela || meta?.destino?.tabela_destino || "tabela-desconhecida";
+  const tabela =
+    meta.tabela || meta?.destino?.tabela_destino || "tabela-desconhecida";
   const ano = meta.ano ?? meta?.destino?.ano ?? meta?.range?.ano ?? "—";
   return `[${tabela}][${ano}]`;
 }
@@ -58,7 +63,9 @@ function buildLogAction(meta) {
   if (!meta) return undefined;
   const tabela = meta.tabela || meta?.destino?.tabela_destino;
   const ano = meta.ano ?? meta?.destino?.ano ?? meta?.range?.ano;
-  return [tabela, ano].filter((value) => value != null && value !== "").join(" ");
+  return [tabela, ano]
+    .filter((value) => value != null && value !== "")
+    .join(" ");
 }
 export function destinoByFilePath(filePath) {
   const { dir, base: fileName, name: baseNameNoExt } = path.parse(filePath);
@@ -109,7 +116,9 @@ export function truncarFilepath(fullpath) {
 
 function inferTabelaFromContexto(contexto, fallback = "—") {
   if (!contexto) return fallback;
-  const match = String(contexto).match(/[\\/](\d{2}_\d{2}_\d{2})[\\/](\d{4})[\\/][^\\/]+$/);
+  const match = String(contexto).match(
+    /[\\/](\d{2}_\d{2}_\d{2})[\\/](\d{4})[\\/][^\\/]+$/,
+  );
   if (match && match[1]) {
     return match[1];
   }
@@ -121,12 +130,21 @@ function computeHeadersDiff(headersCsv, headersTabela) {
   const tabela = Array.isArray(headersTabela) ? headersTabela : [];
   const tabelaSet = new Set(tabela.map((h) => String(h ?? "")));
   const csvSet = new Set(csv.map((h) => String(h ?? "")));
-  const extras = csv.map((h) => String(h ?? "")).filter((h) => !tabelaSet.has(h));
-  const missing = tabela.map((h) => String(h ?? "")).filter((h) => !csvSet.has(h));
+  const extras = csv
+    .map((h) => String(h ?? ""))
+    .filter((h) => !tabelaSet.has(h));
+  const missing = tabela
+    .map((h) => String(h ?? ""))
+    .filter((h) => !csvSet.has(h));
   return { extras, missing };
 }
 
-async function logHeadersComparison({ contexto, tabela, headersCsv, headersTabela }) {
+async function logHeadersComparison({
+  contexto,
+  tabela,
+  headersCsv,
+  headersTabela,
+}) {
   if (!Array.isArray(headersCsv) || !Array.isArray(headersTabela)) return;
   const tabelaSafe = tabela || inferTabelaFromContexto(contexto);
   try {
@@ -154,9 +172,15 @@ async function logHeadersComparison({ contexto, tabela, headersCsv, headersTabel
 
 /* ---------- controllers ---------- */
 
-export default async function createDataController(filePath, action, opts = {}) {
+export default async function createDataController(
+  filePath,
+  action,
+  opts = {},
+) {
   const workFilePath =
-    opts && typeof opts.workFilePath === "string" ? opts.workFilePath : filePath;
+    opts && typeof opts.workFilePath === "string"
+      ? opts.workFilePath
+      : filePath;
   return createFundamentalDocsController(filePath, action, filePath, {
     workFilePath,
     stagingInfo: opts?.stagingInfo ?? null,
@@ -170,7 +194,7 @@ export default async function createDataController(filePath, action, opts = {}) 
       if (m.total_linhas === 0) {
         addAviso(
           "CSV sem registros (apenas cabeçalho ou vazio). Prosseguindo no FAST_PATH.",
-          filePath
+          filePath,
         );
       }
       return result;
@@ -185,11 +209,13 @@ export async function createFundamentalDocsController(
   filePath,
   action,
   contexto,
-  opts = {}
+  opts = {},
 ) {
   try {
     const workFilePath =
-      opts && typeof opts.workFilePath === "string" ? opts.workFilePath : filePath;
+      opts && typeof opts.workFilePath === "string"
+        ? opts.workFilePath
+        : filePath;
     const metadados = await createMetadadosController(filePath, action, opts);
     const { size } = await stat(workFilePath);
     metadados.file_size_bytes = size;
@@ -203,7 +229,9 @@ export async function createFundamentalDocsController(
     const copiedNow = Boolean(stagingInfo?.copied);
     const reusedCopy = Boolean(stagingInfo?.reused);
     const existingPaths =
-      metadados.paths && typeof metadados.paths === "object" ? metadados.paths : {};
+      metadados.paths && typeof metadados.paths === "object"
+        ? metadados.paths
+        : {};
     metadados.paths = {
       ...existingPaths,
       source: existingPaths.source || filePath,
@@ -214,12 +242,21 @@ export async function createFundamentalDocsController(
       reusedLocalCopy: reusedCopy,
       stagingDir: stagingInfo?.stagingDir ?? existingPaths.stagingDir ?? null,
     };
+    addInfo(
+      `[DEBUG fundamental] tabela=${metadados.tabela} | colunas_tabela_len=${metadados.colunas_tabela?.length} | colunas_tabela=${JSON.stringify(metadados.colunas_tabela)}`,
+      contexto,
+    );
+
+    addInfo(
+      `[DEBUG fundamental] colunas_json_len=${metadados.colunas_json?.length} | colunas_json=${JSON.stringify(metadados.colunas_json)}`,
+      contexto,
+    );
     return { metadados, logData };
   } catch (e) {
     addErro(
       "Erro ao gerar os objetos fundamentais, metadados e logdata, erro: " +
         e.message,
-      contexto
+      contexto,
     );
     throw e;
   }
@@ -229,16 +266,22 @@ export async function createMetadadosController(filePath, action, opts = {}) {
   const destino = destinoByFilePath(filePath);
   const caminho_truncado = truncarFilepath(filePath);
   const workFilePath =
-    opts && typeof opts.workFilePath === "string" ? opts.workFilePath : filePath;
+    opts && typeof opts.workFilePath === "string"
+      ? opts.workFilePath
+      : filePath;
 
   if (PIPELINE_FAST_PATH) {
     const { headBuf } = await readHeadOnce(workFilePath, 64 * 1024);
     const headSampleBytes = headBuf?.length ?? 0;
-    let { encoding } = await detectEncoding(
-      { filePath: workFilePath, headBuf, sampleBytes: headSampleBytes, fallback: "latin1" }
-    );
+    let { encoding } = await detectEncoding({
+      filePath: workFilePath,
+      headBuf,
+      sampleBytes: headSampleBytes,
+      fallback: "latin1",
+    });
 
-    let encodingNorm = typeof encoding === "string" ? encoding.toLowerCase() : "utf8";
+    let encodingNorm =
+      typeof encoding === "string" ? encoding.toLowerCase() : "utf8";
     if (encodingNorm !== "latin1" && encodingNorm !== "utf8") {
       encodingNorm = "utf8";
     }
@@ -246,7 +289,11 @@ export async function createMetadadosController(filePath, action, opts = {}) {
 
     let headForText = headBuf ?? Buffer.alloc(0);
     if (encodingNorm === "utf8" && headForText.length >= 3) {
-      if (headForText[0] === 0xef && headForText[1] === 0xbb && headForText[2] === 0xbf) {
+      if (
+        headForText[0] === 0xef &&
+        headForText[1] === 0xbb &&
+        headForText[2] === 0xbf
+      ) {
         headForText = headForText.subarray(3);
       }
     }
@@ -272,6 +319,17 @@ export async function createMetadadosController(filePath, action, opts = {}) {
       getTiposFromTable(destino.tabela_destino),
       getDateColumnsFromTable(destino.tabela_destino),
     ]);
+    addInfo(
+      `[DEBUG metadados] destino.tabela_destino=${destino.tabela_destino} | insertable_cols=${JSON.stringify(colunasTabela)}`,
+      filePath,
+    );
+
+    addInfo(`[DEBUG metadados] coluna_data_detectada=${colunaData}`, filePath);
+
+    addInfo(
+      `[DEBUG metadados] headers_csv=${JSON.stringify(headersNorm)}`,
+      filePath,
+    );
 
     const metadados = {
       nome_arquivo: destino.nome_arquivo,
@@ -357,7 +415,7 @@ async function ensureOverlapMetadata(metadados, contexto, action) {
     contexto,
     action,
     buildLogAction(metadados),
-    buildContextTag(metadados)
+    buildContextTag(metadados),
   );
   const decision = await decideOverlapPolicy({
     table: metadados.tabela,
@@ -369,18 +427,29 @@ async function ensureOverlapMetadata(metadados, contexto, action) {
   return decision;
 }
 
-function createOverlapLogger(contexto, action, activityAction, contextTag = "") {
+function createOverlapLogger(
+  contexto,
+  action,
+  activityAction,
+  contextTag = "",
+) {
   return {
     info(message, payload = {}) {
       try {
         const serialized = JSON.stringify(payload);
         const line = `${message} ${serialized}`;
         addInfo(contextTag ? `${contextTag} ${line}` : line, contexto);
-        void logActivity("info", line, { filePath: contexto, action: activityAction || action });
+        void logActivity("info", line, {
+          filePath: contexto,
+          action: activityAction || action,
+        });
       } catch (err) {
         const fallback = `${message} ${payload ? String(payload) : ""}`;
         addInfo(contextTag ? `${contextTag} ${fallback}` : fallback, contexto);
-        void logActivity("info", message, { filePath: contexto, action: activityAction || action });
+        void logActivity("info", message, {
+          filePath: contexto,
+          action: activityAction || action,
+        });
       }
     },
   };

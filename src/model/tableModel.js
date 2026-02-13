@@ -12,18 +12,43 @@ const dateColCache = new Map();
 
 /* -------------------- Mapa de meses -------------------- */
 const meses = {
-  janeiro: 1, jan: 1, "jan.": 1,
-  fevereiro: 2, fev: 2, "fev.": 2,
-  marco: 3, março: 3, mar: 3, "mar.": 3,
-  abril: 4, abr: 4, "abr.": 4,
-  maio: 5, mai: 5, "mai.": 5,
-  junho: 6, jun: 6, "jun.": 6,
-  julho: 7, jul: 7, "jul.": 7,
-  agosto: 8, ago: 8, "ago.": 8,
-  setembro: 9, set: 9, "set.": 9,
-  outubro: 10, out: 10, "out.": 10,
-  novembro: 11, nov: 11, "nov.": 11,
-  dezembro: 12, dez: 12, "dez.": 12,
+  janeiro: 1,
+  jan: 1,
+  "jan.": 1,
+  fevereiro: 2,
+  fev: 2,
+  "fev.": 2,
+  marco: 3,
+  março: 3,
+  mar: 3,
+  "mar.": 3,
+  abril: 4,
+  abr: 4,
+  "abr.": 4,
+  maio: 5,
+  mai: 5,
+  "mai.": 5,
+  junho: 6,
+  jun: 6,
+  "jun.": 6,
+  julho: 7,
+  jul: 7,
+  "jul.": 7,
+  agosto: 8,
+  ago: 8,
+  "ago.": 8,
+  setembro: 9,
+  set: 9,
+  "set.": 9,
+  outubro: 10,
+  out: 10,
+  "out.": 10,
+  novembro: 11,
+  nov: 11,
+  "nov.": 11,
+  dezembro: 12,
+  dez: 12,
+  "dez.": 12,
 };
 
 /* ========================= Helpers ========================= */
@@ -34,11 +59,17 @@ const insertPiecesCache = new Map(); // key: `${schema}.${tabela}` -> { colunasS
 function getInsertPieces(tabela, cols) {
   const key = `${schema}.${tabela}`;
   let cached = insertPiecesCache.get(key);
-  if (cached && cached.cols?.length === cols.length && cached.cols.every((c,i)=>c===cols[i])) {
+  if (
+    cached &&
+    cached.cols?.length === cols.length &&
+    cached.cols.every((c, i) => c === cols[i])
+  ) {
     return cached;
   }
-  const colunasSql   = cols.map((col) => `\`${col}\``).join(", ");
-  const updateClause = cols.map((col) => `\`${col}\` = VALUES(\`${col}\`)`).join(", ");
+  const colunasSql = cols.map((col) => `\`${col}\``).join(", ");
+  const updateClause = cols
+    .map((col) => `\`${col}\` = VALUES(\`${col}\`)`)
+    .join(", ");
   cached = { colunasSql, updateClause, cols: [...cols] };
   insertPiecesCache.set(key, cached);
   return cached;
@@ -137,7 +168,7 @@ export async function getAllRegistersFromTable(tabela) {
     return result;
   } catch (e) {
     throw new Error(
-      `[Model registers] Erro ao consultar os registros da tabela destino, erro: ${e.message} `
+      `[Model registers] Erro ao consultar os registros da tabela destino, erro: ${e.message} `,
     );
   }
 }
@@ -154,21 +185,21 @@ export async function getDateColumnsFromTable(tabela) {
         AND TABLE_SCHEMA = ?
         AND DATA_TYPE = 'date'
     `,
-      [tabela, schema]
+      [tabela, schema],
     );
     const col = results.length > 0 ? results[0].COLUMN_NAME : null;
     dateColCache.set(key, col);
     return col;
   } catch (e) {
     throw new Error(
-      `[Model dataColun] Erro ao consultar colunas de data: ${e.message}`
+      `[Model dataColun] Erro ao consultar colunas de data: ${e.message}`,
     );
   }
 }
 
-export async function getColumnsFromTable(tabela) {
+export async function getGeneratedDateColumnsFromTable(tabela) {
   const key = `${schema}.${tabela}`;
-  if (columnsCache.has(key)) return columnsCache.get(key);
+  if (dateColCache.has(key)) return dateColCache.get(key);
   try {
     const results = await query(
       `
@@ -176,16 +207,51 @@ export async function getColumnsFromTable(tabela) {
       FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = ?
         AND TABLE_SCHEMA = ?
-        ORDER BY ORDINAL_POSITION
+        AND DATA_TYPE = 'date'
+        AND EXTRA LIKE '%GENERATED%';
     `,
-      [tabela, schema]
+      [tabela, schema],
     );
-    const cols = results.map((col) => col.COLUMN_NAME);
+    const col = results.length > 0 ? results[0].COLUMN_NAME : null;
+    dateColCache.set(key, col);
+    return col;
+  } catch (e) {
+    throw new Error(
+      `[Model dataColun] Erro ao consultar colunas de data: ${e.message}`,
+    );
+  }
+}
+
+export async function getColumnsFromTable(tabela) {
+  const key = `${schema}.${tabela}`;
+  if (columnsCache.has(key)) return columnsCache.get(key);
+
+  try {
+    const res = await query(
+      `
+      SELECT COLUMN_NAME AS name
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = ?
+        AND TABLE_NAME = ?
+        AND (GENERATION_EXPRESSION IS NULL OR GENERATION_EXPRESSION = '')
+        AND EXTRA NOT LIKE '%GENERATED%'
+      ORDER BY ORDINAL_POSITION
+      `,
+      [schema, tabela],
+    );
+
+    const rows = Array.isArray(res) && Array.isArray(res[0]) ? res[0] : res;
+    const cols = rows.map((r) => {
+      if (Array.isArray(r)) return r[0];
+      return r.name ?? r.COLUMN_NAME ?? r.column_name;
+    });
+
     columnsCache.set(key, cols);
+    console.log(`[Schema] ${tabela} insertables ->`, cols);
     return cols;
   } catch (e) {
     throw new Error(
-      `[model consultar colunas] Erro ao consultar colunas da tabela: ${e.message}`
+      `[model consultar colunas] Erro ao consultar colunas da tabela: ${e.message}`,
     );
   }
 }
@@ -194,9 +260,11 @@ export async function getColumnsFromTable(tabela) {
  * Insere/Upserta 1 linha.
  */
 export async function insertRegisterinTable(tabela, linhaTipada, colunas) {
-  let cols = colunas || await getColumnsFromTable(tabela);
+  let cols = colunas || (await getColumnsFromTable(tabela));
   if (!cols || cols.length === 0) {
-    throw new Error(`[model coleta de tipagem para insert] Tabela '${tabela}' não possui colunas válidas.`);
+    throw new Error(
+      `[model coleta de tipagem para insert] Tabela '${tabela}' não possui colunas válidas.`,
+    );
   }
 
   const { colunasSql, updateClause } = getInsertPieces(tabela, cols);
@@ -209,11 +277,14 @@ export async function insertRegisterinTable(tabela, linhaTipada, colunas) {
     ON DUPLICATE KEY UPDATE ${updateClause}
   `;
 
+
   try {
     const result = await query(sql, valores);
     return { result, linhaTipada };
   } catch (e) {
-    throw new Error(`[model insert] erro ao realizar a query de inserção do registro, erro: ${e.message}`);
+    throw new Error(
+      `[model insert] erro ao realizar a query de inserção do registro, erro: ${e.message}`,
+    );
   }
 }
 
@@ -225,14 +296,16 @@ export async function existsAnyCsvDateInTable(metadados, opts = {}) {
   if (Array.isArray(datas_csv)) {
     for (let i = 0; i < datas_csv.length; i++) {
       const d = datas_csv[i];
-      if (d && typeof d === "string" && d.length >= 10) uniq.add(d.slice(0, 10));
+      if (d && typeof d === "string" && d.length >= 10)
+        uniq.add(d.slice(0, 10));
     }
   }
   const dates = Array.from(uniq);
   if (dates.length === 0) return false;
 
   // 1) pré-cheque rápido por range (usa índice de data)
-  let min = dates[0], max = dates[0];
+  let min = dates[0],
+    max = dates[0];
   for (let i = 1; i < dates.length; i++) {
     const d = dates[i];
     if (d < min) min = d;
@@ -269,9 +342,9 @@ export async function existsAnyCsvDateInTable(metadados, opts = {}) {
   return false;
 }
 
-
 export async function deleteFromTable(opcoes) {
-  const { tabela, tabela_destino, mes, ano, dia, coluna_data, chunkSize } = opcoes;
+  const { tabela, tabela_destino, mes, ano, dia, coluna_data, chunkSize } =
+    opcoes;
   const nomeTabela = tabela || tabela_destino;
 
   if (!nomeTabela) {
@@ -279,28 +352,27 @@ export async function deleteFromTable(opcoes) {
   }
   if (!coluna_data) {
     try {
-      const colDb = await getDateColumnsFromTable(nomeTabela); 
+      const colDb = await getDateColumnsFromTable(nomeTabela);
       if (colDb) {
         addAviso(
           `[model delete] DELETE TOTAL BLOQUEADO: '${schema}.${nomeTabela}' possui coluna DATE ('${colDb}') no DB, mas coluna_data não veio nos metadados. ` +
-          `Provável CSV/metadados incompatíveis. Operação abortada para evitar perda de dados.`,
-          nomeTabela
+            `Provável CSV/metadados incompatíveis. Operação abortada para evitar perda de dados.`,
+          nomeTabela,
         );
         throw new Error(
-          `[model delete] DELETE TOTAL BLOQUEADO: tabela '${nomeTabela}' é periódica (DB tem DATE '${colDb}'), mas coluna_data está ausente.`
+          `[model delete] DELETE TOTAL BLOQUEADO: tabela '${nomeTabela}' é periódica (DB tem DATE '${colDb}'), mas coluna_data está ausente.`,
         );
       }
     } catch (e) {
-
       if (String(e?.message || "").includes("DELETE TOTAL BLOQUEADO")) throw e;
 
       addAviso(
         `[model delete] BLOQUEADO por segurança: falha ao verificar coluna DATE no DB antes de DELETE TOTAL em '${schema}.${nomeTabela}'. ` +
-        `Erro: ${e?.message || e}`,
-        nomeTabela
+          `Erro: ${e?.message || e}`,
+        nomeTabela,
       );
       throw new Error(
-        `[model delete] BLOQUEADO: não foi possível verificar se '${nomeTabela}' é cadastral antes do DELETE TOTAL.`
+        `[model delete] BLOQUEADO: não foi possível verificar se '${nomeTabela}' é cadastral antes do DELETE TOTAL.`,
       );
     }
 
@@ -310,7 +382,7 @@ export async function deleteFromTable(opcoes) {
       return result;
     } catch (e) {
       throw new Error(
-        `[model delete] Erro ao deletar dados da tabela '${nomeTabela}': ${e.message}`
+        `[model delete] Erro ao deletar dados da tabela '${nomeTabela}': ${e.message}`,
       );
     }
   }
@@ -318,7 +390,7 @@ export async function deleteFromTable(opcoes) {
   // =========================
   // Delete por período (tabela periódica)
   // =========================
-  const range = (ano && mes) ? computeDateRange({ ano, mes, dia }) : null;
+  const range = ano && mes ? computeDateRange({ ano, mes, dia }) : null;
   if (!range) {
     throw new Error(`[model delete] Mês/Ano inválidos para delete.`);
   }
@@ -327,12 +399,12 @@ export async function deleteFromTable(opcoes) {
 
   const idx = await query(
     `SHOW INDEX FROM \`${schema}\`.\`${nomeTabela}\` WHERE Column_name = ?`,
-    [coluna_data]
+    [coluna_data],
   );
   if (!idx || idx.length === 0) {
     addAviso(
       `coluna ${coluna_data} da tabela ${nomeTabela} sem índice. Sugerido: CREATE INDEX idx_${nomeTabela}_${coluna_data} ON ${nomeTabela}(${coluna_data});`,
-      nomeTabela
+      nomeTabela,
     );
   }
 
@@ -363,13 +435,11 @@ export async function deleteFromTable(opcoes) {
       return res;
     } catch (e) {
       throw new Error(
-        `[model delete] Erro ao deletar dados da tabela '${nomeTabela}': ${e.message}`
+        `[model delete] Erro ao deletar dados da tabela '${nomeTabela}': ${e.message}`,
       );
     }
   }
 }
-
-
 
 export async function getTiposFromTable(tabela) {
   const key = `${schema}.${tabela}`;
@@ -384,17 +454,17 @@ export async function getTiposFromTable(tabela) {
       WHERE TABLE_NAME = ?
         AND TABLE_SCHEMA = ?
     `,
-      [tabela, schema]
+      [tabela, schema],
     );
   } catch (e) {
     throw new Error(
-      `[model tipagem] Erro ao consultar tipos de colunas da tabela '${tabela}', erro: ${e.message}`
+      `[model tipagem] Erro ao consultar tipos de colunas da tabela '${tabela}', erro: ${e.message}`,
     );
   }
 
   if (!results || results.length === 0) {
     throw new Error(
-      `[model tipagem] Nenhuma coluna encontrada para a tabela '${tabela}'`
+      `[model tipagem] Nenhuma coluna encontrada para a tabela '${tabela}'`,
     );
   }
 
@@ -417,18 +487,28 @@ export async function getTiposFromTable(tabela) {
  * @param {Array<string>} colunas
  * @param {{ skipUpdateClause?: boolean }} opts  // <— NOVO (opcional)
  */
-export async function insertBatchInTable(tabela, linhasTipadas, colunas, opts = {}) {
+export async function insertBatchInTable(
+  tabela,
+  linhasTipadas,
+  colunas,
+  opts = {},
+) {
   if (!linhasTipadas || linhasTipadas.length === 0) {
     return { result: null, linhasTipadas: [] };
   }
 
-  let cols = colunas || await getColumnsFromTable(tabela);
+  let cols = colunas || (await getColumnsFromTable(tabela));
   if (!cols || cols.length === 0) {
-    throw new Error(`[model coleta de tipagem para insert] Tabela '${tabela}' não possui colunas válidas.`);
+    throw new Error(
+      `[model coleta de tipagem para insert] Tabela '${tabela}' não possui colunas válidas.`,
+    );
   }
 
   const { colunasSql, updateClause } = getInsertPieces(tabela, cols);
-  const { placeholders, flat } = buildMultiValuesPlaceholders(linhasTipadas, cols);
+  const { placeholders, flat } = buildMultiValuesPlaceholders(
+    linhasTipadas,
+    cols,
+  );
 
   // quando o fluxo já deletou o período (cadastro/substituir), dá pra omitir o UPDATE:
   const useUpdate = opts.skipUpdateClause ? false : true;
@@ -443,7 +523,9 @@ export async function insertBatchInTable(tabela, linhasTipadas, colunas, opts = 
     const result = await query(sql, flat);
     return { result, linhasTipadas };
   } catch (e) {
-    throw new Error(`[model insert batch] erro ao realizar a query de inserção do lote, erro: ${e.message}`);
+    throw new Error(
+      `[model insert batch] erro ao realizar a query de inserção do lote, erro: ${e.message}`,
+    );
   }
 }
 
@@ -503,8 +585,8 @@ export function expandTiposWithSchema(tipos, schemaMap) {
     if (!current) {
       out[col] = opts;
     } else if (typeof current === "string" && current === "decimal") {
-      out[col] = opts; 
-    } 
+      out[col] = opts;
+    }
   }
   return out;
 }
