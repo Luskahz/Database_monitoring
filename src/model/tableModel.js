@@ -247,7 +247,6 @@ export async function getColumnsFromTable(tabela) {
     });
 
     columnsCache.set(key, cols);
-    console.log(`[Schema] ${tabela} insertables ->`, cols);
     return cols;
   } catch (e) {
     throw new Error(
