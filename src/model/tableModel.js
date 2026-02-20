@@ -9,6 +9,7 @@ const schemaCache = new Map();
 const columnsCache = new Map();
 const tiposCache = new Map();
 const dateColCache = new Map();
+const generatedDateColCache = new Map();
 
 /* -------------------- Mapa de meses -------------------- */
 const meses = {
@@ -175,31 +176,93 @@ export async function getAllRegistersFromTable(tabela) {
 
 export async function getDateColumnsFromTable(tabela) {
   const key = `${schema}.${tabela}`;
-  if (dateColCache.has(key)) return dateColCache.get(key);
+
+  console.log("[getDateColumnsFromTable] INICIO");
+  console.log("  schema:", schema);
+  console.log("  tabela recebida:", tabela);
+  console.log("  cacheKey:", key);
+
+  if (dateColCache.has(key)) {
+    const cached = dateColCache.get(key);
+    console.log("  >> CACHE HIT:", cached);
+    return cached;
+  }
+
   try {
-    const results = await query(
+    console.log("  >> Verificando existência da tabela...");
+
+    const tableCheck = await query(
       `
-      SELECT COLUMN_NAME
-      FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_NAME = ?
-        AND TABLE_SCHEMA = ?
-        AND DATA_TYPE = 'date'
-    `,
-      [tabela, schema],
+      SELECT TABLE_NAME
+      FROM INFORMATION_SCHEMA.TABLES
+      WHERE TABLE_SCHEMA = ?
+        AND TABLE_NAME = ?
+      `,
+      [schema, tabela],
     );
-    const col = results.length > 0 ? results[0].COLUMN_NAME : null;
+
+    console.log("  >> TABLE CHECK:", tableCheck);
+
+    if (!tableCheck || tableCheck.length === 0) {
+      throw new Error(
+        `[getDateColumnsFromTable] Tabela '${schema}.${tabela}' não existe no banco.`,
+      );
+    }
+
+    console.log("  >> Buscando todas as colunas...");
+
+    const allColumns = await query(
+      `
+      SELECT COLUMN_NAME, DATA_TYPE
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = ?
+        AND TABLE_NAME = ?
+      `,
+      [schema, tabela],
+    );
+
+    if (!allColumns || allColumns.length === 0) {
+      throw new Error(
+        `[getDateColumnsFromTable] Tabela '${schema}.${tabela}' existe mas não possui colunas.`,
+      );
+    }
+
+    console.log("  >> TOTAL COLUNAS:", allColumns.length);
+
+    const dateColumns = allColumns.filter((c) =>
+      ["date", "datetime", "timestamp"].includes(
+        String(c.DATA_TYPE).toLowerCase(),
+      ),
+    );
+
+    console.log("  >> COLUNAS DE DATA ENCONTRADAS:", dateColumns);
+
+    const col = dateColumns.length > 0 ? dateColumns[0].COLUMN_NAME : null;
+
+    console.log("  >> COLUNA DATA FINAL:", col);
+
+    // Só cacheia resultado válido estruturalmente
     dateColCache.set(key, col);
+
+    console.log("  >> CACHE SET:", key, "=>", col);
+    console.log("[getDateColumnsFromTable] FIM\n");
+
     return col;
   } catch (e) {
+    console.error("[getDateColumnsFromTable] ERRO:", e);
     throw new Error(
-      `[Model dataColun] Erro ao consultar colunas de data: ${e.message}`,
+      `[Model dataColun] Falha estrutural ao validar tabela '${schema}.${tabela}': ${e.message}`,
     );
   }
 }
 
 export async function getGeneratedDateColumnsFromTable(tabela) {
   const key = `${schema}.${tabela}`;
-  if (dateColCache.has(key)) return dateColCache.get(key);
+
+  if (generatedDateColCache.has(key)) {
+    return generatedDateColCache.get(key);
+  }
+
   try {
     const results = await query(
       `
@@ -209,15 +272,18 @@ export async function getGeneratedDateColumnsFromTable(tabela) {
         AND TABLE_SCHEMA = ?
         AND DATA_TYPE = 'date'
         AND EXTRA LIKE '%GENERATED%';
-    `,
+      `,
       [tabela, schema],
     );
+
     const col = results.length > 0 ? results[0].COLUMN_NAME : null;
-    dateColCache.set(key, col);
+
+    generatedDateColCache.set(key, col);
+
     return col;
   } catch (e) {
     throw new Error(
-      `[Model dataColun] Erro ao consultar colunas de data: ${e.message}`,
+      `[Model dataColun] Erro ao consultar colunas GENERATED de data: ${e.message}`,
     );
   }
 }
@@ -275,7 +341,6 @@ export async function insertRegisterinTable(tabela, linhaTipada, colunas) {
     VALUES ${placeholdersRow}
     ON DUPLICATE KEY UPDATE ${updateClause}
   `;
-
 
   try {
     const result = await query(sql, valores);
