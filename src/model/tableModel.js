@@ -229,10 +229,8 @@ export async function getDateColumnsFromTable(tabela) {
 
     console.log("  >> TOTAL COLUNAS:", allColumns.length);
 
-    const dateColumns = allColumns.filter((c) =>
-      ["date", "datetime", "timestamp"].includes(
-        String(c.DATA_TYPE).toLowerCase(),
-      ),
+    const dateColumns = allColumns.filter(
+      (c) => String(c.DATA_TYPE).toLowerCase() === "date",
     );
 
     console.log("  >> COLUNAS DE DATA ENCONTRADAS:", dateColumns);
