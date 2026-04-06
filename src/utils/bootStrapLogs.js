@@ -1,7 +1,10 @@
 import { startLogger, logLine, logActivity } from "../middleware/logger.js";
+import { setupConsoleMirror } from "./consoleMirror.js";
 import { silencePapaDuplicatesStart } from "./silencePapa.js";
 
 const GLOBAL_CONTEXT = "__global";
+
+setupConsoleMirror();
 
 try {
   startLogger(GLOBAL_CONTEXT);
