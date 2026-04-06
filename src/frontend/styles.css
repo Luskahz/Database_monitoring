@@ -262,6 +262,57 @@ select {
   gap: 12px;
 }
 
+.console-box {
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(160, 188, 216, 0.14);
+  background: #050b14;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.console-box-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(160, 188, 216, 0.12);
+  background: linear-gradient(180deg, rgba(10, 18, 29, 0.96), rgba(7, 12, 20, 0.96));
+}
+
+.console-box-title,
+.console-box-path {
+  font-family: "IBM Plex Mono", Consolas, monospace;
+  font-size: 0.84rem;
+}
+
+.console-box-title {
+  color: #f2f7ff;
+}
+
+.console-box-path {
+  color: #93a9c3;
+  text-align: right;
+  word-break: break-all;
+}
+
+.console-box-body {
+  max-height: 560px;
+  overflow: auto;
+  padding: 16px;
+  background:
+    linear-gradient(180deg, rgba(7, 12, 20, 0.98), rgba(3, 7, 13, 1)),
+    #050b14;
+}
+
+.console-box-pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #eff6ff;
+  font: 0.92rem/1.55 "IBM Plex Mono", Consolas, monospace;
+}
+
 .log-meta {
   display: flex;
   gap: 10px;
@@ -428,7 +479,8 @@ select {
 
   .panel-head,
   .queue-item-head,
-  .metric-row {
+  .metric-row,
+  .console-box-head {
     flex-direction: column;
     align-items: flex-start;
   }

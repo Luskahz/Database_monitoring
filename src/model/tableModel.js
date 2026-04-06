@@ -177,20 +177,12 @@ export async function getAllRegistersFromTable(tabela) {
 export async function getDateColumnsFromTable(tabela) {
   const key = `${schema}.${tabela}`;
 
-  console.log("[getDateColumnsFromTable] INICIO");
-  console.log("  schema:", schema);
-  console.log("  tabela recebida:", tabela);
-  console.log("  cacheKey:", key);
-
   if (dateColCache.has(key)) {
     const cached = dateColCache.get(key);
-    console.log("  >> CACHE HIT:", cached);
     return cached;
   }
 
   try {
-    console.log("  >> Verificando existência da tabela...");
-
     const tableCheck = await query(
       `
       SELECT TABLE_NAME
@@ -201,7 +193,6 @@ export async function getDateColumnsFromTable(tabela) {
       [schema, tabela],
     );
 
-    console.log("  >> TABLE CHECK:", tableCheck);
 
     if (!tableCheck || tableCheck.length === 0) {
       throw new Error(
@@ -209,7 +200,6 @@ export async function getDateColumnsFromTable(tabela) {
       );
     }
 
-    console.log("  >> Buscando todas as colunas...");
 
     const allColumns = await query(
       `
@@ -227,24 +217,15 @@ export async function getDateColumnsFromTable(tabela) {
       );
     }
 
-    console.log("  >> TOTAL COLUNAS:", allColumns.length);
 
     const dateColumns = allColumns.filter(
       (c) => String(c.DATA_TYPE).toLowerCase() === "date",
     );
 
-    console.log("  >> COLUNAS DE DATA ENCONTRADAS:", dateColumns);
-
     const col = dateColumns.length > 0 ? dateColumns[0].COLUMN_NAME : null;
 
-    console.log("  >> COLUNA DATA FINAL:", col);
 
-    // Só cacheia resultado válido estruturalmente
     dateColCache.set(key, col);
-
-    console.log("  >> CACHE SET:", key, "=>", col);
-    console.log("[getDateColumnsFromTable] FIM\n");
-
     return col;
   } catch (e) {
     console.error("[getDateColumnsFromTable] ERRO:", e);

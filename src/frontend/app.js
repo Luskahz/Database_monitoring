@@ -200,6 +200,31 @@
     );
   }
 
+  function ConsoleTextBox(props) {
+    const lines = props.lines || [];
+    const text = lines
+      .map(function mapLine(line) {
+        return line.raw || line.message || "";
+      })
+      .join("\n");
+
+    return h(
+      "div",
+      { className: "console-box" },
+      h(
+        "div",
+        { className: "console-box-head" },
+        h("span", { className: "console-box-title" }, "Console do processo"),
+        props.path ? h("span", { className: "console-box-path" }, props.path) : null
+      ),
+      h(
+        "div",
+        { className: "console-box-body" },
+        h("pre", { className: "console-box-pre" }, text || "Sem linhas no console para exibir.")
+      )
+    );
+  }
+
   function App() {
     const [health, setHealth] = useState(null);
     const [queueResponse, setQueueResponse] = useState(null);
@@ -536,18 +561,23 @@
                 )
               ),
             },
-            filteredLines.length
-              ? h(
-                  "div",
-                  { className: "log-list" },
-                  filteredLines.map(function renderLine(line) {
-                    return h(LogLine, { key: line.id, line: line });
-                  })
-                )
-              : h(EmptyState, {
-                  title: "Sem linhas para exibir",
-                  description: "Ajuste o filtro ou aguarde novas entradas em " + currentLogSource.label + ".",
+            selectedLogSource === "console"
+              ? h(ConsoleTextBox, {
+                  lines: filteredLines,
+                  path: currentLogResponse && currentLogResponse.path,
                 })
+              : filteredLines.length
+                ? h(
+                    "div",
+                    { className: "log-list" },
+                    filteredLines.map(function renderLine(line) {
+                      return h(LogLine, { key: line.id, line: line });
+                    })
+                  )
+                : h(EmptyState, {
+                    title: "Sem linhas para exibir",
+                    description: "Ajuste o filtro ou aguarde novas entradas em " + currentLogSource.label + ".",
+                  })
           ),
           h(
             Panel,
