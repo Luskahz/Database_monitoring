@@ -1,0 +1,67 @@
+:root {
+  color-scheme: dark;
+  --bg: #050816;
+  --text: #d7f7db;
+  --muted: #8da39a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+}
+
+body {
+  font-family: Consolas, "Cascadia Mono", "Lucida Console", monospace;
+  color: var(--text);
+}
+
+.console-shell {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(14, 24, 33, 0.34), rgba(5, 8, 22, 0.96)),
+    #050816;
+}
+
+.console-output {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  padding: 20px 24px;
+  border: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.45;
+  font-size: 14px;
+  color: var(--text);
+  background: transparent;
+}
+
+.console-output::selection {
+  color: #04110a;
+  background: #8cffaa;
+}
+
+.console-output::-webkit-scrollbar {
+  width: 12px;
+}
+
+.console-output::-webkit-scrollbar-track {
+  background: rgba(141, 163, 154, 0.08);
+}
+
+.console-output::-webkit-scrollbar-thumb {
+  background: rgba(140, 255, 170, 0.22);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}

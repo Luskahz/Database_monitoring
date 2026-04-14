@@ -1,22 +1,67 @@
 import cliProgress from "cli-progress";
+import process from "node:process";
 
-export const multiBar = new cliProgress.MultiBar(
-  {
-    clearOnComplete: false,
-    hideCursor: true,
-    format: "[{filename} - {ano}] → [{bar}] {percentage}% | [{value}/{total} {tabela}] {status}",
-    barCompleteChar: "\u2588",
-    barIncompleteChar: "\u2591",
-    autopadding: false,
-    stopOnComplete: false,
-    fps: 5, 
-  },
-  cliProgress.Presets.shades_grey
+const forcePlainProgress = ["1", "true", "yes", "sim"].includes(
+  String(process.env.PROGRESS_PLAIN_MODE || "").trim().toLowerCase()
 );
+const supportsInteractiveBars = !forcePlainProgress && Boolean(process.stdout?.isTTY);
 
+export const multiBar = supportsInteractiveBars
+  ? new cliProgress.MultiBar(
+      {
+        clearOnComplete: false,
+        hideCursor: true,
+        format: "[{filename} - {ano}] -> [{bar}] {percentage}% | [{value}/{total} {tabela}] {status}",
+        barCompleteChar: "\u2588",
+        barIncompleteChar: "\u2591",
+        autopadding: false,
+        stopOnComplete: false,
+        fps: 5,
+      },
+      cliProgress.Presets.shades_grey
+    )
+  : null;
 
-const barras = new Map(); 
+const barras = new Map();
 const pendentes = new Map();
+
+function normalizeMeta(meta = {}) {
+  return {
+    filename: meta.filename || "arquivo",
+    tabela: meta.tabela || "tabela-desconhecida",
+    ano: meta.ano ?? "-",
+  };
+}
+
+function buildPlainLine(st) {
+  const total = Math.max(0, Number(st.total) || 0);
+  const value = Math.max(0, Math.min(total || 0, Number(st.value) || 0));
+  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+  const status = st.status ? ` ${st.status}` : "";
+  return `[${st.meta.filename} - ${st.meta.ano}] -> ${pct}% | [${value}/${total} ${st.meta.tabela}]${status}`;
+}
+
+function shouldEmitPlainProgress(st, mudouStatus) {
+  const total = Math.max(0, Number(st.total) || 0);
+  const value = Math.max(0, Math.min(total || 0, Number(st.value) || 0));
+  const pct = total > 0 ? Math.floor((value / total) * 100) : 0;
+  const crossedStep =
+    st.lastLoggedPercent == null ||
+    pct >= st.lastLoggedPercent + 5 ||
+    pct === 0 ||
+    pct === 100;
+
+  return mudouStatus || crossedStep;
+}
+
+function emitPlainProgress(st, mudouStatus = false) {
+  if (!shouldEmitPlainProgress(st, mudouStatus)) return;
+  const total = Math.max(0, Number(st.total) || 0);
+  const value = Math.max(0, Math.min(total || 0, Number(st.value) || 0));
+  const pct = total > 0 ? Math.floor((value / total) * 100) : 0;
+  st.lastLoggedPercent = pct;
+  console.log(buildPlainLine(st));
+}
 
 function flush(id) {
   const p = pendentes.get(id);
@@ -26,7 +71,6 @@ function flush(id) {
   const st = barras.get(id);
   if (!st) return;
 
-
   const novo = Math.max(0, Math.min(st.total, st.value + (p.delta || 0)));
   const mudouValor = novo !== st.value;
   const mudouStatus = typeof p.status === "string" && p.status !== st.status;
@@ -34,14 +78,21 @@ function flush(id) {
   if (mudouValor || mudouStatus) {
     st.value = novo;
     if (mudouStatus) st.status = p.status;
-    st.bar.update(st.value, mudouStatus ? { status: st.status } : undefined);
+
+    if (supportsInteractiveBars) {
+      st.bar.update(st.value, {
+        ...st.meta,
+        status: st.status,
+      });
+    } else {
+      emitPlainProgress(st, mudouStatus);
+    }
   }
 }
 
 function schedule(id) {
   const p = pendentes.get(id);
   if (!p || p.timer) return;
-  // agrega por ~50ms (ajuste fino)
   p.timer = setTimeout(() => {
     p.timer = null;
     flush(id);
@@ -50,15 +101,28 @@ function schedule(id) {
 
 export function iniciarBarra(id, total, filename, tabela, ano) {
   if (barras.has(id)) return;
-  const bar = multiBar.create(total, 0, { filename, tabela, ano, status: "" });
-  barras.set(id, { bar, total, value: 0, status: "" });
+
+  const meta = normalizeMeta({ filename, tabela, ano });
+  const state = {
+    bar: supportsInteractiveBars ? multiBar.create(total, 0, { ...meta, status: "" }) : null,
+    total,
+    value: 0,
+    status: "",
+    meta,
+    lastLoggedPercent: null,
+  };
+
+  barras.set(id, state);
+
+  if (!supportsInteractiveBars) {
+    emitPlainProgress(state, true);
+  }
 }
 
 export function atualizarBarra(id, valor = 1, status) {
   const st = barras.get(id);
   if (!st) return;
 
-  // agrega updates: 1 render por ciclo
   let p = pendentes.get(id);
   if (!p) {
     p = { delta: 0, status: undefined, timer: null };
@@ -73,14 +137,18 @@ export function atualizarBarra(id, valor = 1, status) {
 export function setTotalBarra(id, novoTotal) {
   const st = barras.get(id);
   if (!st) return;
+
   st.total = Math.max(0, Number(novoTotal) || 0);
-  // garante consistência se total diminuiu
+
   if (st.value > st.total) {
     st.value = st.total;
+  }
+
+  if (supportsInteractiveBars) {
     st.bar.setTotal(st.total);
-    st.bar.update(st.value, { status: st.status });
+    st.bar.update(st.value, { ...st.meta, status: st.status });
   } else {
-    st.bar.setTotal(st.total);
+    emitPlainProgress(st, true);
   }
 }
 
@@ -88,17 +156,19 @@ export async function finalizarBarra(id) {
   const st = barras.get(id);
   if (!st) return;
 
-  // força aplicar o que estiver pendente
   flush(id);
 
-  // refresh final
-  st.bar.update(st.value, { status: st.status });
-  await new Promise((r) => setTimeout(r, 10));
+  if (supportsInteractiveBars) {
+    st.bar.update(st.value, { ...st.meta, status: st.status });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    st.bar.stop();
+  } else {
+    emitPlainProgress(st, true);
+  }
 
-  st.bar.stop();
   barras.delete(id);
 
-  if (barras.size === 0) {
+  if (supportsInteractiveBars && barras.size === 0) {
     multiBar.stop();
   }
 }
@@ -108,11 +178,10 @@ export function isBarraAtiva() {
 }
 
 export function logBarra(mensagem) {
-  // imprime acima das barras sem quebrar layout
-  if (typeof multiBar.interrupt === "function") {
+  if (supportsInteractiveBars && typeof multiBar.interrupt === "function") {
     multiBar.interrupt(mensagem);
   } else {
-    multiBar.log(mensagem);
+    console.log(mensagem);
   }
 }
 

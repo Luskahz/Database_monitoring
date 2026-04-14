@@ -33,6 +33,10 @@ const defaultActivityTailBytes = toNumber(
   process.env.UI_ACTIVITY_TAIL_BYTES,
   256 * 1024
 );
+const defaultConsoleTailBytes = toNumber(
+  process.env.UI_CONSOLE_TAIL_BYTES,
+  1024 * 1024
+);
 const uiRefreshMs = toNumber(process.env.UI_REFRESH_MS, 5000);
 
 function describeError(err) {
@@ -107,6 +111,44 @@ async function readTailLines(
   } catch (err) {
     if (err?.code === "ENOENT") {
       return { exists: false, truncated: false, size: 0, lines: [] };
+    }
+    throw err;
+  } finally {
+    await handle?.close().catch(() => {});
+  }
+}
+
+async function readTailText(
+  filePath,
+  { maxBytes = defaultConsoleTailBytes } = {}
+) {
+  let handle;
+  try {
+    const stats = await fs.stat(filePath);
+    const start = Math.max(0, stats.size - maxBytes);
+    const length = Math.max(0, stats.size - start);
+    const buffer = Buffer.alloc(length);
+
+    handle = await fs.open(filePath, "r");
+    await handle.read(buffer, 0, length, start);
+
+    let text = buffer.toString("utf8");
+    if (start > 0) {
+      const firstBreak = text.indexOf("\n");
+      if (firstBreak >= 0) {
+        text = text.slice(firstBreak + 1);
+      }
+    }
+
+    return {
+      exists: true,
+      truncated: start > 0,
+      size: stats.size,
+      text,
+    };
+  } catch (err) {
+    if (err?.code === "ENOENT") {
+      return { exists: false, truncated: false, size: 0, text: "" };
     }
     throw err;
   } finally {
@@ -301,7 +343,11 @@ process.on("uncaughtException", (err) => {
 
 app.use("/assets", express.static(frontendDir, { extensions: ["html"] }));
 
-app.get(["/", "/dashboard"], (_req, res) => {
+app.get(["/", "/console"], (_req, res) => {
+  res.sendFile(path.join(frontendDir, "console.html"));
+});
+
+app.get(["/dashboard", "/legacy-dashboard"], (_req, res) => {
   res.sendFile(path.join(frontendDir, "index.html"));
 });
 
@@ -368,6 +414,29 @@ app.get("/api/queue", async (_req, res, next) => {
 app.get("/api/activity", createLogEndpoint(activityLogPath));
 app.get("/api/global-log", createLogEndpoint(globalLogPath));
 app.get("/api/console-log", createLogEndpoint(consoleLogPath));
+app.get("/api/console-stream", async (req, res, next) => {
+  try {
+    const maxBytes = clampNumber(
+      req.query.bytes,
+      64 * 1024,
+      4 * 1024 * 1024,
+      defaultConsoleTailBytes
+    );
+    const result = await readTailText(consoleLogPath, { maxBytes });
+
+    noStore(res);
+    res.json({
+      exists: result.exists,
+      truncated: result.truncated,
+      size: result.size,
+      path: consoleLogPath,
+      refreshIntervalMs: uiRefreshMs,
+      text: result.text,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 app.use((err, _req, res, _next) => {
   const detail = describeError(err);
