@@ -122,8 +122,8 @@ export async function startMonitoring() {
     persistent: true,
     ignoreInitial: true,
     usePolling: true,
-    interval: 10000, // 10 segundos entre varreduras
-    binaryInterval: 10000,
+    interval: 8000, // 10 segundos entre varreduras
+    binaryInterval: 8000,
     depth: 7, // suficiente pro seu nível
     alwaysStat: false, // evita chamadas extras de fs.stat()
     atomic: true,
