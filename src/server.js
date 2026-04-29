@@ -27,7 +27,18 @@ const globalLogPath = path.resolve(process.cwd(), "loggers", "Logger___global.tx
 const consoleLogPath = CONSOLE_LOG_PATH;
 
 const app = express();
-const port = toNumber(process.env.PORT, 3306);
+
+function readServerPort() {
+  const parsedPort = toNumber(process.env.PORT, 4001);
+
+  if (!Number.isInteger(parsedPort) || parsedPort <= 0 || parsedPort > 65535) {
+    throw new Error(`PORT inválida para database-monitoring: ${process.env.PORT}`);
+  }
+
+  return parsedPort;
+}
+const port = readServerPort();
+
 const defaultActivityLines = toNumber(process.env.UI_ACTIVITY_LINES, 200);
 const defaultActivityTailBytes = toNumber(
   process.env.UI_ACTIVITY_TAIL_BYTES,

@@ -246,11 +246,11 @@
       async function load() {
         try {
           const responses = await Promise.all([
-            fetchJson("/api/health"),
-            fetchJson("/api/queue"),
-            fetchJson("/api/activity?limit=" + activityLimit),
-            fetchJson("/api/global-log?limit=" + activityLimit),
-            fetchJson("/api/console-log?limit=" + activityLimit),
+            fetchJson("api/health"),
+            fetchJson("api/queue"),
+            fetchJson("api/activity?limit=" + activityLimit),
+            fetchJson("api/global-log?limit=" + activityLimit),
+            fetchJson("api/console-log?limit=" + activityLimit),
           ]);
 
           if (cancelled) return;

@@ -18,7 +18,7 @@
   }
 
   async function fetchConsole() {
-    const response = await fetch(`/api/console-stream?bytes=${MAX_BYTES}`, {
+    const response = await fetch(`api/console-stream?bytes=${MAX_BYTES}`, {
       headers: {
         Accept: "application/json",
       },
