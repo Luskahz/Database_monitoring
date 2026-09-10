@@ -39,8 +39,6 @@ pool.on("connection", async (conn) => {
         @@collation_connection AS collation_connection
     `);
 
-    console.log("[DB CHARSET]", rows);
-
     await promiseConn.query(
       "SET SESSION wait_timeout = 1800"
     );
