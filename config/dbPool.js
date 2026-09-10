@@ -24,14 +24,28 @@ export const pool = mysql.createPool({
   keepAliveInitialDelay: 0,
 });
 
-pool.on("connection", (conn) => {
-  if (typeof conn.promise === "function") {
-    conn
-      .promise()
-      .query("SET SESSION wait_timeout = 1800")
-      .catch(() => {});
-  } else {
-    conn.query("SET SESSION wait_timeout = 1800", () => {});
+pool.on("connection", async (conn) => {
+  try {
+    const promiseConn =
+      typeof conn.promise === "function"
+        ? conn.promise()
+        : conn;
+
+    const [rows] = await promiseConn.query(`
+      SELECT
+        @@character_set_client AS character_set_client,
+        @@character_set_connection AS character_set_connection,
+        @@character_set_results AS character_set_results,
+        @@collation_connection AS collation_connection
+    `);
+
+    console.log("[DB CHARSET]", rows);
+
+    await promiseConn.query(
+      "SET SESSION wait_timeout = 1800"
+    );
+  } catch (err) {
+    console.error("[DB CONNECTION INIT]", err);
   }
 });
 
