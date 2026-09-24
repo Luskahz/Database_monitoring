@@ -587,7 +587,10 @@ function parseDateTime(value, contexto) {
 
 // ===== Optimized parseTime (mesma lógica/saída) =====
 function parseTime(value, contexto) {
-  const str = String(value).trim();
+  const str = String(value)
+    .trim()
+    .replace(RE_UNICODE_HYPHENS, "-");
+
   const m = str.match(RE_TIME_HH_MM_SS_OPT);
   if (!m) {
     addAviso(
@@ -597,15 +600,15 @@ function parseTime(value, contexto) {
     return null;
   }
 
-  const [, hStr, mStr, sStr] = m;
-  const h = parseInt(hStr, 10);
-  const min = parseInt(mStr, 10);
-  const sec = sStr !== undefined ? parseInt(sStr, 10) : 0;
+  const [, sign, hStr, mStr, sStr] = m;
+  const h = Number.parseInt(hStr, 10);
+  const min = Number.parseInt(mStr, 10);
+  const sec = sStr !== undefined ? Number.parseInt(sStr, 10) : 0;
 
   if (
     !Number.isFinite(h) ||
     h < 0 ||
-    h > 999 ||
+    h > 838 ||
     !Number.isFinite(min) ||
     min < 0 ||
     min > 59 ||
@@ -620,11 +623,11 @@ function parseTime(value, contexto) {
     return null;
   }
 
-  // HH pode ter 2+ dígitos (se >99 mantém como está)
+  // MySQL TIME aceita duração negativa e horas acumuladas até 838.
   const hh = String(h).length >= 2 ? String(h) : pad2(h);
   const mm = pad2(min);
   const ss = pad2(sec);
-  return `${hh}:${mm}:${ss}`;
+  return `${sign}${hh}:${mm}:${ss}`;
 }
 
 // ===== Igual ao seu (sem mudança de lógica) =====
