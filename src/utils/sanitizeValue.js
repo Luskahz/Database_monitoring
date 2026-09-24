@@ -41,7 +41,7 @@ const RE_DT_DDMMYYYY_HHMMSS = /^(\d{2})(\d{2})(\d{4}) (\d{2})(\d{2})(\d{2})$/;
 const RE_DT_BR_DASH_TIME =
   /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s*-\s*(\d{1,2}):(\d{2}):(\d{2})$/;
 
-const RE_TIME_HH_MM_SS_OPT = /^(\d{1,3})\s*:\s*(\d{1,2})(?:\s*:\s*(\d{1,2}))?$/;
+const RE_TIME_HH_MM_SS_OPT = /^(-?)(\d{1,3})\s*:\s*(\d{1,2})(?:\s*:\s*(\d{1,2}))?$/;
 
 export function sanitizeValue(value, tipoEsperado, contexto) {
   // caminho rápido p/ vazio
