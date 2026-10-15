@@ -14,12 +14,18 @@ import { metrics as pipelineMetrics } from "./utils/streamPipeline.js";
 import { getActiveFilesCount } from "./utils/withFileLifecycle.js";
 import { memoryGuard } from "./utils/memoryGuard.js";
 import { startWatchdog } from "./monitoring/watchdog.js";
+import {
+  createDeletionGuard,
+  MAX_DELETIONS,
+  WATCH_POLL_MS,
+} from "./monitoring/deletionGuard.js";
 import { setupGracefulShutdown } from "./utils/gracefulShutdown.js";
 import { endAllLoggers } from "./middleware/logger.js";
 import { shutdownPool } from "../config/dbPool.js";
 import isCsvFile from "./utils/isCsvFile.js";
 import {
   enqueueFileJob,
+  markJobComplete,
   updateDebounceSize,
   updateMetrics as updateQueueMetrics,
 } from "./utils/queueTracker.js";
@@ -29,11 +35,31 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const limit = pLimit(FILES_MAX_CONCURRENT);
 const bigLimit = pLimit(Math.min(FILES_MAX_CONCURRENT, 4));
 const debounceTimers = new Map();
+const deletionGuard = createDeletionGuard({
+  onBatch: (files) => {
+    for (const filePath of files) {
+      runWithDebounce(filePath, "deleted", deletedHandler);
+    }
+  },
+  onBlocked: (count) => {
+    const message = `[MONITOR] EXCLUSÃO EM MASSA BLOQUEADA: ${count} arquivos removidos (limite ${MAX_DELETIONS}). Nenhum arquivo deste lote será enviado para exclusão no banco. Exclusões automáticas bloqueadas até reiniciar o serviço; verifique o caminho monitorado antes de reiniciar.`;
+    console.error(message);
+    addErro(message);
+  },
+});
 
 function runWithDebounce(filePath, acao, handler) {
   const prev = debounceTimers.get(filePath);
   if (prev) clearTimeout(prev.timer);
   const timer = setTimeout(() => {
+    if (
+      acao === "deleted" &&
+      (deletionGuard.isBlocked() || fs.existsSync(filePath))
+    ) {
+      debounceTimers.delete(filePath);
+      updateDebounceSize(debounceTimers.size);
+      return;
+    }
     let chosen = limit;
     try {
       const stats = fs.statSync(filePath);
@@ -48,6 +74,16 @@ function runWithDebounce(filePath, acao, handler) {
     );
 
     chosen(() => {
+      if (
+        acao === "deleted" &&
+        (deletionGuard.isBlocked() || fs.existsSync(filePath))
+      ) {
+        markJobComplete(job, {
+          success: false,
+          message: "Exclusão cancelada pela proteção de remoções",
+        });
+        return;
+      }
       addInfo(
         `[MONITOR] Dispatching job id=${job.id} file=${filePath} action=${acao}`,
         filePath
@@ -122,8 +158,8 @@ export async function startMonitoring() {
     persistent: true,
     ignoreInitial: true,
     usePolling: true,
-    interval: 8000, // 10 segundos entre varreduras
-    binaryInterval: 8000,
+    interval: WATCH_POLL_MS,
+    binaryInterval: WATCH_POLL_MS,
     depth: 7, // suficiente pro seu nível
     alwaysStat: false, // evita chamadas extras de fs.stat()
     atomic: true,
@@ -139,18 +175,24 @@ export async function startMonitoring() {
   watcher
     .on("add", (filePath) => {
       if (!isCsvFile(filePath)) return;
+      deletionGuard.cancel(filePath);
       console.log(`🟢 Arquivo adicionado: ${filePath}`);
       runWithDebounce(filePath, "created", createdHandler);
     })
     .on("change", (filePath) => {
       if (!isCsvFile(filePath)) return;
+      deletionGuard.cancel(filePath);
       console.log(`🟡 Arquivo modificado: ${filePath}`);
       runWithDebounce(filePath, "modified", createdHandler);
     })
     .on("unlink", (filePath) => {
       if (!isCsvFile(filePath)) return;
       console.log(`🔴 Arquivo removido: ${filePath}`);
-      runWithDebounce(filePath, "deleted", deletedHandler);
+      const previous = debounceTimers.get(filePath);
+      if (previous) clearTimeout(previous.timer);
+      debounceTimers.delete(filePath);
+      updateDebounceSize(debounceTimers.size);
+      deletionGuard.add(filePath);
     })
     .on("error", (error) => {
       console.error(`❌ Erro no monitoramento: ${error}`);

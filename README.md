@@ -189,6 +189,14 @@ Servidor rodando na porta 3000
 
 Mensagens de erro (conexão, formato, etc.) aparecerão no console para facilitar o **debug**.
 
+### Proteção contra exclusão em massa
+
+As remoções de CSVs (incluindo `.csv.inf`) são agrupadas antes de entrar na fila de exclusão do banco. O lote aguarda **16 segundos sem novas remoções** (duas varreduras do monitor), além do debounce existente de 2 segundos. Até **35 arquivos distintos** por lote são permitidos. Ao detectar o **36º**, o lote inteiro é descartado antes da fila, um erro `EXCLUSÃO EM MASSA BLOQUEADA` é emitido no console e no log global, e as próximas exclusões automáticas ficam bloqueadas até reiniciar o serviço. Eventos repetidos do mesmo caminho contam uma vez; arquivos recriados durante a espera são retirados do lote.
+
+Após um bloqueio, verifique e restaure o caminho UNC antes de reiniciar. Os lotes bloqueados não são reenviados automaticamente. Inserções e atualizações continuam funcionando. O limite conta arquivos por lote observado, não linhas SQL nem exclusões já iniciadas em lotes anteriores; remoções separadas por mais de 16 segundos são lotes distintos.
+
+Validação isolada, sem acesso ao MySQL ou ao compartilhamento UNC (Node.js 22.3+): `npm test`.
+
 ---
 
 ## ⚙️ Lógica de Inserção de Dados
