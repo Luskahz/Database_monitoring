@@ -156,6 +156,32 @@ Diretorio_Monitorado/               📂 (pasta raiz monitorada)
 
 > **Atenção:** Mantenha os **nomes das colunas** nos CSVs **iguais** aos da tabela de destino (incluindo a **coluna de data** nos diários/mensais).
 
+### Carga anual: `tabela/AAAA.csv`
+
+Exemplo: `MONITOR_PATH/12_06_01/2025.csv`. O nome deve conter **somente quatro dígitos do ano**, de 1000 a 9998, seguido de `.csv` (extensão sem distinção de maiúsculas). O arquivo fica diretamente na pasta da tabela. `relatorio_2025.csv`, `2025.csv.inf`, `25.csv` e arquivos anuais dentro de subpastas são rejeitados. Os formatos mensal, diário e cadastral (`tabela/global/arquivo.csv`) continuam com a interpretação anterior.
+
+O CSV anual representa a **substituição completa do ano**: após a carga, datas daquele ano ausentes no CSV deixam de existir no banco. Não é necessário haver uma linha para cada dia, mas todos os registros fornecidos devem pertencer ao ano do nome. Outros anos são preservados. Evite manter arquivos anuais e mensais/diários ativos para o mesmo período: cada alteração substitui o período correspondente.
+
+Requisitos e proteções do fluxo anual:
+
+* A tabela de destino e `log_ingestao` devem existir e usar **InnoDB**. A tabela de destino deve ter **exatamente uma coluna `DATE`**; múltiplas colunas `DATE` são bloqueadas para não escolher uma data arbitrariamente. Uma coluna somente `DATETIME` não habilita este formato.
+* Todas as colunas graváveis devem constar no CSV, exceto `AUTO_INCREMENT`, que pode ser omitida. Cabeçalhos são normalizados como no legado; cabeçalhos vazios, duplicados ou desconhecidos são rejeitados. Colunas `GENERATED` são calculadas pelo MySQL; se a data for calculada, valida-se seu valor efetivo na tabela temporária.
+* CSV vazio, data nula/inválida/de outro ano, linha com quantidade errada de campos, erro de aspas, falha de conversão e conflito de chave cancelam a carga. Não há fallback que aceite somente parte das linhas nem UPSERT que possa alterar uma chave pertencente a outro ano.
+* Os dados são lidos em lotes com limite de memória e preparados em uma tabela temporária. O destino só é alterado após a validação completa. **DELETE do ano, INSERT e log de sucesso são confirmados na mesma transação**. Erros anteriores à confirmação causam rollback; falhas são registradas no logger/job do arquivo.
+* Logs de cargas anteriores daquele ano são preservados com `sucesso = 0` e motivo de substituição. Hashes desses logs não impedem uma nova ingestão mensal/diária após a anual.
+* A remoção de um arquivo anual segue a proteção de exclusões existente e só exclui o ano com caminho, nome, tabela e log de sucesso concordantes. Se o arquivo reaparecer enquanto aguarda a tabela, a exclusão é cancelada. A exclusão anual também é transacional.
+* Tabelas com triggers ou relações de entrada `ON DELETE CASCADE/SET NULL` são bloqueadas neste fluxo e exigem avaliação específica. O usuário SQL precisa de permissão para criar tabelas temporárias e executar as operações nas tabelas envolvidas.
+
+As mutações de arquivos da mesma tabela são serializadas dentro desta instância do serviço. Ao operar uma carga anual, mantenha apenas uma instância responsável pelo diretório/banco; escritores externos não participam dessa fila. Uma carga grande também exige espaço para a tabela temporária e para os registros de transação do MySQL.
+
+Validação automatizada: `npm test` executa os testes locais sem conexão real. Os testes de integração são opt-in e usam exclusivamente `127.0.0.1`, banco descartável `annual_test`, usuário `root` sem senha. **Nunca aponte a porta de testes para uma base de trabalho**. Exemplo com um MySQL descartável:
+
+```powershell
+$env:ANNUAL_TEST_MYSQL_PORT = 'PORTA_DO_MYSQL_DESCARTAVEL'
+$env:ANNUAL_TEST_FAST_PATH = '0' # repetir com '1'
+node --experimental-test-module-mocks --test test/annual-mysql.integration.test.js
+```
+
 ---
 
 ## ▶️ Execução do Projeto

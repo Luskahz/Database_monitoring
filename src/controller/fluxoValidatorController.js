@@ -20,6 +20,8 @@ function buildLogAction(meta) {
 }
 
 export default async function fluxoValidatorController(metadados, logData) {
+  // Logs antigos não comprovam o estado atual de um ano já substituído por outros arquivos.
+  if (metadados.periodicidade === "anual") return "reprocessar";
   const contexto = metadados.caminho_original;
   const nome = metadados.nome_arquivo;
   const tabela = metadados.tabela;

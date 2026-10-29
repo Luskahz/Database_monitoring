@@ -1,4 +1,5 @@
 import path from "path";
+import fs from "node:fs";
 import { deleteFromTable, buildRangeFromMetadados } from "../model/tableModel.js";
 import { atualizarBarra } from "../utils/progressBar.js";
 
@@ -26,6 +27,8 @@ import {
 } from "../../config/index.js";
 import { updateActiveJob } from "../utils/queueTracker.js";
 import { normalizeTotal } from "../utils/normalizeTotal.js";
+import { withTableJobLock } from "../utils/tableJobLock.js";
+import { importAnnualFile, deleteAnnualFile } from "../model/annualImport.js";
 
 // ⏱️ PERF
 import { startPerf, endPerf, perfWrap } from "../utils/perfLogger.js";
@@ -45,6 +48,15 @@ function buildLogAction(metadados) {
 }
 
 export async function manageInsertController(metadados, logData) {
+  return withTableJobLock(metadados.tabela, () => {
+    if (metadados.periodicidade === "anual") return importAnnualFile(metadados, logData);
+    // A decisão feita antes de aguardar a tabela pode ter sido invalidada por uma carga anual.
+    metadados.overlap = null;
+    return manageLegacyInsertController(metadados, logData);
+  });
+}
+
+async function manageLegacyInsertController(metadados, logData) {
   const contexto = metadados.caminho_original;
   const workPath = metadados.paths?.work || contexto;
   const nomeArquivo = metadados.nome_arquivo ?? "arquivo-desconhecido";
@@ -387,6 +399,15 @@ function logManageStrategy(contexto, payload, activityAction, contextTag = "") {
 }
 
 export async function managerDeleterController(logData) {
+  return withTableJobLock(logData.tabela || logData.tabela_destino, () => {
+    if (logData.caminho_original && fs.existsSync(logData.caminho_original)) {
+      throw new Error("Exclusão cancelada: o arquivo reapareceu enquanto aguardava a tabela.");
+    }
+    return logData.mes === "anual" ? deleteAnnualFile(logData) : managerLegacyDeleterController(logData);
+  });
+}
+
+async function managerLegacyDeleterController(logData) {
   const perfCtx = `${logData?.nome_arquivo ?? path.basename(logData?.caminho || logData?.caminho_original || "")}|${logData?.tabela || "-"}`;
   startPerf("delete.managerDeleterController", perfCtx);
 

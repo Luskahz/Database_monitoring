@@ -5,41 +5,27 @@ import { managerDeleterController } from "../managerDataController.js";
 import { withFileLifecycle } from "../../utils/withFileLifecycle.js";
 
 export default async function deletedHandler(filePath, acao, job) {
-  await withFileLifecycle(
-    filePath,
-    async () => {
-      let logData = {};
-      try {
-        const destino = destinoByFilePath(filePath);
-        try {
-          logData = await getLogWithFilePath(filePath);
-        if (!logData) {
-          addErro(`Nenhum registro de log encontrado para ${filePath} logica de exclusão travada`, filePath);
-          return;
-        }
-      } catch (e) {
-        addErro(`Erro ao extrair o logdata do banco, verifique o banco`, filePath);
+  await withFileLifecycle(filePath, async () => {
+    try {
+      const destino = destinoByFilePath(filePath);
+      const logData = await getLogWithFilePath(filePath);
+      if (!logData) throw new Error(`Nenhum registro de log encontrado para ${filePath}; exclusão bloqueada.`);
+      if (!logData.sucesso) throw new Error("Exclusão bloqueada: a carga deste arquivo falhou ou seu período já foi substituído.");
+      if (destino.periodicidade === "anual" && (!logData.sucesso || logData.mes !== "anual" ||
+          logData.tabela_destino !== destino.tabela_destino || String(logData.ano) !== destino.ano ||
+          logData.nome_arquivo !== destino.nome_arquivo)) {
+        throw new Error("[Anual] Exclusão bloqueada: log não comprova uma carga anual bem-sucedida deste arquivo.");
       }
-      if (acao) {
-        logData.acao = acao;
-      }
-
-      try {
-        addAviso("logica de exclusão dos dados iniciada...", filePath);
-        const resultado = await managerDeleterController(logData);
-        addAviso("logica de exclusão dos dados finalizada...", filePath);
-        if (resultado?.erro) {
-          addErro(`Erro durante managerDeleterController: ${resultado.mensagem || "Erro desconhecido"}`, filePath);
-          return;
-        }
-        await deleteLogByHash(logData);
-      } catch (e) {
-        addErro(`problema ao apagar o hash do banco, erro: ${e.message}`, filePath);
-      }
-    } catch (e) {
-      addErro(`Erro no deletedHandler, erro: ${e.message}, ${e.stack}`, filePath);
+      logData.caminho_original = filePath;
+      if (acao) logData.acao = acao;
+      addAviso("Lógica de exclusão dos dados iniciada...", filePath);
+      const resultado = await managerDeleterController(logData);
+      if (resultado?.erro) throw new Error(resultado.mensagem || "Erro durante exclusão.");
+      if (logData.mes !== "anual") await deleteLogByHash(logData);
+      addAviso("Lógica de exclusão dos dados finalizada...", filePath);
+    } catch (error) {
+      addErro(`Erro no deletedHandler: ${error.message}`, filePath);
+      throw error;
     }
-    },
-    { job, action: acao }
-  );
+  }, { job, action: acao });
 }

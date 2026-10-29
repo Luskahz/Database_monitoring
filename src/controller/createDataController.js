@@ -26,6 +26,8 @@ import {
   shortPath,
 } from "../middleware/logger.js";
 import { isRemotePath } from "../utils/ensureLocalStaging.js";
+import { annualDestination } from "../utils/annualLayout.js";
+import { loadAnnualTableDefinition } from "../model/annualImport.js";
 
 /* ---------- hot helpers ---------- */
 function isAllDigits(s) {
@@ -68,6 +70,8 @@ function buildLogAction(meta) {
     .join(" ");
 }
 export function destinoByFilePath(filePath) {
+  const annual = annualDestination(filePath);
+  if (annual) return annual;
   const { dir, base: fileName, name: baseNameNoExt } = path.parse(filePath);
   const [parent, grandParent, greatGrandParent] = tailDirs(dir);
   const fileNameLC = fileName.toLowerCase();
@@ -270,7 +274,7 @@ export async function createMetadadosController(filePath, action, opts = {}) {
       ? opts.workFilePath
       : filePath;
 
-  if (PIPELINE_FAST_PATH) {
+  if (PIPELINE_FAST_PATH || destino.periodicidade === "anual") {
     const { headBuf } = await readHeadOnce(workFilePath, 64 * 1024);
     const headSampleBytes = headBuf?.length ?? 0;
     let { encoding } = await detectEncoding({
@@ -319,6 +323,8 @@ export async function createMetadadosController(filePath, action, opts = {}) {
       getTiposFromTable(destino.tabela_destino),
       getDateColumnsFromTable(destino.tabela_destino),
     ]);
+    const annualDefinition = destino.periodicidade === "anual"
+      ? await loadAnnualTableDefinition(destino.tabela_destino) : null;
     addInfo(
       `[DEBUG metadados] destino.tabela_destino=${destino.tabela_destino} | insertable_cols=${JSON.stringify(colunasTabela)}`,
       filePath,
@@ -337,6 +343,7 @@ export async function createMetadadosController(filePath, action, opts = {}) {
       mes: destino.mes,
       dia: destino.dia,
       tabela: destino.tabela_destino,
+      ...(annualDefinition ? { periodicidade: "anual", annualDefinition } : {}),
 
       hash: null,
       encoding,
@@ -360,7 +367,14 @@ export async function createMetadadosController(filePath, action, opts = {}) {
       headersTabela: metadados.colunas_tabela,
     });
 
-    await ensureOverlapMetadata(metadados, filePath, action);
+    if (annualDefinition) {
+      metadados.coluna_data = annualDefinition.dateCol;
+      metadados.colunas_tabela = annualDefinition.columns;
+      metadados.tipos_esperados = annualDefinition.types;
+      metadados.range = buildRangeFromMetadados(metadados);
+    } else {
+      await ensureOverlapMetadata(metadados, filePath, action);
+    }
     return metadados;
   }
 

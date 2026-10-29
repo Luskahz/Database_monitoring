@@ -1,8 +1,7 @@
 import chokidar from "chokidar";
 import pLimit from "p-limit";
 import fs from "fs";
-import path, { dirname } from "path";
-import { fileURLToPath } from "url";
+import path from "path";
 
 import { FILES_MAX_CONCURRENT, STAGING_DIR } from "../config/index.js";
 
@@ -30,8 +29,8 @@ import {
   updateMetrics as updateQueueMetrics,
 } from "./utils/queueTracker.js";
 import { toNumber } from "./utils/normalizar.js";
+import { DEFAULT_MONITOR_PATH } from "./utils/annualLayout.js";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
 const limit = pLimit(FILES_MAX_CONCURRENT);
 const bigLimit = pLimit(Math.min(FILES_MAX_CONCURRENT, 4));
 const debounceTimers = new Map();
@@ -132,10 +131,7 @@ purgeInterval.unref?.();
 export async function startMonitoring() {
   const monitorPath =
     process.env.MONITOR_PATH ||
-    path.resolve(
-      __dirname,
-      "\\\\192.168.0.213\\Files\\Logistica\\0.DPO\\Diretórios_SQL"
-    );
+    DEFAULT_MONITOR_PATH;
 
   const awfStability = toNumber(process.env.AWF_STABILITY_MS, 2000);
   const awfPoll = toNumber(process.env.AWF_POLL_MS, 500);
