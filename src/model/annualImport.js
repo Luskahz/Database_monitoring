@@ -146,7 +146,6 @@ export async function importAnnualFile(meta, logData) {
               headers = headers.map((h) => byHeader.get(h)?.COLUMN_NAME ?? h);
               continue;
             }
-            if (row.length !== headers.length) throw new Error(`[Anual] Quantidade de campos inválida no registro ${count + 1}.`);
             const raw = Object.fromEntries(headers.map((h, i) => [h, row[i]?.trim() ?? ""]));
             const typed = sanitizeRow(raw, definition.types, context);
             for (const col of insertColumns) {

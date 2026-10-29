@@ -111,7 +111,6 @@ test("carga anual no MySQL isolado", { skip: !process.env.ANNUAL_TEST_MYSQL_PORT
     ["vazio", "", /vazio|cabeçalho/],
     ["apenas cabeçalho", "id;data;valor\n", /vazio|cabeçalho/],
     ["sem coluna de data", "id;valor\n1;x\n", /Data vazia/],
-    ["linha truncada", "id;data;valor\n1;2025-01-01\n", /Quantidade de campos/],
     ["CSV malformado", 'id;data;valor\n1;2025-01-01;"aberto', /CSV malformado/],
     ["chave duplicada no CSV", "id;data;valor\n1;2025-01-01;x\n1;2025-02-01;y\n", /Duplicate entry/],
     ["chave de outro ano", "id;data;valor\n10;2025-01-01;x\n", /Duplicate entry/],
@@ -119,15 +118,19 @@ test("carga anual no MySQL isolado", { skip: !process.env.ANNUAL_TEST_MYSQL_PORT
   ]) {
     await t.test(`bloqueia ${label} sem alterar o destino`, async () => { await reset(); await seed(); await expectPreserved(text, error); });
   }
-  await t.test("cabeçalhos vazios, repetidos e extras seguem a projeção do legado", async () => {
+  await t.test("cabeçalhos e linhas de tamanhos diferentes seguem a projeção do legado", async () => {
     await reset("id INT PRIMARY KEY, data DATE NOT NULL, valor VARCHAR(10), valor_2 VARCHAR(10), campo_em_branco VARCHAR(10), campo_sem_nome_2 VARCHAR(10)");
-    const { meta, log } = await content("id;data;valor;valor;;;extra\n1;2025-01-01;um;dois;ignorado;ignorado;ignorado\n");
+    const { meta, log } = await content("id;data;valor;valor;;;extra\n1;2025-01-01;um;dois;ignorado;ignorado;ignorado\n2;2025-02-01\n3;2025-03-01;tres;quatro;ignorado;ignorado;ignorado;excedente\n");
     await importAnnualFile(meta, log);
-    const [row] = await snapshot();
+    const [row, short, extra] = await snapshot();
     assert.equal(row.valor, "um");
     assert.equal(row.valor_2, "dois");
     assert.equal(row.campo_em_branco, null);
     assert.equal(row.campo_sem_nome_2, null);
+    assert.equal(short.valor, null);
+    assert.equal(short.valor_2, null);
+    assert.equal(extra.valor, "tres");
+    assert.equal(extra.valor_2, "quatro");
   });
   await t.test("erro tardio após vários lotes mantém os dados anteriores", async () => {
     await reset(); await seed();
