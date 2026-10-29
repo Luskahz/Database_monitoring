@@ -153,12 +153,6 @@ export async function importAnnualFile(meta, logData) {
                 throw new Error(`[Anual] Valor inválido na coluna '${col}', registro ${count + 1}.`);
               }
             }
-            if (!definition.generatedDate) {
-              const day = typed[definition.dateCol];
-              if (!day || day < start || day >= end) {
-                throw new Error(`[Anual] Data vazia, inválida ou fora de ${meta.ano} no registro ${count + 1}.`);
-              }
-            }
             const values = insertColumns.map((c) => typed[c] ?? null);
             const bytes = Buffer.byteLength(JSON.stringify(values), "utf8");
             if (batch.length && (batch.length >= rowCap || batchBytes + bytes > bytesCap)) await flush();
@@ -170,9 +164,6 @@ export async function importAnnualFile(meta, logData) {
       });
       await flush();
       if (!count) throw new Error("[Anual] CSV vazio ou somente com cabeçalho: substituição bloqueada.");
-      const invalid = await run(`SELECT 1 FROM ${temp} WHERE ${ident(definition.dateCol)} IS NULL
-        OR ${ident(definition.dateCol)} < ? OR ${ident(definition.dateCol)} >= ? LIMIT 1`, [start, end]);
-      if (invalid.length) throw new Error(`[Anual] Datas calculadas inválidas ou fora de ${meta.ano}.`);
       meta.total_linhas = count;
       meta.coluna_data = definition.dateCol;
       const cols = insertColumns.map(ident).join(",");

@@ -104,13 +104,11 @@ test("carga anual no MySQL isolado", { skip: !process.env.ANNUAL_TEST_MYSQL_PORT
     assert.equal(rows.find((r) => r.id === 1).valor, "novo");
   });
   for (const [label, text, error] of [
-    ["ano anterior", "id;data;valor\n1;2024-12-31;x\n", /fora de 2025/],
-    ["ano seguinte", "id;data;valor\n1;2026-01-01;x\n", /fora de 2025/],
-    ["data vazia", "id;data;valor\n1;;x\n", /Data vazia/],
+    ["data vazia em coluna NOT NULL do banco", "id;data;valor\n1;;x\n", /cannot be null/],
     ["data impossível", "id;data;valor\n1;2025-02-29;x\n", /Valor inválido/],
     ["vazio", "", /vazio|cabeçalho/],
     ["apenas cabeçalho", "id;data;valor\n", /vazio|cabeçalho/],
-    ["sem coluna de data", "id;valor\n1;x\n", /Data vazia/],
+    ["sem coluna de data obrigatória no banco", "id;valor\n1;x\n", /cannot be null/],
     ["CSV malformado", 'id;data;valor\n1;2025-01-01;"aberto', /CSV malformado/],
     ["chave duplicada no CSV", "id;data;valor\n1;2025-01-01;x\n1;2025-02-01;y\n", /Duplicate entry/],
     ["chave de outro ano", "id;data;valor\n10;2025-01-01;x\n", /Duplicate entry/],
@@ -118,6 +116,14 @@ test("carga anual no MySQL isolado", { skip: !process.env.ANNUAL_TEST_MYSQL_PORT
   ]) {
     await t.test(`bloqueia ${label} sem alterar o destino`, async () => { await reset(); await seed(); await expectPreserved(text, error); });
   }
+  await t.test("não compara datas das linhas com o ano do arquivo nem rejeita NULL permitido pelo banco", async () => {
+    await reset("id INT PRIMARY KEY, data DATE NULL, valor VARCHAR(10)"); await seed();
+    const { meta, log } = await content("id;data;valor\n1;2024-12-31;anterior\n2;2026-01-01;seguinte\n3;;sem data\n");
+    await importAnnualFile(meta, log);
+    const rows = await snapshot();
+    assert.deepEqual(rows.map((r) => r.id), [1, 2, 3, 10, 30]);
+    assert.equal(rows.find((r) => r.id === 3).data, null);
+  });
   await t.test("cabeçalhos e linhas de tamanhos diferentes seguem a projeção do legado", async () => {
     await reset("id INT PRIMARY KEY, data DATE NOT NULL, valor VARCHAR(10), valor_2 VARCHAR(10), campo_em_branco VARCHAR(10), campo_sem_nome_2 VARCHAR(10)");
     const { meta, log } = await content("id;data;valor;valor;;;extra\n1;2025-01-01;um;dois;ignorado;ignorado;ignorado\n2;2025-02-01\n3;2025-03-01;tres;quatro;ignorado;ignorado;ignorado;excedente\n");
@@ -134,8 +140,8 @@ test("carga anual no MySQL isolado", { skip: !process.env.ANNUAL_TEST_MYSQL_PORT
   });
   await t.test("erro tardio após vários lotes mantém os dados anteriores", async () => {
     await reset(); await seed();
-    const text = "id;data;valor\n" + Array.from({ length: 2001 }, (_, i) => `${i + 100};2025-01-01;ok\n`).join("") + "9999;2026-01-01;erro\n";
-    await expectPreserved(text, /fora de 2025/);
+    const text = "id;data;valor\n" + Array.from({ length: 2001 }, (_, i) => `${i + 100};2025-01-01;ok\n`).join("") + "9999;2025-01-01;valor muito longo\n";
+    await expectPreserved(text, /Data too long/);
   });
   await t.test("falha no log após DELETE/INSERT também desfaz a substituição", async () => {
     await reset(); await seed();
@@ -154,8 +160,8 @@ test("carga anual no MySQL isolado", { skip: !process.env.ANNUAL_TEST_MYSQL_PORT
     assert.equal(completed.at(-1).success, true);
     assert.equal((await query("SELECT id FROM log_ingestao WHERE sucesso = 1")).length, 1);
     const before = await snapshot();
-    await writeFile(file, "id;data;valor\n1;2026-01-01;erro\n");
-    await assert.rejects(createdHandler(file, "modified"), /fora de 2025/);
+    await writeFile(file, "id;data;valor\n1;2025-01-01;valor muito longo\n");
+    await assert.rejects(createdHandler(file, "modified"), /Data too long/);
     assert.equal(completed.at(-1).success, false);
     assert.deepEqual(await snapshot(), before);
     await assert.rejects(deletedHandler(file, "deleted"), /reapareceu/);
@@ -213,14 +219,13 @@ test("carga anual no MySQL isolado", { skip: !process.env.ANNUAL_TEST_MYSQL_PORT
       await assert.rejects(content("id;data;valor\n1;2025-01-01;x\n"), error);
     }
   });
-  await t.test("valida data GENERATED efetiva no staging", async () => {
+  await t.test("data GENERATED também não é comparada com o ano do arquivo", async () => {
     await reset("id INT PRIMARY KEY, raw_date VARCHAR(10), valor VARCHAR(10), data DATE GENERATED ALWAYS AS (cast(raw_date as date)) STORED");
     let fixture = await content("id;raw_date;valor\n1;2025-02-28;ok\n");
     await importAnnualFile(fixture.meta, fixture.log);
-    const before = await snapshot();
     fixture = await content("id;raw_date;valor\n2;2026-01-01;erro\n");
-    await assert.rejects(importAnnualFile(fixture.meta, fixture.log), /Datas calculadas/);
-    assert.deepEqual(await snapshot(), before);
+    await importAnnualFile(fixture.meta, fixture.log);
+    assert.deepEqual((await snapshot()).map((r) => r.id), [2]);
   });
   await t.test("DELETE anual genérico é bloqueado e unlink usa ano/log validados", async () => {
     await reset(); await seed();
