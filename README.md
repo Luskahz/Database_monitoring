@@ -158,7 +158,7 @@ Diretorio_Monitorado/               📂 (pasta raiz monitorada)
 
 ### Carga anual: `tabela/AAAA.csv`
 
-Exemplo: `MONITOR_PATH/12_06_01/2025.csv`. O nome deve conter **somente quatro dígitos do ano**, de 1000 a 9998, seguido de `.csv` (extensão sem distinção de maiúsculas). O arquivo fica diretamente na pasta da tabela. `relatorio_2025.csv`, `2025.csv.inf`, `25.csv` e arquivos anuais dentro de subpastas são rejeitados. Os formatos mensal, diário e cadastral (`tabela/global/arquivo.csv`) continuam com a interpretação anterior.
+Exemplos: `MONITOR_PATH/12_06_01/2025.csv` e `MONITOR_PATH/Financeiro/12_06_01/2026.csv`. O destino é identificado **do arquivo para cima**: a pasta imediatamente acima do CSV é a tabela; pastas anteriores são apenas organização e podem ter qualquer profundidade dentro de `MONITOR_PATH`. O nome deve conter **somente quatro dígitos do ano**, de 1000 a 9998, seguido de `.csv` (extensão sem distinção de maiúsculas). `relatorio_2025.csv`, `2025.csv.inf` e `25.csv` não habilitam carga anual. Uma pasta de ano ou `global` imediatamente acima do arquivo não é uma tabela anual válida. Os formatos mensal, diário e cadastral (`tabela/global/arquivo.csv`) continuam com a interpretação anterior.
 
 O CSV anual representa a **substituição completa do ano**: após a carga, datas daquele ano ausentes no CSV deixam de existir no banco. Não é necessário haver uma linha para cada dia, mas todos os registros fornecidos devem pertencer ao ano do nome. Outros anos são preservados. Evite manter arquivos anuais e mensais/diários ativos para o mesmo período: cada alteração substitui o período correspondente.
 

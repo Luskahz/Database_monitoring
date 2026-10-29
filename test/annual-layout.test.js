@@ -5,7 +5,7 @@ import { annualDestination, annualRange } from "../src/utils/annualLayout.js";
 import { withTableJobLock } from "../src/utils/tableJobLock.js";
 
 const root = path.resolve("__annual_monitor_root__");
-test("anual exige raiz/tabela/AAAA.csv e não aceita nomes parecidos", () => {
+test("anual exige arquivo AAAA.csv na pasta da tabela e não aceita nomes parecidos", () => {
   assert.deepEqual(annualDestination(path.join(root, "vendas", "2025.CSV"), root), {
     nome_arquivo: "2025.csv", ano: "2025", mes: "anual", dia: null,
     tabela_destino: "vendas", periodicidade: "anual",
@@ -17,9 +17,23 @@ test("anual exige raiz/tabela/AAAA.csv e não aceita nomes parecidos", () => {
     assert.throws(() => annualDestination(file, root), /\[Anual\]/);
   }
 });
+test("identifica a tabela pelo pai do arquivo, independente das categorias anteriores", () => {
+  for (const categories of [[], ["Financeiro"], ["Relatórios corporativos", "Financeiro"]]) {
+    assert.deepEqual(annualDestination(path.join(root, ...categories, "12_06_01", "2026.csv"), root), {
+      nome_arquivo: "2026.csv", ano: "2026", mes: "anual", dia: null,
+      tabela_destino: "12_06_01", periodicidade: "anual",
+    });
+  }
+  for (const table of ["2025", "global", "tabela-inválida"]) {
+    assert.throws(() => annualDestination(path.join(root, "Financeiro", table, "2026.csv"), root), /\[Anual\]/);
+  }
+  assert.throws(() => annualDestination(path.join(root, "Financeiro", "12_06_01", "9999.csv"), root), /\[Anual\]/);
+  assert.throws(() => annualDestination(path.resolve("__outside__", "Financeiro", "12_06_01", "2026.csv"), root), /\[Anual\]/);
+});
 test("layout anual não captura caminhos mensais, diários e globais existentes", () => {
   for (const file of ["vendas/2025/janeiro.csv", "vendas/2025/janeiro/01.csv", "cadastros/global/cadastro.csv", "cadastros/2025/cadastro.csv"]) {
     assert.equal(annualDestination(path.join(root, file), root), null);
+    assert.equal(annualDestination(path.join(root, "Financeiro", file), root), null);
   }
 });
 test("range anual só existe com marcador, nome e ano concordantes", () => {
