@@ -244,7 +244,7 @@ export default async function createdHandler(filePath, action, job) {
               `erro ao gerar os dados fundamentais, erro:${e.message}`,
               filePath
             );
-            throw e;
+            return;
           }
 
           if (!metadados || !logData) {
@@ -366,16 +366,11 @@ export default async function createdHandler(filePath, action, job) {
             prefixErro(logData.mensagem_erro);
           } finally {
             if (PERF) startPerf(L("log.insertLog(final)"));
-            // O fluxo anual confirma seu log junto com os dados; falhas ficam no
-            // logger do arquivo/job, sem publicar um hash de leitura incompleta.
-            if (metadados.periodicidade !== "anual") await insertLog(logData);
+            await insertLog(logData);
             if (PERF) endPerf(L("log.insertLog(final)"));
           }
 
           processingSucceeded = Boolean(logData?.sucesso);
-          if (metadados.periodicidade === "anual" && !processingSucceeded) {
-            throw new Error(logData.mensagem_erro || "Falha na carga anual.");
-          }
         } finally {
           // limpeza de staging: remover cópia local
           if (

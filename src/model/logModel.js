@@ -1,4 +1,4 @@
-import { query as dbQuery, execute as dbExecute, getPool, DB_QUERY_TIMEOUT_MS } from "../../config/dbPool.js";
+import { query as dbQuery, execute as dbExecute, getPool } from "../../config/dbPool.js";
 import { schema } from "../../config/index.js";
 import { truncarFilepath } from "../controller/createDataController.js";
 
@@ -51,7 +51,7 @@ export async function getLogByData(metadados) {
 const EXISTS_HASH_SQL = `
   SELECT 1
   FROM \`${schema}\`.log_ingestao
-  WHERE tabela_destino = ? AND hash_arquivo = ? AND sucesso = 1
+  WHERE tabela_destino = ? AND hash_arquivo = ?
   LIMIT 1
 `;
 
@@ -77,7 +77,7 @@ export async function existsHashInLog(tabela_destino, hash_arquivo) {
 const GET_HASHES_SQL = `
   SELECT hash_arquivo
   FROM \`${schema}\`.log_ingestao
-  WHERE tabela_destino = ? AND sucesso = 1
+  WHERE tabela_destino = ?
 `;
 
 export async function getAllHashesFromTable(metadados) {
@@ -105,7 +105,7 @@ const INSERT_LOG_SQL = `
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
-export async function insertLog(logData, { connection } = {}) {
+export async function insertLog(logData) {
   const values = [
     logData.tabela_destino ?? null,
     logData.nome_arquivo ?? null,
@@ -123,11 +123,6 @@ export async function insertLog(logData, { connection } = {}) {
   ];
 
   try {
-    if (connection) {
-      const [result] = await connection.execute({ sql: INSERT_LOG_SQL, timeout: DB_QUERY_TIMEOUT_MS }, values);
-      if (result?.warningStatus > 0) throw new Error("Banco retornou avisos ao gravar o log transacional.");
-      return;
-    }
     const stmt = getStmt("INSERT_LOG", INSERT_LOG_SQL);
     if (stmt) {
       const ps = await stmt;

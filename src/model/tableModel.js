@@ -3,7 +3,6 @@ import { schema } from "../../config/index.js";
 import mapearTipo from "../utils/mapearTipos.js";
 import { addAviso } from "../middleware/errorHandler.js";
 import { existsAnyDataInRange as existsAnyDataInRangeQuery } from "./overlapQueries.js";
-import { annualRange } from "../utils/annualLayout.js";
 
 /* -------------------- Caches de metadados -------------------- */
 const schemaCache = new Map();
@@ -83,9 +82,7 @@ function monthToNumber(m) {
 }
 
 /** Retorna [inicio, fimExclusivo] (YYYY-MM-DD) para filtros sargáveis por data. */
-export function computeDateRange(meta) {
-  const { ano, mes, dia } = meta;
-  if (mes === "anual") return annualRange(meta);
+export function computeDateRange({ ano, mes, dia }) {
   const y = Number(ano);
   if (!y || !mes) return null;
 
@@ -389,9 +386,6 @@ export async function existsAnyCsvDateInTable(metadados, opts = {}) {
 }
 
 export async function deleteFromTable(opcoes) {
-  if (opcoes.mes === "anual" || opcoes.periodicidade === "anual") {
-    throw new Error("[Anual] Exclusão anual exige o fluxo transacional dedicado.");
-  }
   const { tabela, tabela_destino, mes, ano, dia, coluna_data, chunkSize } =
     opcoes;
   const nomeTabela = tabela || tabela_destino;
