@@ -6,6 +6,7 @@ import normalizar from "../utils/normalizar.js";
 import sanitizeRow from "../utils/sanitizeValue.js";
 import { annualRange, annualDestination } from "../utils/annualLayout.js";
 import { readAnnualCsv } from "../utils/readAnnualCsv.js";
+import { normalizeHeadersOnce } from "../utils/csvStream.js";
 import { insertLog } from "./logModel.js";
 import { addInfo, addAviso } from "../middleware/errorHandler.js";
 import { updateActiveJob } from "../utils/queueTracker.js";
@@ -136,28 +137,20 @@ export async function importAnnualFile(meta, logData) {
         async onRows(rows) {
           for (const row of rows) {
             if (!headers) {
-              headers = row.map((h) => normalizar(String(h)));
-              if (headers.some((h) => !h) || new Set(headers).size !== headers.length) {
-                throw new Error("[Anual] Cabeçalhos vazios ou duplicados.");
-              }
+              // Mesma normalização e projeção por nome usadas no fluxo legado:
+              // vazios/repetidos recebem nomes, extras não são inseridos e ausentes ficam NULL.
+              headers = normalizeHeadersOnce(row).headers;
               const byHeader = new Map(definition.allColumns.map((c) => [normalizar(c.COLUMN_NAME), c]));
-              if (byHeader.size !== definition.allColumns.length || headers.some((h) => !byHeader.has(h))) {
-                throw new Error("[Anual] Cabeçalhos incompatíveis com a tabela de destino.");
-              }
-              const missing = definition.allColumns.filter((c) => !isGenerated(c) &&
-                !/auto_increment/i.test(c.EXTRA || "") && !headers.includes(normalizar(c.COLUMN_NAME)));
-              if (missing.length) throw new Error(`[Anual] Colunas ausentes: ${missing.map((c) => c.COLUMN_NAME).join(", ")}.`);
-              insertColumns = headers.map((h) => byHeader.get(h)).filter((c) => !isGenerated(c)).map((c) => c.COLUMN_NAME);
+              insertColumns = definition.columns;
               if (!insertColumns.length) throw new Error("[Anual] CSV sem colunas graváveis.");
-              // Mapeia pelo nome real do DB, mantendo a normalização dos CSVs legados.
-              headers = headers.map((h) => byHeader.get(h).COLUMN_NAME);
+              headers = headers.map((h) => byHeader.get(h)?.COLUMN_NAME ?? h);
               continue;
             }
             if (row.length !== headers.length) throw new Error(`[Anual] Quantidade de campos inválida no registro ${count + 1}.`);
             const raw = Object.fromEntries(headers.map((h, i) => [h, row[i]?.trim() ?? ""]));
             const typed = sanitizeRow(raw, definition.types, context);
             for (const col of insertColumns) {
-              if (raw[col] !== "" && typed[col] == null) {
+              if (raw[col] != null && raw[col] !== "" && typed[col] == null) {
                 throw new Error(`[Anual] Valor inválido na coluna '${col}', registro ${count + 1}.`);
               }
             }

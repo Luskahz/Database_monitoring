@@ -110,9 +110,7 @@ test("carga anual no MySQL isolado", { skip: !process.env.ANNUAL_TEST_MYSQL_PORT
     ["data impossível", "id;data;valor\n1;2025-02-29;x\n", /Valor inválido/],
     ["vazio", "", /vazio|cabeçalho/],
     ["apenas cabeçalho", "id;data;valor\n", /vazio|cabeçalho/],
-    ["sem coluna de data", "id;valor\n1;x\n", /Colunas ausentes/],
-    ["cabeçalho duplicado", "id;data;data\n1;2025-01-01;x\n", /duplicados/],
-    ["coluna desconhecida", "id;data;outra\n1;2025-01-01;x\n", /Cabeçalhos incompatíveis/],
+    ["sem coluna de data", "id;valor\n1;x\n", /Data vazia/],
     ["linha truncada", "id;data;valor\n1;2025-01-01\n", /Quantidade de campos/],
     ["CSV malformado", 'id;data;valor\n1;2025-01-01;"aberto', /CSV malformado/],
     ["chave duplicada no CSV", "id;data;valor\n1;2025-01-01;x\n1;2025-02-01;y\n", /Duplicate entry/],
@@ -121,6 +119,16 @@ test("carga anual no MySQL isolado", { skip: !process.env.ANNUAL_TEST_MYSQL_PORT
   ]) {
     await t.test(`bloqueia ${label} sem alterar o destino`, async () => { await reset(); await seed(); await expectPreserved(text, error); });
   }
+  await t.test("cabeçalhos vazios, repetidos e extras seguem a projeção do legado", async () => {
+    await reset("id INT PRIMARY KEY, data DATE NOT NULL, valor VARCHAR(10), valor_2 VARCHAR(10), campo_em_branco VARCHAR(10), campo_sem_nome_2 VARCHAR(10)");
+    const { meta, log } = await content("id;data;valor;valor;;;extra\n1;2025-01-01;um;dois;ignorado;ignorado;ignorado\n");
+    await importAnnualFile(meta, log);
+    const [row] = await snapshot();
+    assert.equal(row.valor, "um");
+    assert.equal(row.valor_2, "dois");
+    assert.equal(row.campo_em_branco, null);
+    assert.equal(row.campo_sem_nome_2, null);
+  });
   await t.test("erro tardio após vários lotes mantém os dados anteriores", async () => {
     await reset(); await seed();
     const text = "id;data;valor\n" + Array.from({ length: 2001 }, (_, i) => `${i + 100};2025-01-01;ok\n`).join("") + "9999;2026-01-01;erro\n";
