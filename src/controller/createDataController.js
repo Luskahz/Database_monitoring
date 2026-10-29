@@ -72,6 +72,16 @@ export function destinoByFilePath(filePath) {
   const [parent, grandParent, greatGrandParent] = tailDirs(dir);
   const fileNameLC = fileName.toLowerCase();
 
+  if (/^\d{4}\.csv$/i.test(fileName)) {
+    return {
+      nome_arquivo: fileNameLC,
+      ano: baseNameNoExt,
+      mes: "anual",
+      dia: null,
+      tabela_destino: parent.toLowerCase(),
+    };
+  }
+
   if (isAllDigits(baseNameNoExt)) {
     return {
       nome_arquivo: fileNameLC,

@@ -154,6 +154,8 @@ Diretorio_Monitorado/               📂 (pasta raiz monitorada)
 
   * Ex.: `produtos_cadastral/2023/cadastro.csv`.
 
+* **Anual**: arquivo com nome `AAAA.csv` diretamente na pasta da tabela. Ex.: `Financeiro/12_06_01/2026.csv` identifica a tabela `12_06_01` e o período de 01/01/2026 até 01/01/2027 (fim exclusivo). Pastas anteriores são apenas organização. O arquivo segue os mesmos fluxos existentes de metadados, validação, overlap, inserção e logs.
+
 > **Atenção:** Mantenha os **nomes das colunas** nos CSVs **iguais** aos da tabela de destino (incluindo a **coluna de data** nos diários/mensais).
 
 ---

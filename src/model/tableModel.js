@@ -86,6 +86,12 @@ export function computeDateRange({ ano, mes, dia }) {
   const y = Number(ano);
   if (!y || !mes) return null;
 
+  if (mes === "anual") {
+    const inicio = new Date(Date.UTC(y, 0, 1));
+    const fim = new Date(Date.UTC(y + 1, 0, 1));
+    return [inicio.toISOString().slice(0, 10), fim.toISOString().slice(0, 10)];
+  }
+
   const m = monthToNumber(mes);
   if (!m) return null;
 
